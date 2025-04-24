@@ -1,3 +1,9 @@
+# Exclude build artifacts
+/dist
+/build
+
+# Exclude node_modules
+/node_modules
 # Dependencies
 /node_modules
 /.pnp
