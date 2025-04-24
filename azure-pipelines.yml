@@ -12,11 +12,11 @@ steps:
 
 - script: |
     npm install
-  displayName: 'npm install'
+  displayName: 'Install Dependencies'
 
 - script: |
     npm run build
-  displayName: 'npm build'
+  displayName: 'Build Frontend'
 
 - script: |
     cd api
@@ -26,8 +26,8 @@ steps:
 
 - task: AzureStaticWebApp@0
   inputs:
-    app_location: 'out'
+    app_location: '/'
     api_location: 'api'
-    output_location: ''
+    output_location: 'dist'
   env:
     AZURE_STATIC_WEB_APPS_API_TOKEN: $(AZURE_STATIC_WEB_APPS_API_TOKEN)
