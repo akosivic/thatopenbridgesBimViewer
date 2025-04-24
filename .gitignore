@@ -35,3 +35,7 @@ Thumbs.db
 # Cache
 .cache
 .npm
+
+# Azure-specific files
+local.settings.json
+*.azurefunctions
