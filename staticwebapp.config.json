@@ -4,13 +4,6 @@
   },
   "routes": [
     {
-      "route": "/*",
-      "allowedRoles": [
-        "contributor",
-        "owner"
-      ]
-    },
-    {
       "route": "/error",
       "allowedRoles": [
         "anonymous",
@@ -27,6 +20,13 @@
         "PUT",
         "DELETE"
       ],
+      "allowedRoles": [
+        "contributor",
+        "owner"
+      ]
+    },
+    {
+      "route": "/*",
       "allowedRoles": [
         "contributor",
         "owner"
