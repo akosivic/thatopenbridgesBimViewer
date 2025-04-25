@@ -1,7 +1,23 @@
+// import * as THREE from "three";
+import {
+  Worlds,
+  SimpleScene,
+  OrthoPerspectiveCamera,
+  Components,
+  Grids,
+  FragmentsManager,
+  IfcRelationsIndexer,
+  Classifier,
+  IfcLoader,
+  Cullers,
+} from "@thatopen/components";
+import {
+  PostproductionRenderer,
+  IfcStreamer,
+  Highlighter,
+} from "@thatopen/components-front";
+import { Manager, Viewport, Component, html, Grid } from "@thatopen/ui";
 import * as THREE from "three";
-import * as OBC from "@thatopen/components";
-import * as OBF from "@thatopen/components-front";
-import * as BUI from "@thatopen/ui";
 import projectInformation from "./components/Panels/ProjectInformation";
 import elementData from "./components/Panels/Selection";
 import settings from "./components/Panels/Settings";
@@ -12,36 +28,36 @@ import measurement from "./components/Toolbars/Sections/Measurement";
 import selection from "./components/Toolbars/Sections/Selection";
 import { AppManager } from "./bim-components";
 
-BUI.Manager.init();
+Manager.init();
 
-const components = new OBC.Components();
-const worlds = components.get(OBC.Worlds);
+const components = new Components();
+const worlds = components.get(Worlds);
 
 const world = worlds.create<
-  OBC.SimpleScene,
-  OBC.OrthoPerspectiveCamera,
-  OBF.PostproductionRenderer
+  SimpleScene,
+  OrthoPerspectiveCamera,
+  PostproductionRenderer
 >();
 world.name = "Main";
 
-world.scene = new OBC.SimpleScene(components);
+world.scene = new SimpleScene(components);
 world.scene.setup();
 world.scene.three.background = null;
 
-const viewport = BUI.Component.create<BUI.Viewport>(() => {
-  return BUI.html`
+const viewport = Component.create<Viewport>(() => {
+  return html`
     <bim-viewport>
       <bim-grid floating></bim-grid>
     </bim-viewport>
   `;
 });
 
-world.renderer = new OBF.PostproductionRenderer(components, viewport);
+world.renderer = new PostproductionRenderer(components, viewport);
 const { postproduction } = world.renderer;
 
-world.camera = new OBC.OrthoPerspectiveCamera(components);
+world.camera = new OrthoPerspectiveCamera(components);
 
-const worldGrid = components.get(OBC.Grids).create(world);
+const worldGrid = components.get(Grids).create(world);
 worldGrid.material.uniforms.uColor.value = new THREE.Color(0x424242);
 worldGrid.material.uniforms.uSize1.value = 2;
 worldGrid.material.uniforms.uSize2.value = 8;
@@ -61,28 +77,28 @@ postproduction.setPasses({ custom: true, ao: true, gamma: true });
 postproduction.customEffects.lineColor = 0x17191c;
 
 const appManager = components.get(AppManager);
-const viewportGrid = viewport.querySelector<BUI.Grid>("bim-grid[floating]")!;
+const viewportGrid = viewport.querySelector<Grid>("bim-grid[floating]")!;
 appManager.grids.set("viewport", viewportGrid);
 
-const fragments = components.get(OBC.FragmentsManager);
-const indexer = components.get(OBC.IfcRelationsIndexer);
-const classifier = components.get(OBC.Classifier);
+const fragments = components.get(FragmentsManager);
+const indexer = components.get(IfcRelationsIndexer);
+const classifier = components.get(Classifier);
 classifier.list.CustomSelections = {};
 
-const ifcLoader = components.get(OBC.IfcLoader);
+const ifcLoader = components.get(IfcLoader);
 await ifcLoader.setup();
 
-const tilesLoader = components.get(OBF.IfcStreamer);
+const tilesLoader = components.get(IfcStreamer);
 tilesLoader.world = world;
 tilesLoader.culler.threshold = 10;
 tilesLoader.culler.maxHiddenTime = 1000;
 tilesLoader.culler.maxLostTime = 40000;
 
-const highlighter = components.get(OBF.Highlighter);
+const highlighter = components.get(Highlighter);
 highlighter.setup({ world });
 highlighter.zoomToSelection = true;
 
-const culler = components.get(OBC.Cullers).create(world);
+const culler = components.get(Cullers).create(world);
 culler.threshold = 5;
 
 world.camera.controls.restThreshold = 0.25;
@@ -126,31 +142,26 @@ fragments.onFragmentsDisposed.add(({ fragmentIDs }) => {
 const projectInformationPanel = projectInformation(components);
 const elementDataPanel = elementData(components);
 
-const toolbar = BUI.Component.create(() => {
-  return BUI.html`
+const toolbar = Component.create(() => {
+  return html`
     <bim-tabs floating style="justify-self: center; border-radius: 0.5rem;">
       <bim-tab label="Import">
-        <bim-toolbar>
-          ${load(components)}
-        </bim-toolbar>
+        <bim-toolbar>${load(components)}</bim-toolbar>
       </bim-tab>
       <bim-tab label="Selection">
         <bim-toolbar>
-          ${camera(world)}
-          ${selection(components, world)}
+          ${camera(world)} ${selection(components, world)}
         </bim-toolbar>
       </bim-tab>
       <bim-tab label="Measurement">
-        <bim-toolbar>
-            ${measurement(world, components)}
-        </bim-toolbar>      
+        <bim-toolbar> ${measurement(world, components)} </bim-toolbar>
       </bim-tab>
     </bim-tabs>
   `;
 });
 
-const leftPanel = BUI.Component.create(() => {
-  return BUI.html`
+const leftPanel = Component.create(() => {
+  return html`
     <bim-tabs switchers-full>
       <bim-tab name="project" label="Project" icon="ph:building-fill">
         ${projectInformationPanel}
@@ -161,11 +172,11 @@ const leftPanel = BUI.Component.create(() => {
       <bim-tab name="help" label="Help" icon="material-symbols:help">
         ${help}
       </bim-tab>
-    </bim-tabs> 
+    </bim-tabs>
   `;
 });
 
-const app = document.getElementById("app") as BUI.Grid;
+const app = document.getElementById("app") as Grid;
 app.layouts = {
   main: {
     template: `
