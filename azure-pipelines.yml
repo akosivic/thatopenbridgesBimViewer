@@ -18,11 +18,11 @@ steps:
     npm run build
   displayName: 'Build Frontend'
 
-- script: |
-    cd api
-    npm install
-    npm run build
-  displayName: 'Build API'
+# - script: |
+#     cd api
+#     npm install
+#     npm run build
+#   displayName: 'Build API'
 
 - task: AzureStaticWebApp@0
   inputs:
