@@ -1,0 +1,39 @@
+{
+  "navigationFallback": {
+    "rewrite": "/index.html"
+  },
+  "routes": [
+    {
+      "route": "/*",
+      "allowedRoles": [
+        "contributor",
+        "owner"
+      ]
+    },
+    {
+      "route": "/error",
+      "allowedRoles": [
+        "anonymous",
+        "authenticated",
+        "contributor",
+        "owner"
+      ]
+    },
+    {
+      "route": "/api/*",
+      "methods": [
+        "GET",
+        "POST",
+        "PUT",
+        "DELETE"
+      ],
+      "allowedRoles": [
+        "contributor",
+        "owner"
+      ]
+    }
+  ],
+  "platform": {
+    "apiRuntime": "node:20"
+  }
+}
