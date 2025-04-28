@@ -26,7 +26,7 @@ import help from "./components/Panels/Help";
 import camera from "./components/Toolbars/Sections/Camera";
 import measurement from "./components/Toolbars/Sections/Measurement";
 import selection from "./components/Toolbars/Sections/Selection";
-import { AppManager } from "./bim-components";
+import { AppManager } from "./components/bim-components";
 
 export class WorldViewer extends HTMLElement {
   constructor() {

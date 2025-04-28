@@ -1,7 +1,7 @@
 
 // import './App.css'
 // Change this line in App.tsx
-import HeaderComponent from './components/common/headerComponent'; // Ensure the casing matches the actual file name
+import HeaderComponent from './components/common/HeaderComponent'; // Ensure the casing matches the actual file name
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { createTheme } from '@mui/material/styles';
