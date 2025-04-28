@@ -29,5 +29,5 @@ steps:
     app_location: '/'
     api_location: 'api'
     output_location: 'dist'
-  env:
-    AZURE_STATIC_WEB_APPS_API_TOKEN: $(AZURE_STATIC_WEB_APPS_API_TOKEN)
+  # env:
+    # AZURE_STATIC_WEB_APPS_API_TOKEN: $(AZURE_STATIC_WEB_APPS_API_TOKEN)
