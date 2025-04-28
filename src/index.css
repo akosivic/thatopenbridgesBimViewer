@@ -69,18 +69,11 @@ html.bim-ui-light {
   margin: 0;
 }
 
-body {
+/* body {
   height: 100vh;
-}
+} */
 
 html {
   font-family: sans-serif;
 }
 
-bim-grid:not([floating])>bim-panel {
-  border-radius: 0;
-}
-
-bim-grid[floating]>bim-toolbar {
-  justify-self: center;
-}

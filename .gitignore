@@ -1,47 +1,24 @@
-# Exclude build artifacts
-/dist
-/build
-
-# Exclude node_modules
-/node_modules
-# Dependencies
-/node_modules
-/.pnp
-.pnp.js
-
-# Production build
-/dist
-/build
-
-# Environment files
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# IDE specific files
-.vscode
-.idea
-*.swp
-*.swo
-
-# Debug logs
+# Logs
+logs
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
-# System Files
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
 .DS_Store
-Thumbs.db
-
-# TypeScript
-*.tsbuildinfo
-
-# Cache
-.cache
-.npm
-
-# Azure-specific files
-local.settings.json
-*.azurefunctions
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
