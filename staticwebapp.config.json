@@ -29,7 +29,8 @@
       "route": "/*",
       "allowedRoles": [
         "contributor",
-        "owner"
+        "owner",
+        "anonymous"
       ]
     }
   ],
