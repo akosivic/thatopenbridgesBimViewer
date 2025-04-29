@@ -1,0 +1,42 @@
+{
+  "configurations": {
+    "app": {
+      "appLocation": ".",
+      "apiLocation": "./api",
+      "outputLocation": "dist",
+      "appBuildCommand": "npm run build",
+      "run": "npm run dev",
+      "appDevserverUrl": "http://localhost:5173"
+    },
+    "api": {
+      "apiLocation": "./api",
+      "run": "func start"
+    },
+    "bim-viewer": {
+      "appLocation": ".",
+      "apiLocation": "api",
+      "outputLocation": "dist",
+      "dataApiLocation": "swa-db-connections",
+      "apiLanguage": "node",
+      "apiVersion": "20",
+      "appBuildCommand": "npm run build",
+      "apiBuildCommand": "npm run build --if-present",
+      "run": "npm run dev",
+      "appDevserverUrl": "http://localhost:5173"
+    }
+  },
+  "auth": {
+    "identityProvider": "aad",
+    "userDetailsList": [
+      {
+        "name": "authenticated-user",
+        "identityProvider": "aad",
+        "roles": [
+          "authenticated",
+          "contributor",
+          "owner"
+        ]
+      }
+    ]
+  }
+}

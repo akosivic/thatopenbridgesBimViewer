@@ -1,16 +1,16 @@
 
 // import './App.css'
 // Change this line in App.tsx
-import HeaderComponent from './components/HeaderComponent'; // Ensure the casing matches the actual file name
+import HeaderComponent from '../components/HeaderComponent'; // Ensure the casing matches the actual file name
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { createTheme } from '@mui/material/styles';
-import { WorldViewerComponent } from './components/WorldViewerComponent';
-import FooterComponent from './components/FooterComponent'; // Ensure the casing matches the actual file name
+import { WorldViewerComponent } from '../components/WorldViewerComponent';
+import FooterComponent from '../components/FooterComponent'; // Ensure the casing matches the actual file name
 
 const theme = createTheme();
 
-function App() {
+function WorldViewer() {
 
   return (
     <ThemeProvider theme={theme}>
@@ -23,4 +23,4 @@ function App() {
   )
 }
 
-export default App
+export default WorldViewer;

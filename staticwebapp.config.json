@@ -1,0 +1,40 @@
+{
+  "navigationFallback": {
+    "rewrite": "/index.html"
+  },
+  "routes": [
+    {
+      "route": "/worldviewer/*",
+      "allowedRoles": [
+        "contributor",
+        "owner"
+      ]
+    },
+    {
+      "route": "/error",
+      "allowedRoles": [
+        "anonymous",
+        "authenticated",
+        "contributor",
+        "owner"
+      ]
+    },
+    {
+      "route": "/worldviewer",
+      "allowedRoles": [
+        "contributor",
+        "owner"
+      ]
+    },
+    {
+      "route": "/api/*",
+      "allowedRoles": [
+        "contributor",
+        "owner"
+      ]
+    }
+  ],
+  "platform": {
+    "apiRuntime": "node:20"
+  }
+}

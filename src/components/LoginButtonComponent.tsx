@@ -9,7 +9,7 @@ const LoginButton: React.FC = () => {
 
   // Handle login action
   const handleLogin = (): void => {
-    login('/manage');
+    login('/worldviewer');
   };
 
   return (

@@ -5,7 +5,7 @@ import App from './App.tsx'
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from '@mui/material/styles'; // Import ThemeProvider
 import { createTheme } from '@mui/material/styles';
-
+import WorldViewer from './worldviewer/WorldViewer.tsx';
 // Create the custom theme
 const theme = createTheme({
   typography: {
@@ -23,6 +23,7 @@ createRoot(document.getElementById('root')!).render(
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<App />} />
+          <Route path="/worldviewer" element={<WorldViewer />} />
         </Routes>
       </BrowserRouter>
     </ThemeProvider>
