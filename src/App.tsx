@@ -8,6 +8,7 @@ import HeaderComponent from './components/HeaderComponent';
 import LoginButtonComponent from './components/LoginButtonComponent';
 import { useAuth } from './components/common/authentication';
 import { Navigate } from 'react-router-dom';
+import { JSX } from 'react';
 
 // Styled component for the container
 const StyledBox = styled(Box)({

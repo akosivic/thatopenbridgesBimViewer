@@ -11,9 +11,9 @@ const theme = createTheme({
   typography: {
     fontFamily: "'Roboto', 'Hiragino Sans', 'Yu Gothic UI', 'Hiragino Kaku Gothic ProN', sans-serif",
   },
-  root: {
-    fontFamily: "'Roboto', 'Hiragino Sans', 'Yu Gothic UI', 'Hiragino Kaku Gothic ProN', sans-serif"
-  }
+  // root: {
+  //   fontFamily: "'Roboto', 'Hiragino Sans', 'Yu Gothic UI', 'Hiragino Kaku Gothic ProN', sans-serif"
+  // }
 });
 
 
