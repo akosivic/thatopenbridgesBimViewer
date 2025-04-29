@@ -4,11 +4,11 @@ import { WorldViewer } from "./common/WorldViewer";
 
 
 export const WorldViewerComponent = createComponent({
-    tagName: 'world-viewer',
-    elementClass: WorldViewer,
-    react: React,
-    events: {
-        onactivate: 'activate',
-        onchange: 'change',
-    },
+  tagName: 'world-viewer',
+  elementClass: WorldViewer,
+  react: React,
+  events: {
+    onactivate: 'activate',
+    onchange: 'change',
+  },
 });

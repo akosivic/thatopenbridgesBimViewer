@@ -1,26 +1,49 @@
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import { styled } from '@mui/material/styles';
+import Divider from '@mui/material/Divider';
 
-// import './App.css'
-// Change this line in App.tsx
-import HeaderComponent from './components/common/HeaderComponent'; // Ensure the casing matches the actual file name
-import { ThemeProvider } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
-import { createTheme } from '@mui/material/styles';
-import { WorldViewerComponent } from './components/WorldViewerComponent';
-import FooterComponent from './components/FooterComponent'; // Ensure the casing matches the actual file name
+import FooterComponent from './components/FooterComponent';
+import HeaderComponent from './components/HeaderComponent';
+import LoginButtonComponent from './components/LoginButtonComponent';
+import { useAuth } from './components/common/authentication';
+import { Navigate } from 'react-router-dom';
 
-const theme = createTheme();
+// Styled component for the container
+const StyledBox = styled(Box)({
+  display: 'flex',
+  alignItems: 'center', // aligns items horizontally center
+  justifyContent: 'center',
+  minHeight: '100vh',
+  gap: '16px', // space between elements
+});
 
-function App() {
+function App(): JSX.Element {
+  const { isAuthenticated } = useAuth();
+
+  if (isAuthenticated) {
+    return <Navigate to="/manage" />;
+  }
 
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
+    <StyledBox>
       <HeaderComponent />
-      <WorldViewerComponent />
+      <StyledBox>
+        <Typography
+          variant="h5"
+          component="h5"
+          sx={{
+            cursor: 'default',
+          }}
+        >
+          BIM Manager
+        </Typography>
+        <Divider orientation="vertical" flexItem />
+        <LoginButtonComponent />
+      </StyledBox>
       <FooterComponent />
-      {/* rest of your app */}
-    </ThemeProvider>
-  )
+    </StyledBox>
+  );
 }
 
-export default App
+export default App;
