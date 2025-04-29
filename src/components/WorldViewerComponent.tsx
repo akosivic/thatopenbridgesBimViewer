@@ -1,6 +1,6 @@
 import React from 'react';
 import { createComponent } from '@lit/react';
-import { WorldViewer } from "./WorldViewer";
+import { WorldViewer } from "./common/WorldViewer";
 
 
 export const WorldViewerComponent = createComponent({
