@@ -1,0 +1,14 @@
+{
+  "name": "ddnsupdater_nodejs",
+  "version": "1.0.1",
+  "description": "",
+  "scripts": {
+    "start": "func start",
+    "test": "echo \"No tests yet...\""
+  },
+  "dependencies": {},
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "main": "src/{index.js}"
+}

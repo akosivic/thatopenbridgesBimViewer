@@ -23,7 +23,7 @@ function App(): JSX.Element {
   const { isAuthenticated } = useAuth();
 
   if (isAuthenticated) {
-    return <Navigate to="/manage" />;
+    return <Navigate to="/worldviewer" />;
   }
 
   return (

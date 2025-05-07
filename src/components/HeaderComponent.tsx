@@ -2,11 +2,16 @@ import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 // import Button from '@mui/material/Button';
-import { Box } from '@mui/material';
+import { Box, Button } from '@mui/material';
 import SvgIcon from '@mui/material/SvgIcon';
 import Divider from '@mui/material/Divider';
+import { logout } from './common/authentication';
+import AuthGuard from './common/AuthGuard';
+import { useTranslation } from 'react-i18next';
 
 const HeaderComponent = () => {
+  const { t } = useTranslation();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function BridgesIcon(props: any) {
     return (
       <SvgIcon {...props} viewBox='0 0 176 49'>
@@ -15,9 +20,9 @@ const HeaderComponent = () => {
     );
   }
 
-  // const handleLogOff = () => {
-  //     logout();
-  // };
+  const handleLogOff = () => {
+    logout();
+  };
 
   return (
     <AppBar position="sticky" sx={{
@@ -37,6 +42,15 @@ const HeaderComponent = () => {
           }}>
             BIM Manager
           </Typography>
+        </Box>
+        <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'flex-end' }}>
+          {/* <LanguageSelector>
+          </LanguageSelector> */}
+          <AuthGuard>
+            <Button color="inherit" onClick={handleLogOff}>
+              {t('logout')}
+            </Button>
+          </AuthGuard>
         </Box>
       </Toolbar>
     </AppBar>
