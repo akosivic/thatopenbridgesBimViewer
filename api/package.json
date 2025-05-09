@@ -1,14 +1,16 @@
 {
-  "name": "ddnsupdater_nodejs",
+  "name": "bridges-bim-viewer-api",
   "version": "1.0.1",
-  "description": "",
+  "description": "API for Bridges BIM Viewer",
   "scripts": {
     "start": "func start",
     "test": "echo \"No tests yet...\""
   },
-  "dependencies": {},
+  "dependencies": {
+    "@azure/functions": "^4.0.0"
+  },
   "engines": {
     "node": ">=20.0.0"
   },
-  "main": "src/{index.js}"
+  "main": "src/index.js"
 }

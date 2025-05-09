@@ -32,6 +32,13 @@
         "contributor",
         "owner"
       ]
+    },
+    {
+      "route": "/.auth/login/aad",
+      "allowedRoles": [
+        "anonymous",
+        "authenticated"
+      ]
     }
   ],
   "platform": {
