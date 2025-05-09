@@ -1,31 +1,5 @@
 const fs = require('fs');
 const path = require('path');
-// const { app } = require('@azure/functions');
-
-
-// app.http('streamifc', {
-//   methods: ['GET'],
-//   authLevel: 'anonymous',
-//   handler: async (request, context) => {
-//     switch (request.method) {
-//       case 'GET':
-//         return await handlestreamifcGet(request, context);
-//       // case 'PUT':
-//       //   return await handlePut(request, context);
-//       // case 'POST':
-//       //   return await handlePost(request, context);
-//       // case 'DELETE':
-//       //   return handleDelete(request, context);
-//       default:
-//         // context.log({ message: 'Subdomains', properties: { subdomains } });
-//         // Handle unsupported methods
-//         return JSON.stringify({
-//           error: 'Method not supported',
-//           supportedMethods: ['GET']
-//         });
-//     }
-//   }
-// });
 
 module.exports = async function (request, context) {
   try {

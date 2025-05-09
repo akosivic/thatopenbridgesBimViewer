@@ -21,7 +21,7 @@ import * as THREE from "three";
 import projectInformation from "./components/Panels/ProjectInformation";
 import elementData from "./components/Panels/Selection";
 import settings from "./components/Panels/Settings";
-import load from "./components/Toolbars/Sections/Import";
+import loadTestIfc from "./components/Toolbars/Sections/Import";
 import help from "./components/Panels/Help";
 import camera from "./components/Toolbars/Sections/Camera";
 import measurement from "./components/Toolbars/Sections/Measurement";
@@ -152,23 +152,23 @@ export class WorldViewer extends HTMLElement {
     const projectInformationPanel = projectInformation(components);
     const elementDataPanel = elementData(components);
 
-    const toolbar = Component.create(() => {
-      return html`
-        <bim-tabs floating style="justify-self: center; border-radius: 0.5rem;padding:30px">
-          <bim-tab label="Import">
-            <bim-toolbar>${load(components)}</bim-toolbar>
-          </bim-tab>
-          <bim-tab label="Selection">
-            <bim-toolbar>
-              ${camera(world)} ${selection(components, world)}
-            </bim-toolbar>
-          </bim-tab>
-          <bim-tab label="Measurement">
-            <bim-toolbar> ${measurement(world, components)} </bim-toolbar>
-          </bim-tab>
-        </bim-tabs>
-      `;
-    });
+    // const toolbar = Component.create(() => {
+    //   return html`
+    //     <bim-tabs floating style="justify-self: center; border-radius: 0.5rem;padding:30px">
+    //       <bim-tab label="Import">
+    //         <bim-toolbar>${load(components)}</bim-toolbar>
+    //       </bim-tab>
+    //       <bim-tab label="Selection">
+    //         <bim-toolbar>
+    //           ${camera(world)} ${selection(components, world)}
+    //         </bim-toolbar>
+    //       </bim-tab>
+    //       <bim-tab label="Measurement">
+    //         <bim-toolbar> ${measurement(world, components)} </bim-toolbar>
+    //       </bim-tab>
+    //     </bim-tabs>
+    //   `;
+    // });
 
     const leftPanel = Component.create(() => {
       return html`
@@ -209,14 +209,14 @@ export class WorldViewer extends HTMLElement {
     gridApp.layout = "main";
 
     viewportGrid.layouts = {
-      main: {
-        template: `
-          "empty" 1fr
-          "toolbar" auto
-          /1fr
-        `,
-        elements: { toolbar },
-      },
+      // main: {
+      //   template: `
+      //     "empty" 1fr
+      //     "toolbar" auto
+      //     /1fr
+      //   `,
+      //   elements: { toolbar },
+      // },
       second: {
         template: `
           "empty elementDataPanel" 1fr
@@ -231,6 +231,7 @@ export class WorldViewer extends HTMLElement {
     };
 
     viewportGrid.layout = "main";
+    loadTestIfc(components);
   }
 }
 
