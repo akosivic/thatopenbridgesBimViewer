@@ -27,7 +27,6 @@ import camera from "./components/Toolbars/Sections/Camera";
 import measurement from "./components/Toolbars/Sections/Measurement";
 import selection from "./components/Toolbars/Sections/Selection";
 import { AppManager } from "./components/bim-components";
-import { loadIfc } from "./components/Toolbars/Sections/Import";
 
 export class WorldViewer extends HTMLElement {
   constructor() {
@@ -154,12 +153,11 @@ export class WorldViewer extends HTMLElement {
       }
     });
 
-    const projectInformationPanel = projectInformation(components, isDebugMode);
+    const projectInformationPanel = projectInformation(components);
     const elementDataPanel = elementData(components);
 
     const toolbar = Component.create(() => {
-      if (isDebugMode) {
-        return html`
+      return html`
         <bim-tabs floating style="justify-self: center; border-radius: 0.5rem;padding:30px">
           <bim-tab label="Import">
             <bim-toolbar>${load(components)}</bim-toolbar>
@@ -174,47 +172,22 @@ export class WorldViewer extends HTMLElement {
           </bim-tab>
         </bim-tabs>
       `;
-      }
-      else {
-        return html`
-        <bim-tabs floating style="justify-self: center; border-radius: 0.5rem;padding:30px">
-          <bim-tab label="Options">
-            <bim-toolbar>
-              ${camera(world)} ${selection(components, world)}
-            </bim-toolbar>
-          </bim-tab>
-        </bim-tabs>
-      `;
-      }
     });
 
     const leftPanel = Component.create(() => {
-      if (isDebugMode) {
-        return html`
+      return html`
         <bim-tabs switchers-full>
           <bim-tab name="project" label="Project" icon="ph:building-fill">
             ${projectInformationPanel}
           </bim-tab>
           <bim-tab name="settings" label="Settings" icon="solar:settings-bold">
-            ${settings(components, isDebugMode)}
+            ${settings(components)}
           </bim-tab>
           <bim-tab name="help" label="Help" icon="material-symbols:help">
             ${help}
           </bim-tab>
         </bim-tabs>
       `;
-      }
-      else {
-        return html` <bim-tabs switchers-full>
-          <bim-tab name="project" label="Project" icon="ph:building-fill">
-            ${projectInformationPanel}
-          </bim-tab>
-          <bim-tab name="settings" label="Settings" icon="solar:settings-bold">
-            ${settings(components, isDebugMode)}
-          </bim-tab>
-        </bim-tabs>
-        `
-      }
     });
 
     const app = document.getElementsByTagName("world-viewer")[0];
@@ -224,45 +197,74 @@ export class WorldViewer extends HTMLElement {
     app.appendChild(grid);
 
     const gridApp = grid as Grid;
-
-    gridApp.layouts = {
-      main: {
-        template: `
-        "leftPanel viewport" 1fr
-          / 26rem 1fr
-            `,
-        elements: {
-          leftPanel,
-          viewport,
+    // Configure layouts based on debug mode
+    if (isDebugMode) {
+      // Debug mode - show left panel and viewport
+      gridApp.layouts = {
+        main: {
+          template: `
+          "leftPanel viewport" 1fr
+          /26rem 1fr
+        `,
+          elements: {
+            leftPanel,
+            viewport,
+          },
         },
-      },
+      };
+    } else {
+      gridApp.layouts = {
+        main: {
+          template: `
+          "viewport" 1fr
+          /1fr
+        `,
+          elements: {
+            leftPanel,
+            viewport,
+          },
+        },
+      };
+      // Normal mode - show viewport and toolbar
     }
 
     gridApp.layout = "main";
-    viewportGrid.layouts = {
-      main: {
-        template: `
-        "empty" 1fr
-        "toolbar" auto
-          / 1fr
-            `,
-        elements: { toolbar },
-      },
-      second: {
-        template: `
-        "empty elementDataPanel" 1fr
-        "toolbar elementDataPanel" auto
-          / 1fr 24rem
-            `,
-        elements: {
-          toolbar,
-          elementDataPanel,
+    if (isDebugMode) {
+      viewportGrid.layouts = {
+        main: {
+          template: `
+          "empty" 1fr
+          "toolbar" auto
+          /1fr
+        `,
+          elements: { toolbar },
         },
-      },
-    };
+        second: {
+          template: `
+          "empty elementDataPanel" 1fr
+          "toolbar elementDataPanel" auto
+          /1fr 24rem
+        `,
+          elements: {
+            toolbar,
+            elementDataPanel,
+          },
+        },
+      };
+    }
+    else {
+      viewportGrid.layouts = {
+        main: {
+          template: `
+            "empty" 1fr
+            /1fr
+          `,
+          elements: {},
+        }
+      };
+    }
 
     viewportGrid.layout = "main";
-    await loadIfc(components);
   }
 }
 
