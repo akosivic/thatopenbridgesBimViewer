@@ -156,7 +156,6 @@ export class WorldViewer extends HTMLElement {
     const projectInformationPanel = projectInformation(components);
     const elementDataPanel = elementData(components);
 
-    // Create toolbar component - only shown in debug mode
     const toolbar = Component.create(() => {
       return html`
         <bim-tabs floating style="justify-self: center; border-radius: 0.5rem;padding:30px">
@@ -198,16 +197,15 @@ export class WorldViewer extends HTMLElement {
     app.appendChild(grid);
 
     const gridApp = grid as Grid;
-
     // Configure layouts based on debug mode
     if (isDebugMode) {
       // Debug mode - show left panel and viewport
       gridApp.layouts = {
         main: {
           template: `
-            "leftPanel viewport" 1fr
-            /26rem 1fr
-          `,
+          "leftPanel viewport" 1fr
+          /26rem 1fr
+        `,
           elements: {
             leftPanel,
             viewport,
@@ -215,46 +213,46 @@ export class WorldViewer extends HTMLElement {
         },
       };
     } else {
-      // Normal mode - show only viewport
       gridApp.layouts = {
         main: {
           template: `
-            "viewport" 1fr
-            /1fr
-          `,
+          "viewport" 1fr
+          /1fr
+        `,
           elements: {
+            leftPanel,
             viewport,
           },
         },
       };
+      // Normal mode - show viewport and toolbar
     }
 
     gridApp.layout = "main";
-
-    // Configure viewport grid layouts based on debug mode
     if (isDebugMode) {
       viewportGrid.layouts = {
         main: {
           template: `
-            "empty" 1fr
-            "toolbar" auto
-            /1fr
-          `,
+          "empty" 1fr
+          "toolbar" auto
+          /1fr
+        `,
           elements: { toolbar },
         },
         second: {
           template: `
-            "empty elementDataPanel" 1fr
-            "toolbar elementDataPanel" auto
-            /1fr 24rem
-          `,
+          "empty elementDataPanel" 1fr
+          "toolbar elementDataPanel" auto
+          /1fr 24rem
+        `,
           elements: {
             toolbar,
             elementDataPanel,
           },
         },
       };
-    } else {
+    }
+    else {
       viewportGrid.layouts = {
         main: {
           template: `
@@ -267,15 +265,6 @@ export class WorldViewer extends HTMLElement {
     }
 
     viewportGrid.layout = "main";
-
-    // Automatically load the test IFC file
-    // if (typeof load === 'function') {
-    //   const importSection = load(components);
-    //   // Check if the component has a loadTestIfc method
-    //   if (importSection && typeof importSection.loadTestIfc === 'function') {
-    //     importSection.loadTestIfc();
-    //   }
-    // }
   }
 }
 
