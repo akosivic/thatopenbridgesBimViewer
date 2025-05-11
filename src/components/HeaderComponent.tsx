@@ -5,7 +5,7 @@ import Typography from '@mui/material/Typography';
 import { Box, Button } from '@mui/material';
 import SvgIcon from '@mui/material/SvgIcon';
 import Divider from '@mui/material/Divider';
-import { logout } from './common/authentication';
+import { logout } from './common/Authentication';
 import AuthGuard from './common/AuthGuard';
 import { useTranslation } from 'react-i18next';
 

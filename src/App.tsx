@@ -6,7 +6,7 @@ import Divider from '@mui/material/Divider';
 import FooterComponent from './components/FooterComponent';
 import HeaderComponent from './components/HeaderComponent';
 import LoginButtonComponent from './components/LoginButtonComponent';
-import { useAuth } from './components/common/authentication';
+import { useAuth } from './components/common/Authentication';
 import { Navigate } from 'react-router-dom';
 import { JSX } from 'react';
 

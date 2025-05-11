@@ -1,4 +1,4 @@
-import { useAuth } from "./authentication"
+import { useAuth } from "./Authentication"
 import { ReactNode } from "react";
 
 

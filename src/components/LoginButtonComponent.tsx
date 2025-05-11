@@ -1,6 +1,6 @@
 import React from 'react';
 import Button from '@mui/material/Button';
-import { login } from '../components/common/authentication';
+import { login } from '../components/common/Authentication';
 import { useTranslation } from 'react-i18next';
 
 // Login button component with MSAL
