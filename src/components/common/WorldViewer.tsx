@@ -38,6 +38,10 @@ export class WorldViewer extends HTMLElement {
   }
 
   private async initializeWorldViewer() {
+    // Check if debug mode is enabled via URL parameter
+    const isDebugMode = window.location.search.includes('?debug') ||
+      window.location.search.includes('&debug');
+
     Manager.init();
 
     const components = new Components();
@@ -193,42 +197,72 @@ export class WorldViewer extends HTMLElement {
     app.appendChild(grid);
 
     const gridApp = grid as Grid;
-    gridApp.layouts = {
-      main: {
-        template: `
+    // Configure layouts based on debug mode
+    if (isDebugMode) {
+      // Debug mode - show left panel and viewport
+      gridApp.layouts = {
+        main: {
+          template: `
           "leftPanel viewport" 1fr
           /26rem 1fr
         `,
-        elements: {
-          leftPanel,
-          viewport,
+          elements: {
+            leftPanel,
+            viewport,
+          },
         },
-      },
-    };
+      };
+    } else {
+      gridApp.layouts = {
+        main: {
+          template: `
+          "viewport" 1fr
+          /1fr
+        `,
+          elements: {
+            leftPanel,
+            viewport,
+          },
+        },
+      };
+      // Normal mode - show viewport and toolbar
+    }
 
     gridApp.layout = "main";
-
-    viewportGrid.layouts = {
-      main: {
-        template: `
+    if (isDebugMode) {
+      viewportGrid.layouts = {
+        main: {
+          template: `
           "empty" 1fr
           "toolbar" auto
           /1fr
         `,
-        elements: { toolbar },
-      },
-      second: {
-        template: `
+          elements: { toolbar },
+        },
+        second: {
+          template: `
           "empty elementDataPanel" 1fr
           "toolbar elementDataPanel" auto
           /1fr 24rem
         `,
-        elements: {
-          toolbar,
-          elementDataPanel,
+          elements: {
+            toolbar,
+            elementDataPanel,
+          },
         },
-      },
-    };
+      };
+    }
+    else {
+      viewportGrid.layouts = {
+        main: {
+          template: `
+            "empty" 1fr
+            /1fr
+          `,
+          elements: {},
+        }
+      };
+    }
 
     viewportGrid.layout = "main";
   }
