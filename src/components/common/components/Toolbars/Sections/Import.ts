@@ -87,8 +87,7 @@ export default (components: OBC.Components) => {
     return name.substring(0, name.indexOf(".ifc"));
   };
 
-  // Original fetch method for local files
-  const originalFetch = streamer.fetch;
+
 
   // Override fetch method to handle both API and local files
   streamer.fetch = async (path: string) => {
@@ -117,8 +116,6 @@ export default (components: OBC.Components) => {
     return fileHandle.getFile();
   };
 
-  // Original FragmentsGroup fetch method
-  const originalFragmentsGroupFetch = FRAGS.FragmentsGroup.fetch;
 
   // Override FragmentsGroup fetch to handle both API and local files
   FRAGS.FragmentsGroup.fetch = async (name: string) => {
@@ -216,7 +213,7 @@ export async function loadTestIfc(components: OBC.Components) {
 
     // Use the existing IFC loader to process the file
     await ifcLoader.load(new Uint8Array(arrayBuffer));
-  } catch (error) {
+  } catch (error: string | any) {
     console.error('Error loading test IFC file:', error);
     alert(`Failed to load test IFC file: ${error.message}`);
   }
