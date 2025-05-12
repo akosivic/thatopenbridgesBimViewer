@@ -2,7 +2,7 @@ import * as BUI from "@thatopen/ui";
 import * as CUI from "@thatopen/ui-obc";
 import * as OBC from "@thatopen/components";
 
-export default (components: OBC.Components) => {
+export default (components: OBC.Components, isDebug: boolean) => {
   const html = document.querySelector("html")!;
   const onThemeChange = (event: Event) => {
     const selector = event.target as BUI.Selector;
@@ -27,7 +27,8 @@ export default (components: OBC.Components) => {
   };
 
   return BUI.Component.create<BUI.Panel>(() => {
-    return BUI.html`
+    if (isDebug) {
+      return BUI.html`
       <bim-panel>
         <bim-panel-section label="Aspect" icon="mage:box-3d-fill">
           <bim-selector vertical @change=${onThemeChange}>
@@ -35,10 +36,9 @@ export default (components: OBC.Components) => {
               value="0"
               label="System"
               icon="majesticons:laptop"
-              .checked=${
-                !html.classList.contains("bim-ui-dark") &&
-                !html.classList.contains("bim-ui-light")
-              }>
+              .checked=${!html.classList.contains("bim-ui-dark") &&
+        !html.classList.contains("bim-ui-light")
+        }>
             </bim-option>
             <bim-option value="1" label="Dark" icon="solar:moon-bold" .checked=${html.classList.contains("bim-ui-dark")}></bim-option>
             <bim-option value="2" label="Light" icon="solar:sun-bold" .checked=${html.classList.contains("bim-ui-light")}></bim-option>
@@ -53,5 +53,26 @@ export default (components: OBC.Components) => {
         </bim-panel-section>
       </bim-panel> 
     `;
+    }
+    else {
+      return BUI.html`
+      <bim-panel>
+        <bim-panel-section label="Aspect" icon="mage:box-3d-fill">
+          <bim-selector vertical @change=${onThemeChange}>
+            <bim-option
+              value="0"
+              label="System"
+              icon="majesticons:laptop"
+              .checked=${!html.classList.contains("bim-ui-dark") &&
+        !html.classList.contains("bim-ui-light")
+        }>
+            </bim-option>
+            <bim-option value="1" label="Dark" icon="solar:moon-bold" .checked=${html.classList.contains("bim-ui-dark")}></bim-option>
+            <bim-option value="2" label="Light" icon="solar:sun-bold" .checked=${html.classList.contains("bim-ui-light")}></bim-option>
+          </bim-selector>
+        </bim-panel-section>
+      </bim-panel> 
+    `;
+    }
   });
 };
