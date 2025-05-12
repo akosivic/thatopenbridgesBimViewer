@@ -152,8 +152,6 @@ export default (components: OBC.Components) => {
           tooltip-text="Loads a pre-converted IFC from a Fragments file. Use this option if you want to avoid the conversion from IFC to Fragments."></bim-button>
         <bim-button @click=${loadTiles} label="Tiles" icon="fe:tiled" tooltip-title="Load BIM Tiles"
         tooltip-text="Loads a pre-converted IFC from a Tiles file to stream the model. Perfect for big models."></bim-button>
-        <bim-button @click=${loadIfc(components)} label="Load Default IFC" icon="mdi:bridge" tooltip-title="Load Test Bridge"
-        tooltip-text="Loads the default bridge IFC file from the API."></bim-button>
       </bim-toolbar-section>
     `;
   });
