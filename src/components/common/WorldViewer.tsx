@@ -154,11 +154,12 @@ export class WorldViewer extends HTMLElement {
       }
     });
 
-    const projectInformationPanel = projectInformation(components);
+    const projectInformationPanel = projectInformation(components, isDebugMode);
     const elementDataPanel = elementData(components);
 
     const toolbar = Component.create(() => {
-      return html`
+      if (isDebugMode) {
+        return html`
         <bim-tabs floating style="justify-self: center; border-radius: 0.5rem;padding:30px">
           <bim-tab label="Import">
             <bim-toolbar>${load(components)}</bim-toolbar>
@@ -173,22 +174,47 @@ export class WorldViewer extends HTMLElement {
           </bim-tab>
         </bim-tabs>
       `;
+      }
+      else {
+        return html`
+        <bim-tabs floating style="justify-self: center; border-radius: 0.5rem;padding:30px">
+          <bim-tab label="Options">
+            <bim-toolbar>
+              ${camera(world)} ${selection(components, world)}
+            </bim-toolbar>
+          </bim-tab>
+        </bim-tabs>
+      `;
+      }
     });
 
     const leftPanel = Component.create(() => {
-      return html`
+      if (isDebugMode) {
+        return html`
         <bim-tabs switchers-full>
           <bim-tab name="project" label="Project" icon="ph:building-fill">
             ${projectInformationPanel}
           </bim-tab>
           <bim-tab name="settings" label="Settings" icon="solar:settings-bold">
-            ${settings(components)}
+            ${settings(components, isDebugMode)}
           </bim-tab>
           <bim-tab name="help" label="Help" icon="material-symbols:help">
             ${help}
           </bim-tab>
         </bim-tabs>
       `;
+      }
+      else {
+        return html` <bim-tabs switchers-full>
+          <bim-tab name="project" label="Project" icon="ph:building-fill">
+            ${projectInformationPanel}
+          </bim-tab>
+          <bim-tab name="settings" label="Settings" icon="solar:settings-bold">
+            ${settings(components, isDebugMode)}
+          </bim-tab>
+        </bim-tabs>
+        `
+      }
     });
 
     const app = document.getElementsByTagName("world-viewer")[0];
@@ -198,72 +224,42 @@ export class WorldViewer extends HTMLElement {
     app.appendChild(grid);
 
     const gridApp = grid as Grid;
-    // Configure layouts based on debug mode
-    if (isDebugMode) {
-      // Debug mode - show left panel and viewport
-      gridApp.layouts = {
-        main: {
-          template: `
-          "leftPanel viewport" 1fr
-          /26rem 1fr
-        `,
-          elements: {
-            leftPanel,
-            viewport,
-          },
+
+    gridApp.layouts = {
+      main: {
+        template: `
+        "leftPanel viewport" 1fr
+          / 26rem 1fr
+            `,
+        elements: {
+          leftPanel,
+          viewport,
         },
-      };
-    } else {
-      gridApp.layouts = {
-        main: {
-          template: `
-          "viewport" 1fr
-          /1fr
-        `,
-          elements: {
-            leftPanel,
-            viewport,
-          },
-        },
-      };
-      // Normal mode - show viewport and toolbar
+      },
     }
 
     gridApp.layout = "main";
-    if (isDebugMode) {
-      viewportGrid.layouts = {
-        main: {
-          template: `
-          "empty" 1fr
-          "toolbar" auto
-          /1fr
-        `,
-          elements: { toolbar },
+    viewportGrid.layouts = {
+      main: {
+        template: `
+        "empty" 1fr
+        "toolbar" auto
+          / 1fr
+            `,
+        elements: { toolbar },
+      },
+      second: {
+        template: `
+        "empty elementDataPanel" 1fr
+        "toolbar elementDataPanel" auto
+          / 1fr 24rem
+            `,
+        elements: {
+          toolbar,
+          elementDataPanel,
         },
-        second: {
-          template: `
-          "empty elementDataPanel" 1fr
-          "toolbar elementDataPanel" auto
-          /1fr 24rem
-        `,
-          elements: {
-            toolbar,
-            elementDataPanel,
-          },
-        },
-      };
-    }
-    else {
-      viewportGrid.layouts = {
-        main: {
-          template: `
-            "empty" 1fr
-            /1fr
-          `,
-          elements: {},
-        }
-      };
-    }
+      },
+    };
 
     viewportGrid.layout = "main";
 
