@@ -22,7 +22,7 @@ module.exports = async function (request, context) {
 
     // Create a read stream from the file
     const fileStream = fs.createReadStream(ifcFilePath);
-    console.log('fileStream', fileStream);
+    // console.log('fileStream', fileStream);
     // Set response headers
     return {
       status: 200,
