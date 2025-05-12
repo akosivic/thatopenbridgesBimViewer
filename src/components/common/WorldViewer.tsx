@@ -266,9 +266,7 @@ export class WorldViewer extends HTMLElement {
     }
 
     viewportGrid.layout = "main";
-    if (!isDebugMode) {
-      loadIfc(components);
-    }
+    await loadIfc(components);
   }
 }
 
