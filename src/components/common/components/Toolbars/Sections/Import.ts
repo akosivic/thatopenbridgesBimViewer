@@ -24,7 +24,6 @@ const askForFile = (extension: string) => {
     input.click();
   });
 };
-
 // Function to fetch a file from a URL
 const fetchFile = async (url: string): Promise<File> => {
   const response = await fetch(url);
@@ -35,6 +34,7 @@ const fetchFile = async (url: string): Promise<File> => {
   return new File([blob], url.substring(url.lastIndexOf('/') + 1), { type: blob.type });
 };
 
+
 export default (components: OBC.Components) => {
   const [loadBtn] = CUI.buttons.loadIfc({ components });
   loadBtn.label = "IFC";
@@ -44,6 +44,8 @@ export default (components: OBC.Components) => {
 
   const fragments = components.get(OBC.FragmentsManager);
   const indexer = components.get(OBC.IfcRelationsIndexer);
+
+
 
   const loadFragments = async () => {
     const fragmentsZip = await askForFile(".zip");
@@ -87,58 +89,17 @@ export default (components: OBC.Components) => {
     return name.substring(0, name.indexOf(".ifc"));
   };
 
-
-
-  // Override fetch method to handle both API and local files
   streamer.fetch = async (path: string) => {
-    // If path starts with 'api/', use API fetch
-    if (path.startsWith('api/')) {
-      const apiUrl = path;
-      const response = await fetch(apiUrl);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch from API: ${response.statusText}`);
-      }
-      return new File(
-        [await response.blob()],
-        path.substring(path.lastIndexOf('/') + 1),
-        { type: 'application/octet-stream' }
-      );
-    }
-
-    // Otherwise use original fetch for local files
     const name = path.substring(path.lastIndexOf("/") + 1);
     const modelName = getStreamDirName(name);
     const directory = streamedDirectories[modelName];
-    if (!directory) {
-      throw new Error(`Directory not found for model: ${modelName}`);
-    }
     const fileHandle = await directory.getFileHandle(name);
     return fileHandle.getFile();
   };
 
-
-  // Override FragmentsGroup fetch to handle both API and local files
   FRAGS.FragmentsGroup.fetch = async (name: string) => {
-    // If name starts with 'api/', use API fetch
-    if (name.startsWith('api/')) {
-      const apiUrl = name;
-      const response = await fetch(apiUrl);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch from API: ${response.statusText}`);
-      }
-      return new File(
-        [await response.blob()],
-        name.substring(name.lastIndexOf('/') + 1),
-        { type: 'application/octet-stream' }
-      );
-    }
-
-    // Otherwise use original fetch for local files
     const modelName = getStreamDirName(name);
     const directory = streamedDirectories[modelName];
-    if (!directory) {
-      throw new Error(`Directory not found for model: ${modelName}`);
-    }
     const fileHandle = await directory.getFileHandle(name);
     return fileHandle.getFile();
   };
@@ -183,9 +144,6 @@ export default (components: OBC.Components) => {
     }
   }
 
-  // Function to load the test IFC file from the API
-
-
   return BUI.Component.create<BUI.PanelSection>(() => {
     return BUI.html`
       <bim-toolbar-section label="Import" icon="solar:import-bold">
@@ -194,11 +152,14 @@ export default (components: OBC.Components) => {
           tooltip-text="Loads a pre-converted IFC from a Fragments file. Use this option if you want to avoid the conversion from IFC to Fragments."></bim-button>
         <bim-button @click=${loadTiles} label="Tiles" icon="fe:tiled" tooltip-title="Load BIM Tiles"
         tooltip-text="Loads a pre-converted IFC from a Tiles file to stream the model. Perfect for big models."></bim-button>
+        <bim-button @click=${loadIfc(components)} label="Load Default IFC" icon="mdi:bridge" tooltip-title="Load Test Bridge"
+        tooltip-text="Loads the default bridge IFC file from the API."></bim-button>
       </bim-toolbar-section>
     `;
   });
 };
 
+// Function to load the test IFC file from the API
 export async function loadIfc(components: OBC.Components) {
   try {
     const apiUrl = '/api/streamIfc';
@@ -215,7 +176,6 @@ export async function loadIfc(components: OBC.Components) {
     // Handle any errors that occur during the loading process
     console.error('Error loading IFC file:', error);
     alert(`Failed to load IFC file: ${error.message}`);
-    console.error('Error loading test IFC file:', error);
-    alert(`Failed to load test IFC file: ${error.message}`);
   }
 }
+

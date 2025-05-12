@@ -22,15 +22,10 @@ module.exports = async function (request, context) {
 
     // Create a read stream from the file
     const fileStream = fs.createReadStream(ifcFilePath);
-    // console.log('fileStream', fileStream);
+    console.log('fileStream', fileStream);
     // Set response headers
     return {
       status: 200,
-      // headers: {
-      //   'Content-Type': 'application/octet-stream',
-      //   'Content-Disposition': 'attachment; filename="For Test Package.ifc"',
-      //   'Content-Length': stats.size
-      // },
       body: fileStream
     };
   } catch (error) {

@@ -12,6 +12,5 @@ app.http('streamIfc', {
   handler: async (request, context) => {
     return await streamIfc(request, context);
   },
-  route: 'streamIfc',
-  // handler: streamIfc
+  route: 'streamIfc'
 });
