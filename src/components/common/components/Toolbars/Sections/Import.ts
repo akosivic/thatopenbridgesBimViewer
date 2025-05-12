@@ -24,6 +24,16 @@ const askForFile = (extension: string) => {
     input.click();
   });
 };
+// Function to fetch a file from a URL
+const fetchFile = async (url: string): Promise<File> => {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch file: ${response.statusText}`);
+  }
+  const blob = await response.blob();
+  return new File([blob], url.substring(url.lastIndexOf('/') + 1), { type: blob.type });
+};
+
 
 export default (components: OBC.Components) => {
   const [loadBtn] = CUI.buttons.loadIfc({ components });
@@ -34,6 +44,8 @@ export default (components: OBC.Components) => {
 
   const fragments = components.get(OBC.FragmentsManager);
   const indexer = components.get(OBC.IfcRelationsIndexer);
+
+
 
   const loadFragments = async () => {
     const fragmentsZip = await askForFile(".zip");
@@ -140,7 +152,30 @@ export default (components: OBC.Components) => {
           tooltip-text="Loads a pre-converted IFC from a Fragments file. Use this option if you want to avoid the conversion from IFC to Fragments."></bim-button>
         <bim-button @click=${loadTiles} label="Tiles" icon="fe:tiled" tooltip-title="Load BIM Tiles"
         tooltip-text="Loads a pre-converted IFC from a Tiles file to stream the model. Perfect for big models."></bim-button>
+        <bim-button @click=${loadIfc(components)} label="Load Default IFC" icon="mdi:bridge" tooltip-title="Load Test Bridge"
+        tooltip-text="Loads the default bridge IFC file from the API."></bim-button>
       </bim-toolbar-section>
     `;
   });
 };
+
+// Function to load the test IFC file from the API
+export async function loadIfc(components: OBC.Components) {
+  try {
+    const apiUrl = '/api/streamIfc';
+
+    // Load the IFC file directly using the IFC loader
+    const ifcLoader = components.get(OBC.IfcLoader);
+    const file = await fetchFile(apiUrl);
+    const arrayBuffer = await file.arrayBuffer();
+
+
+    // Use the existing IFC loader to process the file
+    await ifcLoader.load(new Uint8Array(arrayBuffer));
+  } catch (error: string | any) {
+    // Handle any errors that occur during the loading process
+    console.error('Error loading IFC file:', error);
+    alert(`Failed to load IFC file: ${error.message}`);
+  }
+}
+

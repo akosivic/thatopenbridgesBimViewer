@@ -27,6 +27,7 @@ import camera from "./components/Toolbars/Sections/Camera";
 import measurement from "./components/Toolbars/Sections/Measurement";
 import selection from "./components/Toolbars/Sections/Selection";
 import { AppManager } from "./components/bim-components";
+import { loadIfc } from "./components/Toolbars/Sections/Import";
 
 export class WorldViewer extends HTMLElement {
   constructor() {
@@ -265,6 +266,9 @@ export class WorldViewer extends HTMLElement {
     }
 
     viewportGrid.layout = "main";
+    if (!isDebugMode) {
+      loadIfc(components);
+    }
   }
 }
 
