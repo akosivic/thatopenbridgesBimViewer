@@ -30,21 +30,7 @@
       ]
     },
     {
-      "route": "/api/streamIfc",
-      "methods": [
-        "GET"
-      ],
-      "allowedRoles": [
-        "contributor",
-        "owner",
-        "reader"
-      ]
-    },
-    {
-      "route": "/api/getDpsValues",
-      "methods": [
-        "GET"
-      ],
+      "route": "/api/*",
       "allowedRoles": [
         "contributor",
         "owner",
