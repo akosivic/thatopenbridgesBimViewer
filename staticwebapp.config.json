@@ -7,7 +7,8 @@
       "route": "/worldviewer/*",
       "allowedRoles": [
         "contributor",
-        "owner"
+        "owner",
+        "reader"
       ]
     },
     {
@@ -16,21 +17,24 @@
         "anonymous",
         "authenticated",
         "contributor",
-        "owner"
+        "owner",
+        "reader"
       ]
     },
     {
       "route": "/worldviewer",
       "allowedRoles": [
         "contributor",
-        "owner"
+        "owner",
+        "reader"
       ]
     },
     {
       "route": "/api/*",
       "allowedRoles": [
         "contributor",
-        "owner"
+        "owner",
+        "reader"
       ]
     }
   ],
