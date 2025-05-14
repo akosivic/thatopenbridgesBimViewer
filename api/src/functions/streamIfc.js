@@ -1,9 +1,18 @@
 const https = require('https');
 const stream = require('stream');
+const { app } = require('@azure/functions');
+// Register the streamIfc function
+app.http('streamIfc', {
+  methods: ['GET'],
+  authLevel: 'anonymous',
+  handler: async (request, context) => {
+    return await streamIfc(request, context);
+  }
+});
 
-module.exports = async function (request, context) {
+async function streamIfc(request, context) {
   context.log('IFC streaming function started');
-  
+
   try {
     // Azure Blob Storage URL with SAS token for authentication
     // Remove the timestamp parameter at the end which might cause issues
@@ -13,7 +22,7 @@ module.exports = async function (request, context) {
 
     // Create a pass-through stream that we'll pipe the response through
     const passThrough = new stream.PassThrough();
-    
+
     // Set up the response first to enable streaming
     context.res = {
       status: 200,
@@ -35,9 +44,9 @@ module.exports = async function (request, context) {
           reject(new Error(errorMsg));
           return;
         }
-        
+
         context.log('Successfully connected to Azure Blob Storage');
-        
+
         // Handle data events explicitly
         res.on('data', (chunk) => {
           passThrough.write(chunk);
