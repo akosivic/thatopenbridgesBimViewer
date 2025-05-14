@@ -30,7 +30,7 @@
       ]
     },
     {
-      "route": "/api/*",
+      "route": "/api/streamifc",
       "allowedRoles": [
         "contributor",
         "owner",
