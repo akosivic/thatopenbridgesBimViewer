@@ -4,7 +4,7 @@ const stream = require('stream');
 module.exports = async function (request, context) {
   try {
     // Azure Blob Storage URL with SAS token for authentication
-    const blobUrl = 'https://bimifcstorage.blob.core.windows.net/ifcfile?sp=r&st=2025-05-13T14:57:45Z&se=2026-05-13T22:57:45Z&spr=https&sv=2024-11-04&sr=c&sig=34EFGwbxixZCD7JMFDQ61zbJISwbjgtyxLgCDhCPIn4%3D';
+    const blobUrl = 'https://bimifcstorage.blob.core.windows.net/ifcfile/bim.ifc?sv=2024-11-04&ss=bqtf&srt=sco&sp=rwdlacuptfxiy&se=2025-05-14T21:32:54Z&sig=iLwumOG6hAkA5IrGvHdt%2Fh4svyErVpbORBHmJQuGlvQ%3D&_=1747229614672';
 
     console.log('Requesting IFC file from Azure Blob Storage');
 
