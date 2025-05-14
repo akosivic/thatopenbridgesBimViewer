@@ -36,17 +36,6 @@
         "owner",
         "reader"
       ]
-    },
-    {
-      "route": "/api/streamIfc",
-      "methods": [
-        "GET"
-      ],
-      "allowedRoles": [
-        "contributor",
-        "owner",
-        "reader"
-      ]
     }
   ],
   "platform": {
