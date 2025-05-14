@@ -30,7 +30,7 @@
       ]
     },
     {
-      "route": "/api/streamifc",
+      "route": "/api/streamIfc",
       "methods": [
         "GET"
       ],
