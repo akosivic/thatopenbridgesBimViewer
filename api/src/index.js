@@ -11,6 +11,5 @@ app.http('streamIfc', {
   authLevel: 'anonymous',
   handler: async (request, context) => {
     return await streamIfc(request, context);
-  },
-  route: 'streamIfc'
+  }
 });
