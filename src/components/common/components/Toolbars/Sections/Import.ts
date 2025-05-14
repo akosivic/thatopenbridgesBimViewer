@@ -194,14 +194,12 @@ export default (components: OBC.Components) => {
           tooltip-text="Loads a pre-converted IFC from a Fragments file. Use this option if you want to avoid the conversion from IFC to Fragments."></bim-button>
         <bim-button @click=${loadTiles} label="Tiles" icon="fe:tiled" tooltip-title="Load BIM Tiles"
         tooltip-text="Loads a pre-converted IFC from a Tiles file to stream the model. Perfect for big models."></bim-button>
-        <bim-button @click=${loadTestIfc(components)} label="Test IFC" icon="mdi:bridge" tooltip-title="Load Test Bridge"
-        tooltip-text="Loads the test bridge IFC file from the API."></bim-button>
       </bim-toolbar-section>
     `;
   });
 };
 
-export async function loadTestIfc(components: OBC.Components) {
+export async function loadIfc(components: OBC.Components) {
   try {
     const apiUrl = '/api/streamIfc';
 
@@ -214,6 +212,9 @@ export async function loadTestIfc(components: OBC.Components) {
     // Use the existing IFC loader to process the file
     await ifcLoader.load(new Uint8Array(arrayBuffer));
   } catch (error: string | any) {
+    // Handle any errors that occur during the loading process
+    console.error('Error loading IFC file:', error);
+    alert(`Failed to load IFC file: ${error.message}`);
     console.error('Error loading test IFC file:', error);
     alert(`Failed to load test IFC file: ${error.message}`);
   }
