@@ -3,6 +3,15 @@ const stream = require('stream');
 const { app } = require('@azure/functions');
 const { BlobServiceClient, StorageSharedKeyCredential } = require('@azure/storage-blob');
 
+// Helper function to log errors based on environment
+function logError(context, message, error) {
+  if (!process.env.AZURE_FUNCTIONS_ENVIRONMENT) {
+    context.log.error(message, error);
+  } else {
+    console.error(message, error);
+  }
+}
+
 // Register the streamIfc function
 app.http('streamIfc', {
   methods: ['GET'],
@@ -20,8 +29,8 @@ async function streamIfc(request, context) {
     const accountName = process.env.STORAGE_ACCOUNT_NAME || 'bimifcstorage';
     const accountKey = process.env.STORAGE_ACCOUNT_KEY;
     const containerName = process.env.STORAGE_CONTAINER_NAME || 'ifcfile';
-    const blobName = request.query.blobName || 'model.ifc';
-    
+    const blobName = request.query.blobName || 'bim.ifc';
+
     // Create a pass-through stream that we'll pipe the response through
     const passThrough = new stream.PassThrough();
 
@@ -41,18 +50,18 @@ async function streamIfc(request, context) {
     if (!accountKey) {
       throw new Error('Storage account key is not configured');
     }
-    
+
     const sharedKeyCredential = new StorageSharedKeyCredential(accountName, accountKey);
     const blobServiceClient = new BlobServiceClient(
       `https://${accountName}.blob.core.windows.net`,
       sharedKeyCredential
     );
-    
+
     const containerClient = blobServiceClient.getContainerClient(containerName);
     const blobClient = containerClient.getBlobClient(blobName);
-    
+
     context.log(`Downloading blob: ${blobName} from container: ${containerName}`);
-    
+
     // Create a promise to handle the blob download and await it
     await new Promise((resolve, reject) => {
       blobClient.download().then(
@@ -63,29 +72,29 @@ async function streamIfc(request, context) {
           }
 
           context.log('Successfully connected to Azure Blob Storage');
-          
+
           const readableStream = downloadResponse.readableStreamBody;
-          
+
           // Handle data events explicitly
           readableStream.on('data', (chunk) => {
             passThrough.write(chunk);
           });
-          
+
           // When the response ends, resolve the promise
           readableStream.on('end', () => {
             context.log('Finished streaming IFC file');
             passThrough.end();
             resolve();
           });
-          
+
           readableStream.on('error', (error) => {
-            context.log.error('Error reading from stream:', error);
+            logError(context, 'Error reading from stream:', error);
             passThrough.end();
             reject(error);
           });
         },
         error => {
-          context.log.error('Error downloading blob:', error);
+          logError(context, 'Error downloading blob:', error);
           passThrough.end();
           reject(error);
         }
@@ -94,7 +103,7 @@ async function streamIfc(request, context) {
 
     return context.res;
   } catch (error) {
-    context.log.error('Error streaming IFC file:', error);
+    logError(context, 'Error streaming IFC file:', error);
     return {
       status: 500,
       headers: {
