@@ -1,6 +1,8 @@
 const https = require('https');
 const stream = require('stream');
 const { app } = require('@azure/functions');
+const { BlobServiceClient, StorageSharedKeyCredential } = require('@azure/storage-blob');
+
 // Register the streamIfc function
 app.http('streamIfc', {
   methods: ['GET'],
@@ -14,12 +16,12 @@ async function streamIfc(request, context) {
   context.log('IFC streaming function started');
 
   try {
-    // Azure Blob Storage URL with SAS token for authentication
-    // Remove the timestamp parameter at the end which might cause issues
-    const blobUrl = 'https://bimifcstorage.blob.core.windows.net/ifcfile/bim.ifc?sv=2024-11-04&ss=bqtf&srt=sco&sp=rwdlacuptfxiy&se=2025-05-14T21:32:54Z&sig=iLwumOG6hAkA5IrGvHdt%2Fh4svyErVpbORBHmJQuGlvQ%3D';
-
-    context.log('Requesting IFC file from Azure Blob Storage');
-
+    // Get storage account credentials from environment variables
+    const accountName = process.env.STORAGE_ACCOUNT_NAME || 'bimifcstorage';
+    const accountKey = process.env.STORAGE_ACCOUNT_KEY;
+    const containerName = process.env.STORAGE_CONTAINER_NAME || 'ifcfile';
+    const blobName = request.query.blobName || 'model.ifc';
+    
     // Create a pass-through stream that we'll pipe the response through
     const passThrough = new stream.PassThrough();
 
@@ -28,50 +30,66 @@ async function streamIfc(request, context) {
       status: 200,
       headers: {
         'Content-Type': 'application/octet-stream',
-        'Content-Disposition': 'attachment; filename="model.ifc"',
+        'Content-Disposition': `attachment; filename="${blobName}"`,
         'Cache-Control': 'no-cache',
         'Transfer-Encoding': 'chunked'
       },
       body: passThrough
     };
 
-    // Create a promise to handle the HTTP request and await it
+    // Create a StorageSharedKeyCredential
+    if (!accountKey) {
+      throw new Error('Storage account key is not configured');
+    }
+    
+    const sharedKeyCredential = new StorageSharedKeyCredential(accountName, accountKey);
+    const blobServiceClient = new BlobServiceClient(
+      `https://${accountName}.blob.core.windows.net`,
+      sharedKeyCredential
+    );
+    
+    const containerClient = blobServiceClient.getContainerClient(containerName);
+    const blobClient = containerClient.getBlobClient(blobName);
+    
+    context.log(`Downloading blob: ${blobName} from container: ${containerName}`);
+    
+    // Create a promise to handle the blob download and await it
     await new Promise((resolve, reject) => {
-      const req = https.get(blobUrl, (res) => {
-        if (res.statusCode !== 200) {
-          const errorMsg = `Failed to fetch file: ${res.statusCode} ${res.statusMessage}`;
-          context.log.error(errorMsg);
-          reject(new Error(errorMsg));
-          return;
-        }
+      blobClient.download().then(
+        downloadResponse => {
+          if (!downloadResponse.readableStreamBody) {
+            reject(new Error('No readable stream available'));
+            return;
+          }
 
-        context.log('Successfully connected to Azure Blob Storage');
-
-        // Handle data events explicitly
-        res.on('data', (chunk) => {
-          passThrough.write(chunk);
-        });
-
-        // When the response ends, resolve the promise
-        res.on('end', () => {
-          context.log('Finished streaming IFC file');
+          context.log('Successfully connected to Azure Blob Storage');
+          
+          const readableStream = downloadResponse.readableStreamBody;
+          
+          // Handle data events explicitly
+          readableStream.on('data', (chunk) => {
+            passThrough.write(chunk);
+          });
+          
+          // When the response ends, resolve the promise
+          readableStream.on('end', () => {
+            context.log('Finished streaming IFC file');
+            passThrough.end();
+            resolve();
+          });
+          
+          readableStream.on('error', (error) => {
+            context.log.error('Error reading from stream:', error);
+            passThrough.end();
+            reject(error);
+          });
+        },
+        error => {
+          context.log.error('Error downloading blob:', error);
           passThrough.end();
-          resolve();
-        });
-      });
-
-      req.on('error', (error) => {
-        context.log.error('Error fetching from Azure Blob Storage:', error);
-        passThrough.end();
-        reject(error);
-      });
-
-      // Set a timeout for the request (increased to 60 seconds)
-      req.setTimeout(60000, () => {
-        context.log.error('Request timeout after 60 seconds');
-        req.destroy();
-        reject(new Error('Request timeout after 60 seconds'));
-      });
+          reject(error);
+        }
+      );
     });
 
     return context.res;
