@@ -2,15 +2,7 @@ const https = require('https');
 const stream = require('stream');
 const { app } = require('@azure/functions');
 const { BlobServiceClient, StorageSharedKeyCredential } = require('@azure/storage-blob');
-
-// Helper function to log errors based on environment
-function logError(context, message, error) {
-  if (!process.env.AZURE_FUNCTIONS_ENVIRONMENT) {
-    context.log.error(message, error);
-  } else {
-    console.error(message, error);
-  }
-}
+const { logMessage, logError } = require('../logger');
 
 // Register the streamIfc function
 app.http('streamIfc', {
@@ -22,7 +14,7 @@ app.http('streamIfc', {
 });
 
 async function streamIfc(request, context) {
-  context.log('IFC streaming function started');
+  logMessage(context, 'IFC streaming function started');
 
   try {
     // Get storage account credentials from environment variables
@@ -60,7 +52,7 @@ async function streamIfc(request, context) {
     const containerClient = blobServiceClient.getContainerClient(containerName);
     const blobClient = containerClient.getBlobClient(blobName);
 
-    context.log(`Downloading blob: ${blobName} from container: ${containerName}`);
+    logMessage(context, `Downloading blob: ${blobName} from container: ${containerName}`);
 
     // Create a promise to handle the blob download and await it
     await new Promise((resolve, reject) => {
@@ -71,7 +63,7 @@ async function streamIfc(request, context) {
             return;
           }
 
-          context.log('Successfully connected to Azure Blob Storage');
+          logMessage(context, 'Successfully connected to Azure Blob Storage');
 
           const readableStream = downloadResponse.readableStreamBody;
 
@@ -82,7 +74,7 @@ async function streamIfc(request, context) {
 
           // When the response ends, resolve the promise
           readableStream.on('end', () => {
-            context.log('Finished streaming IFC file');
+            logMessage(context, 'Finished streaming IFC file');
             passThrough.end();
             resolve();
           });

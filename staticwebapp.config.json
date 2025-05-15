@@ -39,6 +39,17 @@
         "owner",
         "reader"
       ]
+    },
+    {
+      "route": "/api/getDpsValues",
+      "methods": [
+        "GET"
+      ],
+      "allowedRoles": [
+        "contributor",
+        "owner",
+        "reader"
+      ]
     }
   ],
   "platform": {
