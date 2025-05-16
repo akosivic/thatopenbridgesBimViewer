@@ -13,7 +13,7 @@ on:
 
 jobs:
   build_and_deploy_job_branches:
-    if: github.ref == 'refs/heads/staging' || github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
+    if: github.ref == 'refs/heads/staging' 
     runs-on: ubuntu-latest
     name: Build and Deploy Job
     environment: "staging"
@@ -36,7 +36,7 @@ jobs:
           deployment_environment: "staging"
 
   build_and_deploy_job:
-    if: github.ref == 'refs/heads/main' || github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     name: Build and Deploy Job
     steps:
