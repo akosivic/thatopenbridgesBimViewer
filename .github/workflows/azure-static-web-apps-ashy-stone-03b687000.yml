@@ -13,10 +13,10 @@ on:
 
 jobs:
   build_and_deploy_job_branches:
-    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
+    if: github.ref == 'refs/heads/staging' || github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
     runs-on: ubuntu-latest
     name: Build and Deploy Job
-    environment: ${{ github.ref == 'refs/heads/main' && 'Production' || 'Staging' }}
+    environment: "staging"
     steps:
       - uses: actions/checkout@v3
         with:
