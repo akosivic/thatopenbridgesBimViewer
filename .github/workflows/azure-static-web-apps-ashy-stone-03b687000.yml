@@ -33,7 +33,7 @@ jobs:
           api_location: "/api" # Api source code path
           output_location: "dist"
           production_branch: "main"
-          deployment_environment: ${{ github.ref == 'refs/heads/main' && 'Production' || 'Staging' }}
+          deployment_environment: ${{ github.ref == 'refs/heads/main' && '' || 'Staging' }}
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
