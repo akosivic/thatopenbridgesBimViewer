@@ -112,7 +112,24 @@ export class WorldViewer extends HTMLElement {
     const highlighter = components.get(Highlighter);
     highlighter.setup({ world });
     highlighter.zoomToSelection = true;
-
+    // Set up HighlighterConfig according to the type definition
+    highlighter.config = {
+      selectName: "select",
+      /** Toggles the select functionality. */
+      selectEnabled: true,
+      /** Name of the hover event. */
+      hoverName: "hover",
+      /** Toggles the hover functionality. */
+      hoverEnabled: false,
+      /** Color used for selection. */
+      selectionColor: new THREE.Color(1, 0, 0),
+      /** Color used for hover. */
+      hoverColor: new THREE.Color(1, 1, 1),
+      /** Whether to automatically highlight fragments on click. */
+      autoHighlightOnClick: true,
+      /** The world in which the highlighter operates. */
+      world: world
+    };
     const culler = components.get(Cullers).create(world);
     culler.threshold = 5;
 
