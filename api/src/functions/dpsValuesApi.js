@@ -4,7 +4,7 @@ const { logMessage, logError } = require('../logger');
 
 // Register the getDpsValues function
 app.http('getDpsValues', {
-  methods: ['GET'],
+  methods: ['GET', 'PUT'],
   authLevel: 'anonymous',
   handler: async (request, context) => {
     return await getDpsValues(request, context);
@@ -21,7 +21,7 @@ async function getDpsValues(request, context) {
     const targetPath = process.env.DPS_API_PATH || '/api/GetDpsValues';
 
     // Forward any query parameters from the original request
-    const queryString = request.url.searchParams.toString();
+    const queryString = request.url.searchParams?.toString();
     const requestPath = queryString ? `${targetPath}?${queryString}` : targetPath;
 
     // Create a promise to handle the HTTP request
@@ -78,3 +78,6 @@ async function getDpsValues(request, context) {
     };
   }
 }
+
+
+// {"test":{"Favorites.Light.Lounge.01.ST":false,"Favorites.Light.Lounge.02.ST":false,"Favorites.Light.TestRM.ST":false,"Favorites.Light.StockRM.ST":false,"Favorites.Light.Office.01.ST":false,"Favorites.Light.Office.02.ST":false,"Favorites.Light.Office.03.ST":false,"Favorites.Light.Office.04.ST":false,"Favorites.Light.ConfRM.01.ST":false,"Favorites.Light.ConfRM.02.ST":false,"Favorites.Light.ConfRM.03.ST":false,"Favorites.Light.ConfRM.04.ST":false}}
