@@ -15,18 +15,40 @@ export default (components: OBC.Components) => {
     fragmentIdMap: {},
   });
 
+  const [propsviewTable, updatepropsviewTable] = CUI.tables.elementProperties({
+    components,
+    fragmentIdMap: {},
+  });
+
   propsTable.preserveStructureOnFilter = true;
-  fragments.onFragmentsDisposed.add(() => updatePropsTable());
+  propsviewTable.preserveStructureOnFilter = true;
+  fragments.onFragmentsDisposed.add(() => {
+    updatePropsTable();
+    updatepropsviewTable();
+  });
 
   highlighter.events.select.onHighlight.add((fragmentIdMap) => {
     if (!viewportGrid) return;
     viewportGrid.layout = "second";
     propsTable.expanded = false;
     updatePropsTable({ fragmentIdMap });
+    propsTable.dataAsync.then((data) => {
+      const d = data as BUI.TableGroupData;
+      for (const group of d) {
+        const attributes = group.children.find((p: { data: { Name: string; }; }) => p.data.Name === "Attributes");
+        if (attributes) {
+          if (attributes.children.find((p: { data: { Name: string, Value: string; }; }) => p.data.Name === "Tag" && p.data.Value === "315866")) {
+            updatepropsviewTable({ fragmentIdMap });
+            break;
+          }
+        }
+      }
+    });
   });
 
   highlighter.events.select.onClear.add(() => {
     updatePropsTable({ fragmentIdMap: {} });
+    updatepropsviewTable({ fragmentIdMap: {} });
     if (!viewportGrid) return;
     viewportGrid.layout = "main";
   });
@@ -49,7 +71,7 @@ export default (components: OBC.Components) => {
             <bim-button style="flex: 0;" @click=${toggleExpanded} icon="eva:expand-fill"></bim-button>
             <bim-button style="flex: 0;" @click=${() => propsTable.downloadData("ElementData", "tsv")} icon="ph:export-fill" tooltip-title="Export Data" tooltip-text="Export the shown properties to TSV."></bim-button>
           </div>
-          ${propsTable}
+          ${propsviewTable}
         </bim-panel-section>
       </bim-panel> 
     `;
