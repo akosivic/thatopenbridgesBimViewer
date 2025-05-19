@@ -2,12 +2,36 @@ const http = require('http');
 const { app } = require('@azure/functions');
 const { logMessage, logError } = require('../logger');
 
+// Target endpoint
+const targetHost = process.env.DPS_API_HOST || '192.168.50.179';
+const targetPort = process.env.DPS_API_PORT || '8083';
+const targetPath = process.env.DPS_API_PATH || '/api/GetDpsValues';
+
+// Forward any query parameters from the original request
+
 // Register the getDpsValues function
 app.http('getDpsValues', {
   methods: ['GET', 'PUT'],
   authLevel: 'anonymous',
   handler: async (request, context) => {
-    return await getDpsValues(request, context);
+    console.log('request', request);
+    // Get the HTTP method from the request
+    const method = request.method;
+    switch (method) {
+      case 'GET':
+        logMessage(context, 'GET request received');
+        return await getDpsValues(request, context);
+      case 'PUT':
+        logMessage(context, 'PUT request received');
+        return await putDpsValues(request, context);
+      default:
+        logError(context, `Unsupported method: ${method}`);
+        return {
+          status: 405,
+          body: JSON.stringify({ error: `Method ${method} not allowed` })
+        };
+    }
+
   }
 });
 
@@ -15,15 +39,10 @@ async function getDpsValues(request, context) {
   logMessage(context, 'DPS Values function started');
 
   try {
-    // Target endpoint
-    const targetHost = process.env.DPS_API_HOST || '192.168.50.179';
-    const targetPort = process.env.DPS_API_PORT || '8083';
-    const targetPath = process.env.DPS_API_PATH || '/api/GetDpsValues';
 
-    // Forward any query parameters from the original request
     const queryString = request.url.searchParams?.toString();
     const requestPath = queryString ? `${targetPath}?${queryString}` : targetPath;
-
+    console.log('request', request);
     // Create a promise to handle the HTTP request
     const response = await new Promise((resolve, reject) => {
       const options = {
@@ -36,7 +55,7 @@ async function getDpsValues(request, context) {
         }
       };
 
-      logMessage(context, `Connecting to: http://${targetHost}:${targetPort}${requestPath}`);
+      logMessage(context, `GET request to: http://${targetHost}:${targetPort}${requestPath}`);
 
       const req = http.request(options, (res) => {
         let data = '';
@@ -46,7 +65,7 @@ async function getDpsValues(request, context) {
         });
 
         res.on('end', () => {
-          logMessage(context, 'Data received from DPS API');
+          logMessage(context, `Data received fromDPS API`);
           resolve({
             status: res.statusCode,
             headers: {
@@ -59,7 +78,7 @@ async function getDpsValues(request, context) {
       });
 
       req.on('error', (error) => {
-        logError(context, 'Error connecting to DPS API:', error);
+        logError(context, `Error connecting to DPS API:`, error);
         reject(error);
       });
 
@@ -68,16 +87,80 @@ async function getDpsValues(request, context) {
 
     return response;
   } catch (error) {
-    logError(context, 'Error fetching DPS values:', error);
+    logError(context, `Error ${request.method === 'PUT' ? 'updating' : 'fetching'} DPS values:`, error);
     return {
       status: 500,
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ error: "Error fetching DPS values: " + error.message })
+      body: JSON.stringify({ error: `Error ${request.method === 'PUT' ? 'updating' : 'fetching'} DPS values: ` + error.message })
     };
   }
 }
+
+async function putDpsValues(request, context) {
+  logMessage(context, 'DPS Values function started');
+
+  try {
+
+    const queryString = request.url.searchParams?.toString();
+    const requestPath = queryString ? `${targetPath}?${queryString}` : targetPath;
+    // Create a promise to handle the HTTP request
+    const response = await new Promise((resolve, reject) => {
+      const options = {
+        hostname: targetHost,
+        port: targetPort,
+        path: requestPath,
+        method: method,
+        headers: {
+          'Accept': 'application/json'
+        }
+      };
+      options.headers['Content-Type'] = 'application/json';
+
+      logMessage(context, `PUT request to: http://${targetHost}:${targetPort}${requestPath}`);
+
+      const req = http.request(options, (res) => {
+        let data = '';
+
+        res.on('data', (chunk) => {
+          data += chunk;
+        });
+
+        res.on('end', () => {
+          logMessage(context, `Data sent DPS API`);
+          resolve({
+            status: res.statusCode,
+            headers: {
+              'Content-Type': res.headers['content-type'] || 'application/json',
+              'Access-Control-Allow-Origin': '*'
+            },
+            body: data
+          });
+        });
+      });
+
+      req.on('error', (error) => {
+        logError(context, `Error sending to DPS API:`, error);
+        reject(error);
+      });
+      req.write(request.body);
+      req.end();
+    });
+
+    return response;
+  } catch (error) {
+    logError(context, `Error updating DPS values:`, error);
+    return {
+      status: 500,
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ error: `Error updating DPS values: ` + error.message })
+    };
+  }
+}
+
 
 
 // {"test":{"Favorites.Light.Lounge.01.ST":false,"Favorites.Light.Lounge.02.ST":false,"Favorites.Light.TestRM.ST":false,"Favorites.Light.StockRM.ST":false,"Favorites.Light.Office.01.ST":false,"Favorites.Light.Office.02.ST":false,"Favorites.Light.Office.03.ST":false,"Favorites.Light.Office.04.ST":false,"Favorites.Light.ConfRM.01.ST":false,"Favorites.Light.ConfRM.02.ST":false,"Favorites.Light.ConfRM.03.ST":false,"Favorites.Light.ConfRM.04.ST":false}}
