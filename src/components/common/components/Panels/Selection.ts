@@ -20,8 +20,36 @@ export default (components: OBC.Components) => {
     fragmentIdMap: {},
   });
 
+  let lightStatus = "off";
+  let statusButton: BUI.Button | null = null;
+
   propsTable.preserveStructureOnFilter = true;
   propsviewTable.preserveStructureOnFilter = true;
+
+  const fetchLightStatus = async () => {
+    try {
+      const response = await fetch('/api/GetDpValue?dp=Favorites.Light.Lounge.01.ST');
+      const data = await response.json();
+      lightStatus = data.value === true ? "on" : "off";
+      if (statusButton) {
+        statusButton.label = `Light: ${lightStatus}`;
+        statusButton.icon = lightStatus === "on" ? "solar:lamp-on-bold" : "solar:lamp-bold";
+      }
+    } catch (error) {
+      console.error('Error fetching light status:', error);
+    }
+  };
+
+  const toggleLight = async () => {
+    try {
+      // Toggle the light state via API (you would need to implement this endpoint)
+      const newState = lightStatus === "on" ? false : true;
+      await fetch(`/api/SetDpValue?dp=Favorites.Light.Lounge.01.ST&value=${newState}`);
+      await fetchLightStatus();
+    } catch (error) {
+      console.error('Error toggling light:', error);
+    }
+  };
 
   fragments.onFragmentsDisposed.add(() => {
     updatePropsTable();
@@ -45,6 +73,13 @@ export default (components: OBC.Components) => {
       );
 
       if (hasAttributesWithTag) {
+        fetchLightStatus();
+        statusButton = new BUI.Button({
+          label: `Light: ${lightStatus}`,
+          icon: lightStatus === "on" ? "solar:lamp-on-bold" : "solar:lamp-bold",
+          onClick: toggleLight
+        });
+      } else {
         updatepropsviewTable({ fragmentIdMap });
       }
     });
@@ -53,6 +88,7 @@ export default (components: OBC.Components) => {
   highlighter.events.select.onClear.add(() => {
     updatePropsTable({ fragmentIdMap: {} });
     updatepropsviewTable({ fragmentIdMap: {} });
+    statusButton = null;
     if (!viewportGrid) return;
     viewportGrid.layout = "main";
   });
@@ -61,7 +97,7 @@ export default (components: OBC.Components) => {
     return BUI.html`
       <bim-panel>
         <bim-panel-section name="selection" label="Selection Information" icon="solar:document-bold" fixed>
-          ${propsviewTable}
+          ${() => statusButton || propsviewTable}
         </bim-panel-section>
       </bim-panel> 
     `;
