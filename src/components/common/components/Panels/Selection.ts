@@ -28,9 +28,11 @@ export default (components: OBC.Components) => {
 
   const fetchLightStatus = async () => {
     try {
-      const response = await fetch('/api/GetDpValue?dp=Favorites.Light.Lounge.01.ST');
+      // Use getDpsValues endpoint instead since getDpValue is having issues
+      const response = await fetch('/api/getDpsValues?dps=Favorites.Light.Lounge.01.ST');
       const data = await response.json();
-      lightStatus = data.value === true ? "on" : "off";
+      // Adjust how we extract the value based on the response structure
+      lightStatus = data?.test?.["Favorites.Light.Lounge.01.ST"] === true ? "on" : "off";
       if (statusButton) {
         statusButton.label = `Light: ${lightStatus}`;
         statusButton.icon = lightStatus === "on" ? "solar:lamp-on-bold" : "solar:lamp-bold";
@@ -42,9 +44,18 @@ export default (components: OBC.Components) => {
 
   const toggleLight = async () => {
     try {
-      // Toggle the light state via API (you would need to implement this endpoint)
+      // Toggle the light state via API using the working endpoint
       const newState = lightStatus === "on" ? false : true;
-      await fetch(`/api/SetDpValue?dp=Favorites.Light.Lounge.01.ST&value=${newState}`);
+      // Use the getDpsValues endpoint with PUT method to update the value
+      await fetch('/api/getDpsValues', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          "Favorites.Light.Lounge.01.ST": newState
+        })
+      });
       await fetchLightStatus();
     } catch (error) {
       console.error('Error toggling light:', error);
@@ -74,7 +85,7 @@ export default (components: OBC.Components) => {
 
       if (hasAttributesWithTag) {
         fetchLightStatus();
-        statusButton = new BUI.Button({
+        statusButton = BUI.Button.create({
           label: `Light: ${lightStatus}`,
           icon: lightStatus === "on" ? "solar:lamp-on-bold" : "solar:lamp-bold",
           onClick: toggleLight
