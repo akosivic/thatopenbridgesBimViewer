@@ -3,6 +3,7 @@ import * as OBC from "@thatopen/components";
 import * as OBF from "@thatopen/components-front";
 import * as CUI from "@thatopen/ui-obc";
 import { AppManager } from "../bim-components";
+import { label } from "three/src/nodes/TSL.js";
 
 export default (components: OBC.Components) => {
   const fragments = components.get(OBC.FragmentsManager);
@@ -15,16 +16,15 @@ export default (components: OBC.Components) => {
     fragmentIdMap: {},
   });
 
-  const [propsviewTable, updatepropsviewTable] = CUI.tables.elementProperties({
-    components,
-    fragmentIdMap: {},
-  });
-
   let lightStatus = "off";
-  let statusButton: BUI.Button | null = null;
+  let isFromAPI = false;
+  const statusButton: { label: string; icon: string, click: () => void } = {
+    label: "Light: off",
+    icon: "solar:lamp-bold",
+    click: () => { },
+  };
 
   propsTable.preserveStructureOnFilter = true;
-  propsviewTable.preserveStructureOnFilter = true;
 
   const fetchLightStatus = async () => {
     try {
@@ -36,6 +36,11 @@ export default (components: OBC.Components) => {
       if (statusButton) {
         statusButton.label = `Light: ${lightStatus}`;
         statusButton.icon = lightStatus === "on" ? "solar:lamp-on-bold" : "solar:lamp-bold";
+        statusButton.click = toggleLight;
+        isFromAPI = true
+      }
+      else {
+        isFromAPI = false;
       }
     } catch (error) {
       console.error('Error fetching light status:', error);
@@ -64,7 +69,6 @@ export default (components: OBC.Components) => {
 
   fragments.onFragmentsDisposed.add(() => {
     updatePropsTable();
-    updatepropsviewTable();
   });
 
   highlighter.events.select.onHighlight.add((fragmentIdMap) => {
@@ -85,32 +89,37 @@ export default (components: OBC.Components) => {
 
       if (hasAttributesWithTag) {
         fetchLightStatus();
-        statusButton = BUI.Button.create({
-          label: `Light: ${lightStatus}`,
-          icon: lightStatus === "on" ? "solar:lamp-on-bold" : "solar:lamp-bold",
-          onClick: toggleLight
-        });
-      } else {
-        updatepropsviewTable({ fragmentIdMap });
       }
+      else {
+        isFromAPI = false;
+      }
+
+      panel.requestUpdate();
+      panel.updateComplete.then(() => {
+        console.log("Panel updated");
+      });
     });
   });
 
-  highlighter.events.select.onClear.add(() => {
-    updatePropsTable({ fragmentIdMap: {} });
-    updatepropsviewTable({ fragmentIdMap: {} });
-    statusButton = null;
-    if (!viewportGrid) return;
-    viewportGrid.layout = "main";
-  });
+  const isVisible = () => {
+    return isFromAPI ? "visible" : "hidden";
+  };
+  // Create the panel reference so we can call requestUpdate
+  const panel = BUI.Component.create<BUI.Panel>(() => {
 
-  return BUI.Component.create<BUI.Panel>(() => {
     return BUI.html`
-      <bim-panel>
+      <bim-panel visibiliy="${isVisible}" >
         <bim-panel-section name="selection" label="Selection Information" icon="solar:document-bold" fixed>
-          ${() => statusButton || propsviewTable}
+             <bim-button @click="" icon="${statusButton.icon}" style="flex: 0" label="${statusButton.label}"></bim-button>
         </bim-panel-section>
       </bim-panel> 
     `;
   });
+
+  highlighter.events.select.onClear.add(() => {
+    updatePropsTable({ fragmentIdMap: {} });
+    if (!viewportGrid) return;
+    viewportGrid.layout = "main";
+  });
+  return panel;
 };
