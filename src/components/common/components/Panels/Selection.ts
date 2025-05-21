@@ -18,7 +18,7 @@ export default (components: OBC.Components) => {
   let lightStatus = "off";
   interface statusButtonState { label: string; icon: string, visibility: string, click: () => void }
   const statusButton: statusButtonState = {
-    label: "Light: on",
+    label: `Light:${lightStatus}`,
     icon: "solar:lamp-bold",
     visibility: "hidden",
     click: () => toggleLight()
@@ -99,7 +99,7 @@ export default (components: OBC.Components) => {
         group.children.some(p =>
           p.data.Name === "Attributes" &&
           p.children?.some((attr: { data: { Name: string, Value: string } }) =>
-            attr.data.Name === "Tag" && attr.data.Value === "315866"
+            attr.data.Name === "Tag" && (attr.data.Value === "315866" || attr.data.Value === "315775")
           )
         )
       );
