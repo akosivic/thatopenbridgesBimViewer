@@ -64,7 +64,7 @@ export default (components: OBC.Components) => {
   //     console.error('Error toggling light:', error);
   //   }
   // };
-  const [panel, updateState, getState] = BUI.Component.create<HTMLElement, statusButtonState>(
+  const [panel, updateState] = BUI.Component.create<HTMLElement, statusButtonState>(
     (statusButtonState) => {
       const pane = BUI.html`
       <bim-panel ?hidden="${statusButtonState.visibility === 'hidden'}">
@@ -95,11 +95,15 @@ export default (components: OBC.Components) => {
     updatePropsTable({ fragmentIdMap });
 
     propsTable.dataAsync.then((data) => {
-      const hasAttributesWithTag = (data as BUI.TableGroupData).some(group =>
-        group.children.some(p =>
+      const groupArray = Array.isArray(data) ? data : Object.values(data as BUI.TableGroupData);
+      const hasAttributesWithTag = groupArray.some(group =>
+        group.children.some((p: { data: { Name: string; }; children: { data: { Name: string; Value: string; }; }[]; }) =>
           p.data.Name === "Attributes" &&
           p.children?.some((attr: { data: { Name: string, Value: string } }) =>
-            attr.data.Name === "Tag" && (attr.data.Value === "315866" || attr.data.Value === "315775")
+            attr.data.Name === "Tag" && (attr.data.Value === "315866" || attr.data.Value === "315775")//illuminance = lights
+            //m2.lights01 == 315866
+
+            // API = /something/lights/01  --> Model = 315866
           )
         )
       );
