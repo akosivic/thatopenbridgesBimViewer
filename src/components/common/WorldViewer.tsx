@@ -246,7 +246,7 @@ export class WorldViewer extends HTMLElement {
       main: {
         template: `
         "leftPanel viewport" 1fr
-          / 26rem 1fr
+          / auto
             `,
         elements: {
           leftPanel,
