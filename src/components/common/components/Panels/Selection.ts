@@ -3,6 +3,7 @@ import * as OBC from "@thatopen/components";
 import * as OBF from "@thatopen/components-front";
 import * as CUI from "@thatopen/ui-obc";
 import { AppManager } from "../bim-components";
+import { Children } from "react";
 
 export default (components: OBC.Components) => {
   const fragments = components.get(OBC.FragmentsManager);
@@ -77,7 +78,7 @@ export default (components: OBC.Components) => {
     },
     statusButton
   );
-  const toggleLight = () => {
+  const toggleLight = (Tag: string) => {
     lightStatus = lightStatus === "on" ? "off" : "on";
     statusButton.visibility = "visible";
     statusButton.label = `Light:${lightStatus}`;
@@ -96,26 +97,29 @@ export default (components: OBC.Components) => {
 
     propsTable.dataAsync.then((data) => {
       const groupArray = Array.isArray(data) ? data : Object.values(data as BUI.TableGroupData);
-      const hasAttributesWithTag = groupArray.some(group =>
-        group.children.some((p: { data: { Name: string; }; children: { data: { Name: string; Value: string; }; }[]; }) =>
-          p.data.Name === "Attributes" &&
-          p.children?.some((attr: { data: { Name: string, Value: string } }) =>
-            attr.data.Name === "Tag" && (attr.data.Value === "315866" || attr.data.Value === "315775")//illuminance = lights
-            //m2.lights01 == 315866
+      const groupAttribute = groupArray[0].children.filter((children: { data: { Name: string; }; }) =>
+        children.data.Name === "Attributes");
+      let classattr = "";
+      let tag = "";
+      groupAttribute[0].children.forEach((elem: { data: { Name: string, Value: string } }) => {
+        switch (elem.data.Name) {
+          case "Class":
+            classattr = elem.data.Value;
+            break;
+          case "Tag":
+            tag = elem.data.Value;
+            break;
+        }
+      });
 
-            // API = /something/lights/01  --> Model = 315866
-          )
-        )
-      );
 
-      if (hasAttributesWithTag) {
-        toggleLight();
-      }
-      else {
-        statusButton.visibility = "hidden";
-        statusButton.label = "Light: off";
-        statusButton.icon = "solar:lamp-bold";
-        updateState(statusButton);
+      switch (classattr) {
+        case "IFCFLOWTERMINAL":
+          toggleLight(tag);
+          break;
+        default:
+          statusButton.visibility = "hidden";
+          updateState(statusButton);
       }
     });
   });
