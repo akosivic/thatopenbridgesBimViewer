@@ -3,7 +3,7 @@ import * as OBC from "@thatopen/components";
 import * as OBF from "@thatopen/components-front";
 import * as CUI from "@thatopen/ui-obc";
 import { AppManager } from "../bim-components";
-import { Children } from "react";
+
 
 export default (components: OBC.Components) => {
   const fragments = components.get(OBC.FragmentsManager);
@@ -22,7 +22,7 @@ export default (components: OBC.Components) => {
     label: `Light:${lightStatus}`,
     icon: "solar:lamp-bold",
     visibility: "hidden",
-    click: () => toggleLight()
+    click: () => toggleLight(null)
   };
 
   propsTable.preserveStructureOnFilter = true;
@@ -78,12 +78,14 @@ export default (components: OBC.Components) => {
     },
     statusButton
   );
-  const toggleLight = (Tag: string) => {
+  const toggleLight = (Tag: string | null) => {
+    //get state
     lightStatus = lightStatus === "on" ? "off" : "on";
     statusButton.visibility = "visible";
     statusButton.label = `Light:${lightStatus}`;
     statusButton.icon = "solar:lamp-bold";
     updateState(statusButton);
+    console.log("Toggling light", Tag, lightStatus);
   }
   fragments.onFragmentsDisposed.add(() => {
     updatePropsTable();
