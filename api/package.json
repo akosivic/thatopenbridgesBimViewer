@@ -13,5 +13,5 @@
   "engines": {
     "node": ">=20.0.0"
   },
-  "main": "src/{index.js,functions/streamIfc.js,functions/dpsValuesApi.js}"
+  "main": "src/{index.js,functions/streamIfc.js,functions/dpsValuesApi.js,functions/dataPointMapApi.js}"
 }

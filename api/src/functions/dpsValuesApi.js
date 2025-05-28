@@ -14,23 +14,7 @@ app.http('getDpsValues', {
   methods: ['GET', 'PUT'],
   authLevel: 'anonymous',
   handler: async (request, context) => {
-    console.log('request', request);
-    // Get the HTTP method from the request
-    const method = request.method;
-    switch (method) {
-      case 'GET':
-        logMessage(context, 'GET request received');
-        return await getDpsValues(request, context);
-      case 'PUT':
-        logMessage(context, 'PUT request received');
-        return await putDpsValues(request, context);
-      default:
-        logError(context, `Unsupported method: ${method}`);
-        return {
-          status: 405,
-          body: JSON.stringify({ error: `Method ${method} not allowed` })
-        };
-    }
+    return await getDpsValues(request, context);
   }
 });
 
@@ -41,6 +25,86 @@ app.http('getDpValue', {
   handler: async (request, context) => {
     logMessage(context, 'GET single DP value request received');
     return await getDpValue(request, context);
+  }
+});
+
+// Function to set a single datapoint value
+app.http('setDpValue', {
+  methods: ['PUT'],
+  authLevel: 'anonymous',
+  handler: async (request, context) => {
+    logMessage(context, 'Set DP value request received');
+
+    const dp = request.url.searchParams.get('dp');
+    const value = request.url.searchParams.get('value');
+
+    if (!dp || value === null) {
+      return {
+        status: 400,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({ error: 'Missing dp or value parameter' })
+      };
+    }
+
+    try {
+      const requestPath = `/api/SetDpValue?dp=${encodeURIComponent(dp)}&value=${encodeURIComponent(value)}`;
+
+      const response = await new Promise((resolve, reject) => {
+        const options = {
+          hostname: targetHost,
+          port: targetPort,
+          path: requestPath,
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json'
+          }
+        };
+
+        logMessage(context, `SET request to: http://${targetHost}:${targetPort}${requestPath}`);
+
+        const req = http.request(options, (res) => {
+          let data = '';
+
+          res.on('data', (chunk) => {
+            data += chunk;
+          });
+
+          res.on('end', () => {
+            logMessage(context, `Data sent to DPS API for datapoint: ${dp}`);
+            resolve({
+              status: res.statusCode,
+              headers: {
+                'Content-Type': res.headers['content-type'] || 'application/json',
+                'Access-Control-Allow-Origin': '*'
+              },
+              body: data
+            });
+          });
+        });
+
+        req.on('error', (error) => {
+          logError(context, `Error connecting to DPS API:`, error);
+          reject(error);
+        });
+
+        req.end();
+      });
+
+      return response;
+    } catch (error) {
+      logError(context, `Error setting DP value:`, error);
+      return {
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({ error: `Error setting DP value: ` + error.message })
+      };
+    }
   }
 });
 
@@ -252,82 +316,3 @@ async function getDpValue(request, context) {
   }
 }
 
-// Function to set a single datapoint value
-app.http('setDpValue', {
-  methods: ['GET', 'PUT'],
-  authLevel: 'anonymous',
-  handler: async (request, context) => {
-    logMessage(context, 'Set DP value request received');
-
-    const dp = request.url.searchParams.get('dp');
-    const value = request.url.searchParams.get('value');
-
-    if (!dp || value === null) {
-      return {
-        status: 400,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        },
-        body: JSON.stringify({ error: 'Missing dp or value parameter' })
-      };
-    }
-
-    try {
-      const requestPath = `/api/SetDpValue?dp=${encodeURIComponent(dp)}&value=${encodeURIComponent(value)}`;
-
-      const response = await new Promise((resolve, reject) => {
-        const options = {
-          hostname: targetHost,
-          port: targetPort,
-          path: requestPath,
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json'
-          }
-        };
-
-        logMessage(context, `SET request to: http://${targetHost}:${targetPort}${requestPath}`);
-
-        const req = http.request(options, (res) => {
-          let data = '';
-
-          res.on('data', (chunk) => {
-            data += chunk;
-          });
-
-          res.on('end', () => {
-            logMessage(context, `Data sent to DPS API for datapoint: ${dp}`);
-            resolve({
-              status: res.statusCode,
-              headers: {
-                'Content-Type': res.headers['content-type'] || 'application/json',
-                'Access-Control-Allow-Origin': '*'
-              },
-              body: data
-            });
-          });
-        });
-
-        req.on('error', (error) => {
-          logError(context, `Error connecting to DPS API:`, error);
-          reject(error);
-        });
-
-        req.end();
-      });
-
-      return response;
-    } catch (error) {
-      logError(context, `Error setting DP value:`, error);
-      return {
-        status: 500,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        },
-        body: JSON.stringify({ error: `Error setting DP value: ` + error.message })
-      };
-    }
-  }
-});

@@ -26,45 +26,6 @@ export default (components: OBC.Components) => {
   };
 
   propsTable.preserveStructureOnFilter = true;
-
-  // const fetchLightStatus = async () => {
-  //   try {
-  //     // Use getDpsValues endpoint instead since getDpValue is having issues
-  //     const response = await fetch('/api/getDpsValues?dps=Favorites.Light.Lounge.01.ST');
-  //     const data = await response.json();
-  //     // Adjust how we extract the value based on the response structure
-  //     lightStatus = data?.test?.["Favorites.Light.Lounge.01.ST"] === true ? "on" : "off";
-  //     if (statusButton) {
-  //       statusButton.label = `Light: ${lightStatus}`;
-  //       statusButton.icon = lightStatus === "on" ? "solar:lamp-on-bold" : "solar:lamp-bold";
-  //       statusButton.click = toggleLight;
-  //       statusButton.visibility = "visible";
-  //       updateState(statusButton);
-  //     }
-  //   } catch (error) {
-  //     console.error('Error fetching light status:', error);
-  //   }
-  // };
-
-  // const toggleLight = async () => {
-  //   try {
-  //     // Toggle the light state via API using the working endpoint
-  //     const newState = lightStatus === "on" ? false : true;
-  //     // Use the getDpsValues endpoint with PUT method to update the value
-  //     await fetch('/api/getDpsValues', {
-  //       method: 'PUT',
-  //       headers: {
-  //         'Content-Type': 'application/json',
-  //       },
-  //       body: JSON.stringify({
-  //         "Favorites.Light.Lounge.01.ST": newState
-  //       })
-  //     });
-  //     await fetchLightStatus();
-  //   } catch (error) {
-  //     console.error('Error toggling light:', error);
-  //   }
-  // };
   const [panel, updateState] = BUI.Component.create<HTMLElement, statusButtonState>(
     (statusButtonState) => {
       const pane = BUI.html`
@@ -78,14 +39,42 @@ export default (components: OBC.Components) => {
     },
     statusButton
   );
-  const toggleLight = (Tag: string | null) => {
-    //get state
-    lightStatus = lightStatus === "on" ? "off" : "on";
-    statusButton.visibility = "visible";
-    statusButton.label = `Light:${lightStatus}`;
-    statusButton.icon = "solar:lamp-bold";
-    updateState(statusButton);
-    console.log("Toggling light", Tag, lightStatus);
+  const getData = async (tag: string | null) => {
+    const response = await fetch("/api/getDataPoint?key=" + tag);
+    if (!response.ok) {
+      console.error("Failed to fetch data for tag:", tag);
+      return;
+    }
+    const dp = await response.json();
+    const value = await fetch("/api/getDpValue?dp=" + dp.id);
+    if (!value.ok) {
+      console.error("Failed to fetch value for tag:", tag);
+      return;
+    }
+    return await value.json();
+  }
+  const toggleLight = async (Tag: string | null) => {
+    const value = await getData(Tag);
+    if (value !== undefined && value !== null) {
+      lightStatus = value.value === false ? "off" : "on";
+      statusButton.visibility = "visible";
+      statusButton.label = `Light:${lightStatus}`;
+      statusButton.icon = "solar:lamp-bold";
+      statusButton.click = () => {
+        lightStatus = value.value === false ? "on" : "off";
+        statusButton.visibility = "visible";
+        statusButton.label = `Light:${lightStatus}`;
+        statusButton.icon = "solar:lamp-bold";
+        updateState(statusButton);
+      }
+      updateState(statusButton);
+      console.log("Toggling light", Tag, lightStatus);
+    }
+    else {
+      statusButton.visibility = "hidden";
+      updateState(statusButton);
+    }
+
   }
   fragments.onFragmentsDisposed.add(() => {
     updatePropsTable();
