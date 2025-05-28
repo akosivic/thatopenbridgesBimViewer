@@ -208,7 +208,7 @@ export class WorldViewer extends HTMLElement {
     const leftPanel = Component.create(() => {
       if (isDebugMode) {
         return html`
-        <bim-tabs switchers-full floating>
+        <bim-tabs>
           <bim-tab name="project" label="Project" icon="ph:building-fill">
             ${projectInformationPanel}
           </bim-tab>
@@ -222,7 +222,7 @@ export class WorldViewer extends HTMLElement {
       `;
       }
       else {
-        return html` <bim-tabs switchers-full floating>
+        return html` <bim-tabs>
           <bim-tab name="project" label="Project" icon="ph:building-fill">
             ${projectInformationPanel}
           </bim-tab>
