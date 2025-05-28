@@ -34,6 +34,23 @@ const fetchFile = async (url: string): Promise<File> => {
   return new File([blob], url.substring(url.lastIndexOf('/') + 1), { type: blob.type });
 };
 
+// Helper function to create loading overlay
+function createLoadingOverlay(): HTMLElement {
+  const overlay = document.createElement('div');
+  overlay.className = 'loading-overlay';
+  
+  const spinner = document.createElement('div');
+  spinner.className = 'loading-spinner';
+  
+  const text = document.createElement('div');
+  text.className = 'loading-text';
+  text.textContent = 'Loading IFC Model...';
+  
+  overlay.appendChild(spinner);
+  overlay.appendChild(text);
+  
+  return overlay;
+}
 
 export default (components: OBC.Components) => {
   const [loadBtn] = CUI.buttons.loadIfc({ components });
@@ -45,37 +62,63 @@ export default (components: OBC.Components) => {
   const fragments = components.get(OBC.FragmentsManager);
   const indexer = components.get(OBC.IfcRelationsIndexer);
 
-
+  // Modified to show loading overlay
+  loadBtn.onclick = async () => {
+    const loadingOverlay = createLoadingOverlay();
+    document.body.appendChild(loadingOverlay);
+    
+    try {
+      await loadBtn.action();
+      document.body.removeChild(loadingOverlay);
+    } catch (error) {
+      document.body.removeChild(loadingOverlay);
+      console.error('Error loading IFC:', error);
+    }
+  };
 
   const loadFragments = async () => {
-    const fragmentsZip = await askForFile(".zip");
-    if (!fragmentsZip) return;
-    const zipBuffer = await fragmentsZip.arrayBuffer();
-    const zip = new Zip();
-    await zip.loadAsync(zipBuffer);
-    const geometryBuffer = zip.file("geometry.frag");
-    if (!geometryBuffer) {
-      alert("No geometry found in the file!");
-      return;
+    const loadingOverlay = createLoadingOverlay();
+    document.body.appendChild(loadingOverlay);
+    
+    try {
+      const fragmentsZip = await askForFile(".zip");
+      if (!fragmentsZip) {
+        document.body.removeChild(loadingOverlay);
+        return;
+      }
+      const zipBuffer = await fragmentsZip.arrayBuffer();
+      const zip = new Zip();
+      await zip.loadAsync(zipBuffer);
+      const geometryBuffer = zip.file("geometry.frag");
+      if (!geometryBuffer) {
+        document.body.removeChild(loadingOverlay);
+        alert("No geometry found in the file!");
+        return;
+      }
+
+      const geometry = await geometryBuffer.async("uint8array");
+
+      let properties: FRAGS.IfcProperties | undefined;
+      const propsFile = zip.file("properties.json");
+      if (propsFile) {
+        const json = await propsFile.async("string");
+        properties = JSON.parse(json);
+      }
+
+      let relationsMap: OBC.RelationsMap | undefined;
+      const relationsMapFile = zip.file("relations-map.json");
+      if (relationsMapFile) {
+        const json = await relationsMapFile.async("string");
+        relationsMap = indexer.getRelationsMapFromJSON(json);
+      }
+
+      await fragments.load(geometry, { properties, relationsMap });
+      document.body.removeChild(loadingOverlay);
+    } catch (error) {
+      document.body.removeChild(loadingOverlay);
+      console.error('Error loading fragments:', error);
+      alert(`Failed to load fragments: ${error}`);
     }
-
-    const geometry = await geometryBuffer.async("uint8array");
-
-    let properties: FRAGS.IfcProperties | undefined;
-    const propsFile = zip.file("properties.json");
-    if (propsFile) {
-      const json = await propsFile.async("string");
-      properties = JSON.parse(json);
-    }
-
-    let relationsMap: OBC.RelationsMap | undefined;
-    const relationsMapFile = zip.file("relations-map.json");
-    if (relationsMapFile) {
-      const json = await relationsMapFile.async("string");
-      relationsMap = indexer.getRelationsMapFromJSON(json);
-    }
-
-    fragments.load(geometry, { properties, relationsMap });
   };
 
   const streamer = components.get(OBF.IfcStreamer) as OBF.IfcStreamer;
@@ -105,42 +148,52 @@ export default (components: OBC.Components) => {
   };
 
   async function loadTiles() {
-    let currentDirectory: any | null = null;
-    const directoryInitialized = false;
-
+    const loadingOverlay = createLoadingOverlay();
+    document.body.appendChild(loadingOverlay);
+    
     try {
-      // @ts-ignore
-      currentDirectory = await window.showDirectoryPicker();
-    } catch (e) {
-      return;
-    }
+      let currentDirectory: any | null = null;
+      const directoryInitialized = false;
 
-    const geometryFilePattern = /-processed.json$/;
-    const propertiesFilePattern = /-processed-properties.json$/;
-
-    let geometryData: any | undefined;
-    let propertiesData: any | undefined;
-
-    for await (const entry of currentDirectory.values()) {
-      if (!directoryInitialized) {
-        const name = getStreamDirName(entry.name);
-        streamedDirectories[name] = currentDirectory;
+      try {
+        // @ts-ignore
+        currentDirectory = await window.showDirectoryPicker();
+      } catch (e) {
+        document.body.removeChild(loadingOverlay);
+        return;
       }
 
-      if (geometryFilePattern.test(entry.name)) {
-        const file = (await entry.getFile()) as File;
-        geometryData = await JSON.parse(await file.text());
-        continue;
+      const geometryFilePattern = /-processed.json$/;
+      const propertiesFilePattern = /-processed-properties.json$/;
+
+      let geometryData: any | undefined;
+      let propertiesData: any | undefined;
+
+      for await (const entry of currentDirectory.values()) {
+        if (!directoryInitialized) {
+          const name = getStreamDirName(entry.name);
+          streamedDirectories[name] = currentDirectory;
+        }
+
+        if (geometryFilePattern.test(entry.name)) {
+          const file = (await entry.getFile()) as File;
+          geometryData = await JSON.parse(await file.text());
+          continue;
+        }
+
+        if (propertiesFilePattern.test(entry.name)) {
+          const file = (await entry.getFile()) as File;
+          propertiesData = await JSON.parse(await file.text());
+        }
       }
 
-      if (propertiesFilePattern.test(entry.name)) {
-        const file = (await entry.getFile()) as File;
-        propertiesData = await JSON.parse(await file.text());
+      if (geometryData) {
+        await streamer.load(geometryData, false, propertiesData);
       }
-    }
-
-    if (geometryData) {
-      await streamer.load(geometryData, false, propertiesData);
+      document.body.removeChild(loadingOverlay);
+    } catch (error) {
+      document.body.removeChild(loadingOverlay);
+      console.error('Error loading tiles:', error);
     }
   }
 
@@ -161,6 +214,10 @@ export default (components: OBC.Components) => {
 
 // Function to load the test IFC file from the API
 export async function loadIfc(components: OBC.Components) {
+  // Show loading overlay
+  const loadingOverlay = createLoadingOverlay();
+  document.body.appendChild(loadingOverlay);
+  
   try {
     const apiUrl = '/api/streamIfc';
 
@@ -169,13 +226,17 @@ export async function loadIfc(components: OBC.Components) {
     const file = await fetchFile(apiUrl);
     const arrayBuffer = await file.arrayBuffer();
 
-
     // Use the existing IFC loader to process the file
     await ifcLoader.load(new Uint8Array(arrayBuffer));
+    
+    // Hide loading overlay after successful load
+    document.body.removeChild(loadingOverlay);
   } catch (error: string | any) {
+    // Hide loading overlay on error
+    document.body.removeChild(loadingOverlay);
+    
     // Handle any errors that occur during the loading process
     console.error('Error loading IFC file:', error);
     alert(`Failed to load IFC file: ${error.message}`);
   }
 }
-
