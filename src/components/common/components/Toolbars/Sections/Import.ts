@@ -33,22 +33,21 @@ const fetchFile = async (url: string): Promise<File> => {
   const blob = await response.blob();
   return new File([blob], url.substring(url.lastIndexOf('/') + 1), { type: blob.type });
 };
-
 // Helper function to create loading overlay
 function createLoadingOverlay(): HTMLElement {
   const overlay = document.createElement('div');
   overlay.className = 'loading-overlay';
-  
+
   const spinner = document.createElement('div');
   spinner.className = 'loading-spinner';
-  
+
   const text = document.createElement('div');
   text.className = 'loading-text';
   text.textContent = 'Loading IFC Model...';
-  
+
   overlay.appendChild(spinner);
   overlay.appendChild(text);
-  
+
   return overlay;
 }
 
@@ -62,24 +61,34 @@ export default (components: OBC.Components) => {
   const fragments = components.get(OBC.FragmentsManager);
   const indexer = components.get(OBC.IfcRelationsIndexer);
 
-  // Modified to show loading overlay
-  loadBtn.onclick = async () => {
-    const loadingOverlay = createLoadingOverlay();
-    document.body.appendChild(loadingOverlay);
-    
-    try {
-      await loadBtn.action();
-      document.body.removeChild(loadingOverlay);
-    } catch (error) {
-      document.body.removeChild(loadingOverlay);
-      console.error('Error loading IFC:', error);
-    }
-  };
+  // loadBtn.requestUpdate = () => {
+  //   // This function is called to update the button state
+  //   if (loadBtn.isUpdatePending) {
+  //     const loadingOverlay = createLoadingOverlay();
+  //     document.body.appendChild(loadingOverlay);
+  //   } else {
+  //     document.body.removeChild(loadingOverlay);
+  //   }
+  // }
+  // // // Modified to show loading overlay
+  // // loadBtn.onclick = async () => {
+
+
+  // //   try {
+  // //     loadBtn.isUpdatePending
+  // //     loadBtn.loading = true;
+  // //     // await loadBtn.action();
+
+  // //   } catch (error) {
+  // //     document.body.removeChild(loadingOverlay);
+  // //     console.error('Error loading IFC:', error);
+  // //   }
+  // // };
 
   const loadFragments = async () => {
     const loadingOverlay = createLoadingOverlay();
     document.body.appendChild(loadingOverlay);
-    
+
     try {
       const fragmentsZip = await askForFile(".zip");
       if (!fragmentsZip) {
@@ -150,7 +159,7 @@ export default (components: OBC.Components) => {
   async function loadTiles() {
     const loadingOverlay = createLoadingOverlay();
     document.body.appendChild(loadingOverlay);
-    
+
     try {
       let currentDirectory: any | null = null;
       const directoryInitialized = false;
@@ -217,7 +226,7 @@ export async function loadIfc(components: OBC.Components) {
   // Show loading overlay
   const loadingOverlay = createLoadingOverlay();
   document.body.appendChild(loadingOverlay);
-  
+
   try {
     const apiUrl = '/api/streamIfc';
 
@@ -228,15 +237,16 @@ export async function loadIfc(components: OBC.Components) {
 
     // Use the existing IFC loader to process the file
     await ifcLoader.load(new Uint8Array(arrayBuffer));
-    
+
     // Hide loading overlay after successful load
     document.body.removeChild(loadingOverlay);
   } catch (error: string | any) {
     // Hide loading overlay on error
     document.body.removeChild(loadingOverlay);
-    
+
     // Handle any errors that occur during the loading process
     console.error('Error loading IFC file:', error);
     alert(`Failed to load IFC file: ${error.message}`);
   }
 }
+
