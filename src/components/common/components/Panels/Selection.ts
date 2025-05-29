@@ -16,12 +16,13 @@ export default (components: OBC.Components) => {
     fragmentIdMap: {},
   });
 
-  let lightStatus = "off";
-  interface statusButtonState { label: string; icon: string, visibility: string, click: () => void }
+  interface statusButtonState { label: string; icon: string, visibility: string, click: () => void, isLightOn: boolean, tag: string | null }
   const statusButton: statusButtonState = {
-    label: `Light:${lightStatus}`,
+    isLightOn: false,
+    label: "Light:false",
     icon: "solar:lamp-bold",
     visibility: "hidden",
+    tag: null,
     click: () => toggleLight(null)
   };
 
@@ -40,6 +41,12 @@ export default (components: OBC.Components) => {
     statusButton
   );
   const getData = async (tag: string | null) => {
+    const r = {
+      value: {
+        "value": false
+      }
+    }
+    return r;
     const response = await fetch("/api/getDataPoint?key=" + tag);
     if (!response.ok) {
       console.error("Failed to fetch data for tag:", tag);
@@ -56,12 +63,17 @@ export default (components: OBC.Components) => {
   const toggleLight = async (Tag: string | null) => {
     const value = await getData(Tag);
     if (value !== undefined && value !== null) {
-      lightStatus = value.value === false ? "off" : "on";
+      value.value = !value.value; // Toggle the value
+      statusButton.isLightOn = value.value; // Update the state
       statusButton.visibility = "visible";
+      const lightStatus = value.value === false ? "off" : "on";
       statusButton.label = `Light:${lightStatus}`;
       statusButton.icon = "solar:lamp-bold";
+      statusButton.tag = Tag;
       statusButton.click = () => {
-        lightStatus = value.value === false ? "on" : "off";
+        value.value = !value.value; // Toggle the value
+        const lightStatus = value.value === false ? "off" : "on";
+        statusButton.label = `Light:${lightStatus}`;
         statusButton.visibility = "visible";
         statusButton.label = `Light:${lightStatus}`;
         statusButton.icon = "solar:lamp-bold";
