@@ -41,12 +41,6 @@ export default (components: OBC.Components) => {
     statusButton
   );
   const getData = async (tag: string | null) => {
-    const r = {
-      value: {
-        "value": false
-      }
-    }
-    return r;
     const response = await fetch("/api/getDataPoint?key=" + tag);
     if (!response.ok) {
       console.error("Failed to fetch data for tag:", tag);
