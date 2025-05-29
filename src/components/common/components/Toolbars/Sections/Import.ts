@@ -61,30 +61,6 @@ export default (components: OBC.Components) => {
   const fragments = components.get(OBC.FragmentsManager);
   const indexer = components.get(OBC.IfcRelationsIndexer);
 
-  // loadBtn.requestUpdate = () => {
-  //   // This function is called to update the button state
-  //   if (loadBtn.isUpdatePending) {
-  //     const loadingOverlay = createLoadingOverlay();
-  //     document.body.appendChild(loadingOverlay);
-  //   } else {
-  //     document.body.removeChild(loadingOverlay);
-  //   }
-  // }
-  // // // Modified to show loading overlay
-  // // loadBtn.onclick = async () => {
-
-
-  // //   try {
-  // //     loadBtn.isUpdatePending
-  // //     loadBtn.loading = true;
-  // //     // await loadBtn.action();
-
-  // //   } catch (error) {
-  // //     document.body.removeChild(loadingOverlay);
-  // //     console.error('Error loading IFC:', error);
-  // //   }
-  // // };
-
   const loadFragments = async () => {
     const loadingOverlay = createLoadingOverlay();
     document.body.appendChild(loadingOverlay);
