@@ -171,7 +171,7 @@ export class WorldViewer extends HTMLElement {
       }
     });
 
-    const projectInformationPanel = projectInformation(components, isDebugMode);
+    const projectInformationPanel = await projectInformation(components, isDebugMode);
     const elementDataPanel = elementData(components);
 
     const toolbar = Component.create(() => {
