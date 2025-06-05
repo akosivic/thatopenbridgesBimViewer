@@ -46,7 +46,8 @@ export default async (components: OBC.Components, isDebug: boolean) => {
     }
     return [];
   };
-
+  interface datapointButtonState { buttons: BUI.TemplateResult[] }
+  const dataPointButtonsResult: datapointButtonState = { buttons: [] };
   // Function to update datapoint by key
   const updateDataPoint = async (key: string) => {
     try {
@@ -55,6 +56,8 @@ export default async (components: OBC.Components, isDebug: boolean) => {
       if (!response.ok) {
         throw new Error(`Failed to update datapoint for key: ${key}`);
       }
+      dataPointButtonsResult.buttons = await renderDataPointButtons();
+      updateState(dataPointButtonsResult); // Update the component state
       console.log(`Updated datapoint for key: ${key}`);
     } catch (error) {
       console.error(`Error updating datapoint for key: ${key}:`, error);
@@ -82,8 +85,9 @@ export default async (components: OBC.Components, isDebug: boolean) => {
       `;
     });
   };
-  const dataPointButtonsResult = await renderDataPointButtons();
-  return BUI.Component.create<BUI.Panel>(() => {
+
+  dataPointButtonsResult.buttons = await renderDataPointButtons();
+  const [panel, updateState] = BUI.Component.create<HTMLElement, datapointButtonState>((dpresult) => {
     if (isDebug) {
       return BUI.html`
       <bim-panel>
@@ -100,7 +104,7 @@ export default async (components: OBC.Components, isDebug: boolean) => {
         </bim-panel-section>
         ${groupings(components)}
         <bim-panel-section label="Lights" icon="ph:tree-structure-fill">
-          ${dataPointButtonsResult}
+          ${dpresult.buttons}
         </bim-panel-section>
       </bim-panel> 
     `;
@@ -117,10 +121,12 @@ export default async (components: OBC.Components, isDebug: boolean) => {
           ${relationsTree}
         </bim-panel-section>
         <bim-panel-section label="Lights" icon="ph:tree-structure-fill">
-          ${dataPointButtonsResult}
+          ${dpresult.buttons}
         </bim-panel-section>
       </bim-panel> 
     `;
     }
-  });
+  }, dataPointButtonsResult);
+
+  return panel;
 };
