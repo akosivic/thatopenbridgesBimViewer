@@ -127,7 +127,7 @@ app.http('getDataPoint', {
       // Check if the key exists in the map
       if (dataPointMap.hasOwnProperty(key)) {
         const dataPoint = dataPointMap[key];
-        console.log(`Data point found for key: ${key}`, dataPointMap);
+        console.log(`Data point found for key: ${key}`, dataPoint);
         logMessage(context, `Data point found for key: ${key}`);
 
         return {
