@@ -13,7 +13,14 @@ interface DataPointKeysResponse {
   keys: string[];
 }
 
-export default async (components: OBC.Components, isDebug: boolean) => {
+export default async (components: OBC.Components, isDebug: boolean, world: OBC.SimpleWorld) => {
+  const viewpoints = components.get(OBC.Viewpoints);
+  const viewpoint = viewpoints.create(world, { title: "My Viewpoint" }); // You can set an optional title for UI purposes
+
+  viewpoint.selectionComponents.add(
+    "3wdHiIt7H5Hw_1XOYvi1bW"
+  );
+
   const [modelsList] = CUI.tables.modelsList({ components });
   const [relationsTree] = CUI.tables.relationsTree({
     components,
@@ -61,12 +68,51 @@ export default async (components: OBC.Components, isDebug: boolean) => {
     return [];
   };
 
+  const updateViewpointCamera = async () => {
+    console.log("Position before updating", viewpoint.position);
+    viewpoint.updateCamera();
+    console.log("Position after updating", viewpoint.position);
+  };
+
+  // const setWorldCamera = async () => {
+  //   const initialPosition = new THREE.Vector3();
+  //   world.camera.controls.getPosition(initialPosition);
+  //   console.log("Camera position before updating", initialPosition);
+  //   await viewpoint.go(world);
+  //   const finalPosition = new THREE.Vector3();
+  //   world.camera.controls.getPosition(finalPosition);
+  //   console.log("Camera position before updating", finalPosition);
+  // };
+
   // Update datapoint by key
   const updateDataPoint = async (key: string) => {
     try {
       dataPointState.buttonStates[key] = !dataPointState.buttonStates[key];
       const response = await fetch(`/api/getDataPoint?key=${key}`);
       if (!response.ok) throw new Error(`Failed to update datapoint for key: ${key}`);
+
+      // Zoom to the selected key
+      try {
+
+        updateViewpointCamera();
+        await viewpoint.go(world);
+        // world.camera.controls.getPosition(finalPosition);
+
+        // world.components.get(OBC.
+        // const scene = components.scene;
+
+        // // Find the object related to this key
+        // const object = scene.getObjectByName(key);
+        // if (object) {
+        //   // Zoom to the object
+        //   world.fitToObject(object, 1.5);
+        // } else {
+        //   console.log(`No object found for key: ${key}`);
+        // }
+      } catch (zoomError) {
+        console.warn(`Could not zoom to key ${key}:`, zoomError);
+      }
+
       await renderDataPointButtons();
       updateState({ ...dataPointState });
       console.log(`Updated datapoint for key: ${key}`);
@@ -121,14 +167,6 @@ export default async (components: OBC.Components, isDebug: boolean) => {
     } else {
       return BUI.html`
         <bim-panel>
-          <bim-panel-section label="Spatial Structures" icon="ph:tree-structure-fill">
-            <div style="display: flex; gap: 0.375rem;">
-              <bim-text-input @input=${search} vertical placeholder="Search..." debounce="200"></bim-text-input>
-              <bim-button style="flex: 0;" @click=${() => (relationsTree.expanded = !relationsTree.expanded)} icon="eva:expand-fill"></bim-button>
-              <bim-button style="flex: 0;" @click=${() => getByQuery("")} icon="solar:refresh-bold"></bim-button>
-            </div>
-            ${relationsTree}
-          </bim-panel-section>
           <bim-panel-section label="Lights" icon="solar:lamp-bold">
             ${dpState.buttons}
           </bim-panel-section>
