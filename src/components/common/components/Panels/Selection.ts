@@ -55,22 +55,22 @@ export default (components: OBC.Components) => {
     return await value.json();
   }
 
-  const zoomToTag = async (tag: string | null) => {
-    if (!tag) return;
-    // Find all fragments with this tag
-    const fragmentIds: string[] = [];
-    const allFragments = fragments.list;
-    for (const fragment of allFragments) {
-      // If Tag is a custom property on fragment.data, use fragment[1]?.data?.Tag
-      if ((fragment[1] as any)?.data?.Tag === tag) {
-        fragmentIds.push(fragment[0]);
-      }
-    }
-    if (fragmentIds.length > 0 && appManager.viewer) {
-      await appManager.viewer.zoomToFragments(fragmentIds);
-    }
-  };
-  
+  // const zoomToTag = async (tag: string | null) => {
+  //   if (!tag) return;
+  //   // Find all fragments with this tag
+  //   const fragmentIds: string[] = [];
+  //   const allFragments = fragments.list;
+  //   for (const fragment of allFragments) {
+  //     // If Tag is a custom property on fragment.data, use fragment[1]?.data?.Tag
+  //     if ((fragment[1] as any)?.data?.Tag === tag) {
+  //       fragmentIds.push(fragment[0]);
+  //     }
+  //   }
+  //   if (fragmentIds.length > 0 && appManager.viewer) {
+  //     await appManager.viewer.zoomToFragments(fragmentIds);
+  //   }
+  // };
+
   const toggleLight = async (Tag: string | null) => {
     const value = await getData(Tag);
     if (value !== undefined && value !== null) {
