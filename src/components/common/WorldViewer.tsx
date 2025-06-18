@@ -179,7 +179,33 @@ export class WorldViewer extends HTMLElement {
 
     const highlighter = components.get(Highlighter);
     highlighter.setup({ world });
-    highlighter.zoomToSelection = false;
+
+
+    // highlighter.events.onBeforeHighlight.onBeforeHighlight.add((fragmentIdMap) => {
+    //   // Filter the fragmentIdMap to only include allowed fragmentsi
+    //   console.log("Before Highlight", fragmentIdMap);
+    // });
+    // highlighter.selectable = {
+    //   "select": fragmentIdMap,
+    //   // "select": { ": new Set([28643]) },
+    //   // "select": {  },
+    //   // "select": {  }
+    // }
+    // highlighter.selectable = {
+    //   ["select"]: { "1a21fd45 - 7d11 - 4e53 - 99fa - e11a9cb26a07": new Set([28643]) },
+    //   ["1a21fd45 - 7d11 - 4e53 - 99fa - e11a9cb26a07"]: { "28643": new Set([28643]) },
+    //   ["7f40df5e - 9b70 - 4695 - 9601 - 5320b37ed2ef"]: { "28643": new Set([28643]) },
+    //   ["9b08e834 - 54bf - 4d5c - b5b7 - 71b3edf41499"]: { "28643": new Set([28643]) },
+    //   ["a2f684b7 - bc71 - 41bb - b924 - 6671f8167ab6"]: { "28643": new Set([28643]) }
+    //   // ["select"]: { "62108cf6-ac8b-4610-8bcc-76a0cd24e4d7": new Set([476304]) },
+    //   // ["62108cf6-ac8b-4610-8bcc-76a0cd24e4d7"]: { "476304": new Set([476304]) },
+    //   // ["e70aa7bd - cb1a - 4968 - b03a - eacd760f9948"]: { "476304": new Set([476304]) },
+    //   // ["62108cf6 - ac8b - 4610 - 8bcc - 76a0cd24e4d7"]: { "476304": new Set([476304]) },
+    //   // ["e171ae40 - d263 - 4ed1 - bb2e - 55cf8c4d6ad8"]: { "476304": new Set([476304]) }
+    // }
+
+
+
     // Set up HighlighterConfig according to the type definition
     highlighter.config = {
       selectName: "select",
@@ -200,7 +226,6 @@ export class WorldViewer extends HTMLElement {
     };
     const culler = components.get(Cullers).create(world);
     culler.threshold = 5;
-
     world.camera.controls.restThreshold = 0.25;
     world.camera.controls.addEventListener("rest", () => {
       culler.needsUpdate = true;
@@ -239,7 +264,7 @@ export class WorldViewer extends HTMLElement {
       }
     });
 
-    const projectInformationPanel = await projectInformation(components, isDebugMode, world);
+    const projectInformationPanel = await projectInformation(components, isDebugMode, world, highlighter);
     const elementDataPanel = elementData(components);
 
     const toolbar = Component.create(() => {
@@ -348,6 +373,7 @@ export class WorldViewer extends HTMLElement {
 
     viewportGrid.layout = "main";
     await loadIfc(components);
+
   }
 }
 
