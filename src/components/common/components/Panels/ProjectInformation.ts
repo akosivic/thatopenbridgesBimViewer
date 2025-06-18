@@ -2,6 +2,8 @@ import * as BUI from "@thatopen/ui";
 import * as OBC from "@thatopen/components";
 import * as CUI from "@thatopen/ui-obc";
 import groupings from "./Sections/Groupings";
+import { FragmentIdMap } from "@thatopen/fragments";
+import { Highlighter } from "@thatopen/components-front";
 
 interface DataPointState {
   keys: string[];
@@ -13,7 +15,11 @@ interface DataPointKeysResponse {
   keys: string[];
 }
 
-export default async (components: OBC.Components, isDebug: boolean, world: OBC.SimpleWorld) => {
+export default async (components: OBC.Components, isDebug: boolean, world: OBC.SimpleWorld, highlighter: Highlighter) => {
+
+
+
+
   const viewpoints = components.get(OBC.Viewpoints);
   const viewpoint = viewpoints.create(world, { title: "My Viewpoint" }); // You can set an optional title for UI purposes
 
@@ -68,11 +74,11 @@ export default async (components: OBC.Components, isDebug: boolean, world: OBC.S
     return [];
   };
 
-  const updateViewpointCamera = async () => {
-    console.log("Position before updating", viewpoint.position);
-    viewpoint.updateCamera();
-    console.log("Position after updating", viewpoint.position);
-  };
+  // const updateViewpointCamera = async () => {
+  //   console.log("Position before updating", viewpoint.position);
+  //   OBC.Zoom.to(viewpoint.position, world.camera.controls, 1.5);
+  //   console.log("Position after updating", viewpoint.position);
+  // };
 
   // const setWorldCamera = async () => {
   //   const initialPosition = new THREE.Vector3();
@@ -93,9 +99,24 @@ export default async (components: OBC.Components, isDebug: boolean, world: OBC.S
 
       // Zoom to the selected key
       try {
+        const test: FragmentIdMap = {
+          "1a21fd45-7d11-4e53-99fa-e11a9cb26a07": new Set([28643]),
+          "7f40df5e-9b70-4695-9601-5320b37ed2ef": new Set([28643]),
+          "9b08e834-54bf-4d5c-b5b7-71b3edf41499": new Set([28643]),
+          "a2f684b7-bc71-41bb-b924-6671f8167ab6": new Set([28643])
+        };
+        // const allowedfragmentIdMap = [
+        //   "91ab8602-652d-4a72-97a2-e23b5cca4967",
+        //   "750e5760-7185-437d-88d8-0d1937f771f8",
+        //   "b1e23697-3c00-49ae-b293-e080a9faac7a",
+        //   "161a1c76-2084-4c7a-b04b-61b4a21e319f"
+        // ];
+        highlighter.zoomToSelection = true;
+        highlighter.highlightByID("select", test, true, true, highlighter.selection.select);
+        // highlighter.highlight("select", true,;
 
-        updateViewpointCamera();
-        await viewpoint.go(world);
+        // updateViewpointCamera();
+        // await viewpoint.go(world);
         // world.camera.controls.getPosition(finalPosition);
 
         // world.components.get(OBC.

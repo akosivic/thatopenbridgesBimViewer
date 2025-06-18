@@ -54,6 +54,23 @@ export default (components: OBC.Components) => {
     }
     return await value.json();
   }
+
+  const zoomToTag = async (tag: string | null) => {
+    if (!tag) return;
+    // Find all fragments with this tag
+    const fragmentIds: string[] = [];
+    const allFragments = fragments.list;
+    for (const fragment of allFragments) {
+      // If Tag is a custom property on fragment.data, use fragment[1]?.data?.Tag
+      if ((fragment[1] as any)?.data?.Tag === tag) {
+        fragmentIds.push(fragment[0]);
+      }
+    }
+    if (fragmentIds.length > 0 && appManager.viewer) {
+      await appManager.viewer.zoomToFragments(fragmentIds);
+    }
+  };
+  
   const toggleLight = async (Tag: string | null) => {
     const value = await getData(Tag);
     if (value !== undefined && value !== null) {
@@ -87,38 +104,42 @@ export default (components: OBC.Components) => {
   });
 
   highlighter.events.select.onHighlight.add((fragmentIdMap) => {
-    if (!viewportGrid) return;
-    viewportGrid.layout = "second";
-    propsTable.expanded = false;
-    updatePropsTable({ fragmentIdMap });
+    if (fragmentIdMap !== undefined && Object.keys(fragmentIdMap).length !== 0) {
+      if (!viewportGrid) return;
+      viewportGrid.layout = "second";
+      propsTable.expanded = false;
+      console.log("onHighlight", fragmentIdMap);
+      updatePropsTable({ fragmentIdMap });
 
-    propsTable.dataAsync.then((data) => {
-      const groupArray = Array.isArray(data) ? data : Object.values(data as BUI.TableGroupData);
-      const groupAttribute = groupArray[0].children.filter((children: { data: { Name: string; }; }) =>
-        children.data.Name === "Attributes");
-      let classattr = "";
-      let tag = "";
-      groupAttribute[0].children.forEach((elem: { data: { Name: string, Value: string } }) => {
-        switch (elem.data.Name) {
-          case "Class":
-            classattr = elem.data.Value;
+      propsTable.dataAsync.then((data) => {
+        if (!Array.isArray(data) || data.length === 0) return;
+        const groupArray = data;
+        const groupAttribute = groupArray[0].children.filter((children: { data: { Name: string; }; }) =>
+          children.data.Name === "Attributes");
+        let classattr = "";
+        let tag = "";
+        groupAttribute[0].children.forEach((elem: { data: { Name: string, Value: string } }) => {
+          switch (elem.data.Name) {
+            case "Class":
+              classattr = elem.data.Value;
+              break;
+            case "Tag":
+              tag = elem.data.Value;
+              break;
+          }
+        });
+
+
+        switch (classattr) {
+          case "IFCFLOWTERMINAL":
+            toggleLight(tag);
             break;
-          case "Tag":
-            tag = elem.data.Value;
-            break;
+          default:
+            statusButton.visibility = "hidden";
+            updateState(statusButton);
         }
       });
-
-
-      switch (classattr) {
-        case "IFCFLOWTERMINAL":
-          toggleLight(tag);
-          break;
-        default:
-          statusButton.visibility = "hidden";
-          updateState(statusButton);
-      }
-    });
+    }
   });
 
 
