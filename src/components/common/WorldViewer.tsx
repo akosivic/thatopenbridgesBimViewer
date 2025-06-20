@@ -74,7 +74,7 @@ export class WorldViewer extends HTMLElement {
     world.camera = new OrthoPerspectiveCamera(components);
 
     // Set initial camera position and rotation for horizontal view
-    world.camera.controls.setPosition(0, 1.6, 5); // Set initial position (x, y, z) - y is eye level
+    world.camera.controls.setPosition(0, 1, 5); // Set initial position (x, y, z) - y is eye level
     world.camera.controls.azimuthAngle = Math.PI / 2; // Set initial rotation to look forward horizontally
     world.camera.controls.polarAngle = Math.PI / 2; // Set polar angle to horizontal view
 
@@ -83,7 +83,7 @@ export class WorldViewer extends HTMLElement {
     world.camera.controls.minPolarAngle = Math.PI / 2; // Restrict vertical rotation to horizontal plane
 
     // Add keyboard controls for walking
-    const moveSpeed = 5; // Speed of camera movement
+    const moveSpeed = 2; // Speed of camera movement
     const keys: Record<string, boolean> = {
       w: false,
       s: false,
@@ -95,6 +95,41 @@ export class WorldViewer extends HTMLElement {
       const key = e.key.toLowerCase();
       if (key in keys) {
         keys[key] = true;
+        // Update camera position based on key presses
+        const updateCameraPosition = () => {
+          const direction = new THREE.Vector3();
+          const rotation = world.camera.controls.azimuthAngle;
+
+          if (keys.w) {
+            direction.z = -Math.cos(rotation);
+            direction.x = -Math.sin(rotation);
+          }
+          if (keys.s) {
+            direction.z = Math.cos(rotation);
+            direction.x = Math.sin(rotation);
+          }
+          if (keys.a) {
+            direction.x = -Math.cos(rotation);
+            direction.z = Math.sin(rotation);
+          }
+          if (keys.d) {
+            direction.x = Math.cos(rotation);
+            direction.z = -Math.sin(rotation);
+          }
+
+          direction.normalize();
+          const position = world.camera.controls.getPosition(new THREE.Vector3());
+          position.x += direction.x * moveSpeed;
+          position.z += direction.z * moveSpeed;
+          world.camera.controls.setPosition(position.x, position.y, position.z);
+        };
+
+        // Add animation loop for smooth movement
+        const animate = () => {
+          //requestAnimationFrame(animate);
+          updateCameraPosition();
+        };
+        animate();
       }
     });
 
@@ -105,41 +140,30 @@ export class WorldViewer extends HTMLElement {
       }
     });
 
-    // Update camera position based on key presses
-    const updateCameraPosition = () => {
+    // Add mouse wheel event for zooming (same as 'w' key)
+    viewport.addEventListener('wheel', (e) => {
+      e.preventDefault();
       const direction = new THREE.Vector3();
       const rotation = world.camera.controls.azimuthAngle;
 
-      if (keys.w) {
+      // Determine zoom direction based on wheel delta
+      // Negative delta means zoom in (forward movement like 'w' key)
+      if (e.deltaY < 0) {
         direction.z = -Math.cos(rotation);
         direction.x = -Math.sin(rotation);
       }
-      if (keys.s) {
+      // Positive delta means zoom out (backward movement like 's' key)
+      else if (e.deltaY > 0) {
         direction.z = Math.cos(rotation);
         direction.x = Math.sin(rotation);
-      }
-      if (keys.a) {
-        direction.x = -Math.cos(rotation);
-        direction.z = Math.sin(rotation);
-      }
-      if (keys.d) {
-        direction.x = Math.cos(rotation);
-        direction.z = -Math.sin(rotation);
       }
 
       direction.normalize();
       const position = world.camera.controls.getPosition(new THREE.Vector3());
-      position.x += direction.x * moveSpeed;
-      position.z += direction.z * moveSpeed;
+      position.x += direction.x * moveSpeed * 0.5; // Reduced speed for smoother zooming
+      position.z += direction.z * moveSpeed * 0.5;
       world.camera.controls.setPosition(position.x, position.y, position.z);
-    };
-
-    // Add animation loop for smooth movement
-    const animate = () => {
-      requestAnimationFrame(animate);
-      updateCameraPosition();
-    };
-    animate();
+    }, { passive: false });
 
     const worldGrid = components.get(Grids).create(world);
     worldGrid.material.uniforms.uColor.value = new THREE.Color(0x424242);
@@ -180,7 +204,7 @@ export class WorldViewer extends HTMLElement {
 
     const highlighter = components.get(Highlighter);
     highlighter.setup({ world });
-    highlighter.zoomToSelection = true;
+    // highlighter.zoomToSelection = true;
 
     // highlighter.events.onBeforeHighlight.onBeforeHighlight.add((fragmentIdMap) => {
     //   // Filter the fragmentIdMap to only include allowed fragmentsi
@@ -268,7 +292,7 @@ export class WorldViewer extends HTMLElement {
     });
 
     const projectInformationPanel = await projectInformation(components, isDebugMode, world, highlighter);
-    const elementDataPanel = elementData(components);
+    const elementDataPanel = elementData(components, isDebugMode);
 
     const toolbar = Component.create(() => {
       if (isDebugMode) {
