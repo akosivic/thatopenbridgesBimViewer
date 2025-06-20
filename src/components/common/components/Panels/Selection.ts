@@ -33,6 +33,7 @@ export default (components: OBC.Components) => {
       <bim-panel ?hidden="${statusButtonState.visibility === 'hidden'}">
         <bim-panel-section name="selection" label="Selection Information" icon="solar:document-bold" fixed>
         <bim-button @click="${() => statusButton.click()}" icon="${statusButtonState.icon}" style="flex: 0" label="${statusButtonState.label}"></bim-button>
+         ${propsTable}
         </bim-panel-section>
       </bim-panel> 
       `

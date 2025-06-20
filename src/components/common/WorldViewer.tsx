@@ -29,6 +29,7 @@ import selection from "./components/Toolbars/Sections/Selection";
 import { AppManager } from "./components/bim-components";
 import { loadIfc } from "./components/Toolbars/Sections/Import";
 
+
 export class WorldViewer extends HTMLElement {
   constructor() {
     super();
@@ -179,7 +180,7 @@ export class WorldViewer extends HTMLElement {
 
     const highlighter = components.get(Highlighter);
     highlighter.setup({ world });
-
+    highlighter.zoomToSelection = true;
 
     // highlighter.events.onBeforeHighlight.onBeforeHighlight.add((fragmentIdMap) => {
     //   // Filter the fragmentIdMap to only include allowed fragmentsi
@@ -237,6 +238,8 @@ export class WorldViewer extends HTMLElement {
       if (model.hasProperties) {
         await indexer.process(model);
         classifier.byEntity(model);
+        const s = model.getObjectByProperty("type", "IfcSite");
+        console.log("Site", s);
       }
 
       if (!model.isStreamed) {
@@ -301,7 +304,7 @@ export class WorldViewer extends HTMLElement {
     const leftPanel = Component.create(() => {
       if (isDebugMode) {
         return html`
-        <bim-tabs>
+        <bim-tabs switchers-full>
           <bim-tab name="project" label="Project" icon="ph:building-fill">
             ${projectInformationPanel}
           </bim-tab>
@@ -315,7 +318,7 @@ export class WorldViewer extends HTMLElement {
       `;
       }
       else {
-        return html` <bim-tabs>
+        return html` <bim-tabs switchers-full>
           <bim-tab name="project" label="Project" icon="ph:building-fill">
             ${projectInformationPanel}
           </bim-tab>
@@ -339,7 +342,7 @@ export class WorldViewer extends HTMLElement {
       main: {
         template: `
         "leftPanel viewport" 1fr
-          /12rem
+           /26rem 1fr
             `,
         elements: {
           leftPanel,
