@@ -35,6 +35,7 @@ export class WorldViewer extends HTMLElement {
     super();
   }
 
+
   async connectedCallback() {
     await this.initializeWorldViewer();
   }
@@ -204,7 +205,7 @@ export class WorldViewer extends HTMLElement {
 
     const highlighter = components.get(Highlighter);
     highlighter.setup({ world });
-    // highlighter.zoomToSelection = true;
+    highlighter.zoomToSelection = true;
 
     // highlighter.events.onBeforeHighlight.onBeforeHighlight.add((fragmentIdMap) => {
     //   // Filter the fragmentIdMap to only include allowed fragmentsi
@@ -257,13 +258,13 @@ export class WorldViewer extends HTMLElement {
       tilesLoader.cancel = true;
       tilesLoader.culler.needsUpdate = true;
     });
-
+    let fragmentModel = null;
     fragments.onFragmentsLoaded.add(async (model) => {
       if (model.hasProperties) {
         await indexer.process(model);
         classifier.byEntity(model);
-        const s = model.getObjectByProperty("type", "IfcSite");
-        console.log("Site", s);
+        fragmentModel = model;
+
       }
 
       if (!model.isStreamed) {
@@ -291,7 +292,7 @@ export class WorldViewer extends HTMLElement {
       }
     });
 
-    const projectInformationPanel = await projectInformation(components, isDebugMode, world, highlighter);
+    const projectInformationPanel = await projectInformation(components, isDebugMode, world, highlighter, fragmentModel);
     const elementDataPanel = elementData(components, isDebugMode);
 
     const toolbar = Component.create(() => {

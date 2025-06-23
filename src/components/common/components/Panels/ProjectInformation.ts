@@ -2,8 +2,8 @@ import * as BUI from "@thatopen/ui";
 import * as OBC from "@thatopen/components";
 import * as CUI from "@thatopen/ui-obc";
 import groupings from "./Sections/Groupings";
-import { FragmentIdMap } from "@thatopen/fragments";
 import { Highlighter } from "@thatopen/components-front";
+import { FragmentsGroup } from "@thatopen/fragments";
 
 interface DataPointState {
   keys: string[];
@@ -15,18 +15,7 @@ interface DataPointKeysResponse {
   keys: string[];
 }
 
-export default async (components: OBC.Components, isDebug: boolean, world: OBC.SimpleWorld, highlighter: Highlighter) => {
-
-
-
-
-  const viewpoints = components.get(OBC.Viewpoints);
-  const viewpoint = viewpoints.create(world, { title: "My Viewpoint" }); // You can set an optional title for UI purposes
-
-  viewpoint.selectionComponents.add(
-    "3wdHiIt7H5Hw_1XOYvi1bW"
-  );
-
+export default async (components: OBC.Components, isDebug: boolean, world: OBC.SimpleWorld, highlighter: Highlighter, model: FragmentsGroup) => {
   const [modelsList] = CUI.tables.modelsList({ components });
   const [relationsTree] = CUI.tables.relationsTree({
     components,
@@ -34,6 +23,8 @@ export default async (components: OBC.Components, isDebug: boolean, world: OBC.S
     hoverHighlighterName: "hover",
     selectHighlighterName: "select",
   });
+
+
   relationsTree.preserveStructureOnFilter = false;
 
   const search = (e: Event) => {
@@ -74,22 +65,6 @@ export default async (components: OBC.Components, isDebug: boolean, world: OBC.S
     return [];
   };
 
-  // const updateViewpointCamera = async () => {
-  //   console.log("Position before updating", viewpoint.position);
-  //   OBC.Zoom.to(viewpoint.position, world.camera.controls, 1.5);
-  //   console.log("Position after updating", viewpoint.position);
-  // };
-
-  // const setWorldCamera = async () => {
-  //   const initialPosition = new THREE.Vector3();
-  //   world.camera.controls.getPosition(initialPosition);
-  //   console.log("Camera position before updating", initialPosition);
-  //   await viewpoint.go(world);
-  //   const finalPosition = new THREE.Vector3();
-  //   world.camera.controls.getPosition(finalPosition);
-  //   console.log("Camera position before updating", finalPosition);
-  // };
-
   // Update datapoint by key
   const updateDataPoint = async (key: string) => {
     try {
@@ -98,41 +73,81 @@ export default async (components: OBC.Components, isDebug: boolean, world: OBC.S
       if (!response.ok) throw new Error(`Failed to update datapoint for key: ${key}`);
 
       // Zoom to the selected key
-      try {
-        const test: FragmentIdMap = {
-          "1a21fd45-7d11-4e53-99fa-e11a9cb26a07": new Set([28643]),
-          "7f40df5e-9b70-4695-9601-5320b37ed2ef": new Set([28643]),
-          "9b08e834-54bf-4d5c-b5b7-71b3edf41499": new Set([28643]),
-          "a2f684b7-bc71-41bb-b924-6671f8167ab6": new Set([28643])
-        };
-        // const allowedfragmentIdMap = [
-        //   "91ab8602-652d-4a72-97a2-e23b5cca4967",
-        //   "750e5760-7185-437d-88d8-0d1937f771f8",
-        //   "b1e23697-3c00-49ae-b293-e080a9faac7a",
-        //   "161a1c76-2084-4c7a-b04b-61b4a21e319f"
-        // ];
-        highlighter.zoomToSelection = true;
-        highlighter.highlightByID("select", test, true, true, highlighter.selection.select);
-        // highlighter.highlight("select", true,;
+      const data: [{ key: string; name: string }] = await response.json();
 
-        // updateViewpointCamera();
-        // await viewpoint.go(world);
-        // world.camera.controls.getPosition(finalPosition);
+      data.forEach(element => {
+        const targetKey = Object.keys(element)[0];
+        getByQuery(targetKey);
+        // attributesTable.queryString = targetKey;
+        relationsTree.requestUpdate();
+        relationsTree.updateComplete.then(() => {
+          relationsTree.expanded = true;
+          console.log(`Zooming to key: ${targetKey}`);
 
-        // world.components.get(OBC.
-        // const scene = components.scene;
+          // Recursive function to find items in the tree with matching name
+          const findItemsByName = (items: any[], name: string): any[] => {
+            if (!items || !Array.isArray(items)) return [];
 
-        // // Find the object related to this key
-        // const object = scene.getObjectByName(key);
-        // if (object) {
-        //   // Zoom to the object
-        //   world.fitToObject(object, 1.5);
-        // } else {
-        //   console.log(`No object found for key: ${key}`);
-        // }
-      } catch (zoomError) {
-        console.warn(`Could not zoom to key ${key}:`, zoomError);
-      }
+            let results: any[] = [];
+
+            for (const item of items) {
+              if (!item || !item.data) continue;
+              if ((item.data.Tag === name) || (item.data?.Name && typeof item.data.Name === 'string' && item.data.Name.includes(name))) {
+                results.push(item);
+              }
+
+              if (item.children) {
+                // Handle children recursively whether they're an array or just a boolean flag
+                if (Array.isArray(item.children)) {
+                  results = [...results, ...findItemsByName(item.children, name)];
+                }
+              }
+            }
+            return results;
+          };
+
+          const foundItems = findItemsByName(relationsTree.data, '467695');// targetKey);
+          if (foundItems.length > 0) {
+            console.log(`Found ${foundItems.length} items for key ${targetKey}:`, foundItems);
+            // Highlight the found items
+            foundItems.forEach(async item => {
+              if (item.data) {
+                const fragmentIdMap = model.getFragmentMap(item.data.expressID);
+                // await highlighter.highlight(item.data.Name, true, true);
+                await highlighter.highlightByID("select", fragmentIdMap, false, true, undefined, undefined, true);
+              }
+            });
+          } else {
+            console.log(`No items found for key ${targetKey} in relations tree`);
+          }
+        });
+      });
+      console.log('relationsTree.data:', relationsTree.data);
+      // const allowedfragmentIdMap = [
+      //   "91ab8602-652d-4a72-97a2-e23b5cca4967",
+      //   "750e5760-7185-437d-88d8-0d1937f771f8",
+      //   "b1e23697-3c00-49ae-b293-e080a9faac7a",
+      //   "161a1c76-2084-4c7a-b04b-61b4a21e319f"
+      // ];
+      highlighter.zoomToSelection = true;
+
+      // highlighter.highlight("select", true,;
+
+      // updateViewpointCamera();
+      // await viewpoint.go(world);
+      // world.camera.controls.getPosition(finalPosition);
+
+      // world.components.get(OBC.
+      // const scene = components.scene;
+
+      // // Find the object related to this key
+      // const object = scene.getObjectByName(key);
+      // if (object) {
+      //   // Zoom to the object
+      //   world.fitToObject(object, 1.5);
+      // } else {
+      //   console.log(`No object found for key: ${key}`);
+      // }
 
       await renderDataPointButtons();
       updateState({ ...dataPointState });
@@ -165,13 +180,13 @@ export default async (components: OBC.Components, isDebug: boolean, world: OBC.S
   await renderDataPointButtons();
 
   const [panel, updateState] = BUI.Component.create<HTMLElement, DataPointState>((dpState) => {
-    if (isDebug) {
-      return BUI.html`
+    const isVisible = isDebug ? "visibility:Collapsed" : "visibility:Visible";
+    return BUI.html`
         <bim-panel>
-          <bim-panel-section label="Loaded Models" icon="mage:box-3d-fill">
+          <bim-panel-section label="Loaded Models" icon="mage:box-3d-fill"  style="${isVisible}">
             ${modelsList}
           </bim-panel-section>
-          <bim-panel-section label="Spatial Structures" icon="ph:tree-structure-fill">
+          <bim-panel-section label="Spatial Structures" icon="ph:tree-structure-fill" style="${isVisible}">
             <div style="display: flex; gap: 0.375rem;">
               <bim-text-input @input=${search} vertical placeholder="Search..." debounce="200"></bim-text-input>
               <bim-button style="flex: 0;" @click=${() => (relationsTree.expanded = !relationsTree.expanded)} icon="eva:expand-fill"></bim-button>
@@ -179,21 +194,12 @@ export default async (components: OBC.Components, isDebug: boolean, world: OBC.S
             </div>
             ${relationsTree}
           </bim-panel-section>
-          ${groupings(components)}
-          <bim-panel-section label="Lights" icon="solar:lamp-bold">
+          ${groupings(components, isDebug)}
+          <bim-panel-section label="Lights" icon="solar:lamp-bold" style="${isVisible}">
             ${dpState.buttons}
           </bim-panel-section>
         </bim-panel>
       `;
-    } else {
-      return BUI.html`
-        <bim-panel>
-          <bim-panel-section label="Lights" icon="solar:lamp-bold">
-            ${dpState.buttons}
-          </bim-panel-section>
-        </bim-panel>
-      `;
-    }
   }, dataPointState);
 
   return panel;
