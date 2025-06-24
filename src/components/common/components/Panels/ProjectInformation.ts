@@ -17,7 +17,7 @@ interface DataPointKeysResponse {
 
 let model: FragmentsGroup | undefined;
 
-export default async (components: OBC.Components, isDebug: boolean, world: OBC.SimpleWorld, highlighter: Highlighter) => {
+export default async (components: OBC.Components, isDebug: boolean, highlighter: Highlighter) => {
   const [modelsList] = CUI.tables.modelsList({ components });
   const [relationsTree] = CUI.tables.relationsTree({
     components,
