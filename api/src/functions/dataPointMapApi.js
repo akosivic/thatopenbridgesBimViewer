@@ -17,7 +17,7 @@ const dataPointMap = {
     { "727329": "Favorites.Light.Lounge.02.ST" },
     { "727598": "Favorites.Light.TestRM.ST" },
     { "727624": "Favorites.Light.StockRM.ST" },
-    { "727624": "Favorites.Light.Office.01.ST" }
+    { "728049": "Favorites.Light.Office.01.ST" }
   ],
   "M3": [
     { "728121": "Favorites.Light.Lounge.01.ST" },

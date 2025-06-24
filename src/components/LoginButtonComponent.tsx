@@ -21,7 +21,7 @@ const LoginButton: React.FC = () => {
         textTransform: 'none',
       }}
     >
-      {t('login')}
+      {t('Login')}
     </Button>
   );
 };
