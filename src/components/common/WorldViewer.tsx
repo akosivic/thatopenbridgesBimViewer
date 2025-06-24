@@ -81,9 +81,9 @@ export class WorldViewer extends HTMLElement {
     world.camera.controls.azimuthAngle = Math.PI / 2; // Set initial rotation to look forward horizontally
     world.camera.controls.polarAngle = Math.PI / 2; // Set polar angle to horizontal view
 
-    // Add walking mode camera controls
-    world.camera.controls.maxPolarAngle = Math.PI / 2; // Restrict vertical rotation to horizontal plane
-    world.camera.controls.minPolarAngle = Math.PI / 2; // Restrict vertical rotation to horizontal plane
+    // Add walking mode camera controls with limited vertical freedom (10 degrees total)
+    world.camera.controls.maxPolarAngle = Math.PI / 2 + Math.PI / 36; // 5 degrees down
+    world.camera.controls.minPolarAngle = Math.PI / 2 - Math.PI / 36; // 5 degrees up
 
     // Add keyboard controls for walking
     const moveSpeed = 2; // Speed of camera movement
@@ -269,7 +269,7 @@ export class WorldViewer extends HTMLElement {
       }
     });
 
-    const projectInformationPanel = await projectInformation(components, isDebugMode, highlighter);
+    const projectInformationPanel = await projectInformation(components, isDebugMode, highlighter, world);
     const elementDataPanel = elementData(components, isDebugMode);
 
     const toolbar = Component.create(() => {

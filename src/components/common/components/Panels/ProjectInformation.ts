@@ -18,6 +18,8 @@ interface DataPointKeysResponse {
 let model: FragmentsGroup | undefined;
 
 export default async (components: OBC.Components, isDebug: boolean, highlighter: Highlighter) => {
+
+
   const [modelsList] = CUI.tables.modelsList({ components });
   const [relationsTree] = CUI.tables.relationsTree({
     components,
@@ -70,58 +72,61 @@ export default async (components: OBC.Components, isDebug: boolean, highlighter:
     try {
       highlighter.clear();
       dataPointState.buttonStates[key] = !dataPointState.buttonStates[key];
-      const response = await fetch(`/api/getDataPoint?key=${key}`);
-      if (!response.ok) throw new Error(`Failed to update datapoint for key: ${key}`);
+      if (!dataPointState.buttonStates[key]) {
+        console.log(`Turning off datapoint for key: ${key}`);
+      } else {
+        console.log(`Turning on datapoint for key: ${key}`);
+        const response = await fetch(`/api/getDataPoint?key=${key}`);
+        if (!response.ok) throw new Error(`Failed to update datapoint for key: ${key}`);
 
-      // Zoom to the selected key
-      const data: [{ key: string; name: string }] = await response.json();
+        // Zoom to the selected key
+        const data: [{ key: string; name: string }] = await response.json();
 
-      data.forEach(element => {
-        const targetKey = Object.keys(element)[0];
-        getByQuery(targetKey);
-        // attributesTable.queryString = targetKey;
-        relationsTree.requestUpdate();
-        relationsTree.updateComplete.then(() => {
-          relationsTree.expanded = true;
-          console.log(`Zooming to key: ${targetKey}`);
+        data.forEach(element => {
+          const targetKey = Object.keys(element)[0];
+          getByQuery(targetKey);
+          // attributesTable.queryString = targetKey;
+          relationsTree.requestUpdate();
+          relationsTree.updateComplete.then(async () => {
+            relationsTree.expanded = true;
+            console.log(`Zooming to key: ${targetKey}`);
 
-          // Recursive function to find items in the tree with matching name
-          const findItemsByName = (items: any[], name: string): any[] => {
-            if (!items || !Array.isArray(items)) return [];
+            // Recursive function to find items in the tree with matching name
+            const findItemsByName = (items: any[], name: string): any[] => {
+              if (!items || !Array.isArray(items)) return [];
 
-            let results: any[] = [];
+              let results: any[] = [];
 
-            for (const item of items) {
-              if (!item || !item.data) continue;
-              if ((item.data.Tag === name) || (item.data?.Name && typeof item.data.Name === 'string' && item.data.Name.includes(name))) {
-                results.push(item);
-              }
+              for (const item of items) {
+                if (!item || !item.data) continue;
+                if ((item.data.Tag === name) || (item.data?.Name && typeof item.data.Name === 'string' && item.data.Name.includes(name))) {
+                  results.push(item);
+                }
 
-              if (item.children) {
-                // Handle children recursively whether they're an array or just a boolean flag
-                if (Array.isArray(item.children)) {
-                  results = [...results, ...findItemsByName(item.children, name)];
+                if (item.children) {
+                  // Handle children recursively whether they're an array or just a boolean flag
+                  if (Array.isArray(item.children)) {
+                    results = [...results, ...findItemsByName(item.children, name)];
+                  }
                 }
               }
-            }
-            return results;
-          };
+              return results;
+            };
 
-          const foundItems = findItemsByName(relationsTree.data, targetKey);
-          if (foundItems.length > 0) {
-            console.log(`Found ${foundItems.length} items for key ${targetKey}:`, foundItems);
-            if (model) {
-              const fragmentIdMap = model.getFragmentMap([foundItems[0].data.expressID]);
-              highlighter.highlightByID("select", fragmentIdMap, false, true, undefined, undefined, true);
+            const foundItems = findItemsByName(relationsTree.data, targetKey);
+            if (foundItems.length > 0) {
+              console.log(`Found ${foundItems.length} items for key ${targetKey}:`, foundItems);
+              if (model) {
+                const fragmentIdMap = model.getFragmentMap([foundItems[0].data.expressID]);
+                highlighter.highlightByID("select", fragmentIdMap, false, true, undefined, undefined, true);
+              }
+            } else {
+              console.log(`No items found for key ${targetKey} in relations tree`);
             }
-          } else {
-            console.log(`No items found for key ${targetKey} in relations tree`);
-          }
+          });
         });
-      });
-
+      }
       console.log('relationsTree.data:', relationsTree.data);
-      highlighter.zoomToSelection = true;
       await renderDataPointButtons();
       updateState({ ...dataPointState });
       console.log(`Updated datapoint for key: ${key}`);
