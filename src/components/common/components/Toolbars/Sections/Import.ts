@@ -212,10 +212,11 @@ export async function loadIfc(components: OBC.Components) {
     const arrayBuffer = await file.arrayBuffer();
 
     // Use the existing IFC loader to process the file
-    await ifcLoader.load(new Uint8Array(arrayBuffer));
+    const retval = await ifcLoader.load(new Uint8Array(arrayBuffer));
 
     // Hide loading overlay after successful load
     document.body.removeChild(loadingOverlay);
+    return retval
   } catch (error: string | any) {
     // Hide loading overlay on error
     document.body.removeChild(loadingOverlay);
@@ -224,5 +225,6 @@ export async function loadIfc(components: OBC.Components) {
     console.error('Error loading IFC file:', error);
     alert(`Failed to load IFC file: ${error.message}`);
   }
+
 }
 

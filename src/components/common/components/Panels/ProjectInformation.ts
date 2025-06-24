@@ -15,7 +15,9 @@ interface DataPointKeysResponse {
   keys: string[];
 }
 
-export default async (components: OBC.Components, isDebug: boolean, world: OBC.SimpleWorld, highlighter: Highlighter, model: FragmentsGroup) => {
+let model: FragmentsGroup | undefined;
+
+export default async (components: OBC.Components, isDebug: boolean, world: OBC.SimpleWorld, highlighter: Highlighter) => {
   const [modelsList] = CUI.tables.modelsList({ components });
   const [relationsTree] = CUI.tables.relationsTree({
     components,
@@ -23,8 +25,6 @@ export default async (components: OBC.Components, isDebug: boolean, world: OBC.S
     hoverHighlighterName: "hover",
     selectHighlighterName: "select",
   });
-
-
   relationsTree.preserveStructureOnFilter = false;
 
   const search = (e: Event) => {
@@ -65,7 +65,7 @@ export default async (components: OBC.Components, isDebug: boolean, world: OBC.S
     return [];
   };
 
-  // Update datapoint by key
+  // // Update datapoint by key
   const updateDataPoint = async (key: string) => {
     try {
       dataPointState.buttonStates[key] = !dataPointState.buttonStates[key];
@@ -106,49 +106,21 @@ export default async (components: OBC.Components, isDebug: boolean, world: OBC.S
             return results;
           };
 
-          const foundItems = findItemsByName(relationsTree.data, '467695');// targetKey);
+          const foundItems = findItemsByName(relationsTree.data, targetKey);
           if (foundItems.length > 0) {
             console.log(`Found ${foundItems.length} items for key ${targetKey}:`, foundItems);
-            // Highlight the found items
-            foundItems.forEach(async item => {
-              if (item.data) {
-                const fragmentIdMap = model.getFragmentMap(item.data.expressID);
-                // await highlighter.highlight(item.data.Name, true, true);
-                await highlighter.highlightByID("select", fragmentIdMap, false, true, undefined, undefined, true);
-              }
-            });
+            if (model) {
+              const fragmentIdMap = model.getFragmentMap([foundItems[0].data.expressID]);
+              highlighter.highlightByID("select", fragmentIdMap, false, true, undefined, undefined, true);
+            }
           } else {
             console.log(`No items found for key ${targetKey} in relations tree`);
           }
         });
       });
+
       console.log('relationsTree.data:', relationsTree.data);
-      // const allowedfragmentIdMap = [
-      //   "91ab8602-652d-4a72-97a2-e23b5cca4967",
-      //   "750e5760-7185-437d-88d8-0d1937f771f8",
-      //   "b1e23697-3c00-49ae-b293-e080a9faac7a",
-      //   "161a1c76-2084-4c7a-b04b-61b4a21e319f"
-      // ];
       highlighter.zoomToSelection = true;
-
-      // highlighter.highlight("select", true,;
-
-      // updateViewpointCamera();
-      // await viewpoint.go(world);
-      // world.camera.controls.getPosition(finalPosition);
-
-      // world.components.get(OBC.
-      // const scene = components.scene;
-
-      // // Find the object related to this key
-      // const object = scene.getObjectByName(key);
-      // if (object) {
-      //   // Zoom to the object
-      //   world.fitToObject(object, 1.5);
-      // } else {
-      //   console.log(`No object found for key: ${key}`);
-      // }
-
       await renderDataPointButtons();
       updateState({ ...dataPointState });
       console.log(`Updated datapoint for key: ${key}`);
@@ -202,5 +174,14 @@ export default async (components: OBC.Components, isDebug: boolean, world: OBC.S
       `;
   }, dataPointState);
 
-  return panel;
+  // Add a public method to update the model
+  (panel as any).updateModel = (newModel: any) => {
+    model = newModel;
+  };
+
+  return [panel, updateState];
+};
+
+export const setModel = (newModel: FragmentsGroup | undefined) => {
+  model = newModel;
 };
