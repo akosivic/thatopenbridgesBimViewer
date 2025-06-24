@@ -68,6 +68,7 @@ export default async (components: OBC.Components, isDebug: boolean, world: OBC.S
   // // Update datapoint by key
   const updateDataPoint = async (key: string) => {
     try {
+      highlighter.clear();
       dataPointState.buttonStates[key] = !dataPointState.buttonStates[key];
       const response = await fetch(`/api/getDataPoint?key=${key}`);
       if (!response.ok) throw new Error(`Failed to update datapoint for key: ${key}`);
@@ -152,7 +153,7 @@ export default async (components: OBC.Components, isDebug: boolean, world: OBC.S
   await renderDataPointButtons();
 
   const [panel, updateState] = BUI.Component.create<HTMLElement, DataPointState>((dpState) => {
-    const isVisible = isDebug ? "visibility:Collapsed" : "visibility:Visible";
+    const isVisible = !isDebug ? "display:none;" : "display:block;";
     return BUI.html`
         <bim-panel>
           <bim-panel-section label="Loaded Models" icon="mage:box-3d-fill"  style="${isVisible}">
@@ -167,7 +168,7 @@ export default async (components: OBC.Components, isDebug: boolean, world: OBC.S
             ${relationsTree}
           </bim-panel-section>
           ${groupings(components, isDebug)}
-          <bim-panel-section label="Lights" icon="solar:lamp-bold" style="${isVisible}">
+          <bim-panel-section label="Lights" icon="solar:lamp-bold">
             ${dpState.buttons}
           </bim-panel-section>
         </bim-panel>

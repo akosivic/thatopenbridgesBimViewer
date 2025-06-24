@@ -77,7 +77,7 @@ export class WorldViewer extends HTMLElement {
     world.camera = new OrthoPerspectiveCamera(components);
 
     // Set initial camera position and rotation for horizontal view
-    world.camera.controls.setPosition(0, 1, 5); // Set initial position (x, y, z) - y is eye level
+    world.camera.controls.setPosition(0, 0.50, 5); // Set initial position (x, y, z) - y is eye level
     world.camera.controls.azimuthAngle = Math.PI / 2; // Set initial rotation to look forward horizontally
     world.camera.controls.polarAngle = Math.PI / 2; // Set polar angle to horizontal view
 
@@ -208,43 +208,19 @@ export class WorldViewer extends HTMLElement {
     const highlighter = components.get(Highlighter);
     highlighter.setup({ world });
     highlighter.zoomToSelection = true;
-
-    // highlighter.events.onBeforeHighlight.onBeforeHighlight.add((fragmentIdMap) => {
-    //   // Filter the fragmentIdMap to only include allowed fragmentsi
-    //   console.log("Before Highlight", fragmentIdMap);
-    // });
-    // highlighter.selectable = {
-    //   "select": fragmentIdMap,
-    //   // "select": { ": new Set([28643]) },
-    //   // "select": {  },
-    //   // "select": {  }
-    // }
-    // highlighter.selectable = {
-    //   ["select"]: { "1a21fd45 - 7d11 - 4e53 - 99fa - e11a9cb26a07": new Set([28643]) },
-    //   ["1a21fd45 - 7d11 - 4e53 - 99fa - e11a9cb26a07"]: { "28643": new Set([28643]) },
-    //   ["7f40df5e - 9b70 - 4695 - 9601 - 5320b37ed2ef"]: { "28643": new Set([28643]) },
-    //   ["9b08e834 - 54bf - 4d5c - b5b7 - 71b3edf41499"]: { "28643": new Set([28643]) },
-    //   ["a2f684b7 - bc71 - 41bb - b924 - 6671f8167ab6"]: { "28643": new Set([28643]) }
-    //   // ["select"]: { "62108cf6-ac8b-4610-8bcc-76a0cd24e4d7": new Set([476304]) },
-    //   // ["62108cf6-ac8b-4610-8bcc-76a0cd24e4d7"]: { "476304": new Set([476304]) },
-    //   // ["e70aa7bd - cb1a - 4968 - b03a - eacd760f9948"]: { "476304": new Set([476304]) },
-    //   // ["62108cf6 - ac8b - 4610 - 8bcc - 76a0cd24e4d7"]: { "476304": new Set([476304]) },
-    //   // ["e171ae40 - d263 - 4ed1 - bb2e - 55cf8c4d6ad8"]: { "476304": new Set([476304]) }
-    // }
-
-
+    highlighter.zoomFactor = 1;
 
     // Set up HighlighterConfig according to the type definition
     highlighter.config = {
       selectName: "select",
       /** Toggles the select functionality. */
-      selectEnabled: true,
+      selectEnabled: false,
       /** Name of the hover event. */
       hoverName: "hover",
       /** Toggles the hover functionality. */
       hoverEnabled: false,
       /** Color used for selection. */
-      selectionColor: new THREE.Color(1, 0, 0),
+      selectionColor: new THREE.Color(1, 1, 0),
       /** Color used for hover. */
       hoverColor: new THREE.Color(1, 1, 1),
       /** Whether to automatically highlight fragments on click. */
@@ -266,9 +242,6 @@ export class WorldViewer extends HTMLElement {
       if (model.hasProperties) {
         await indexer.process(model);
         classifier.byEntity(model);
-        const s = model.getFragmentMap([476237]);
-        console.log("Fragment Map for 476237", s);
-        // highlighter.highlightByID("select", s, false, true, undefined, undefined, true);
       }
 
       if (!model.isStreamed) {
