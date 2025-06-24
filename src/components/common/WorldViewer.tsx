@@ -18,7 +18,7 @@ import {
 } from "@thatopen/components-front";
 import { Manager, Viewport, Component, html, Grid } from "@thatopen/ui";
 import * as THREE from "three";
-import projectInformation from "./components/Panels/ProjectInformation";
+import projectInformation, { setModel } from "./components/Panels/ProjectInformation";
 import elementData from "./components/Panels/Selection";
 import settings from "./components/Panels/Settings";
 import load from "./components/Toolbars/Sections/Import";
@@ -35,7 +35,9 @@ export class WorldViewer extends HTMLElement {
     super();
   }
 
-
+  public fragmentIdMap = function () {
+    return new Map<string, Set<number>>();
+  }
   async connectedCallback() {
     await this.initializeWorldViewer();
   }
@@ -258,13 +260,15 @@ export class WorldViewer extends HTMLElement {
       tilesLoader.cancel = true;
       tilesLoader.culler.needsUpdate = true;
     });
-    let fragmentModel = null;
+
+
     fragments.onFragmentsLoaded.add(async (model) => {
       if (model.hasProperties) {
         await indexer.process(model);
         classifier.byEntity(model);
-        fragmentModel = model;
-
+        const s = model.getFragmentMap([476237]);
+        console.log("Fragment Map for 476237", s);
+        // highlighter.highlightByID("select", s, false, true, undefined, undefined, true);
       }
 
       if (!model.isStreamed) {
@@ -292,7 +296,7 @@ export class WorldViewer extends HTMLElement {
       }
     });
 
-    const projectInformationPanel = await projectInformation(components, isDebugMode, world, highlighter, fragmentModel);
+    const projectInformationPanel = await projectInformation(components, isDebugMode, world, highlighter);
     const elementDataPanel = elementData(components, isDebugMode);
 
     const toolbar = Component.create(() => {
@@ -400,8 +404,8 @@ export class WorldViewer extends HTMLElement {
     };
 
     viewportGrid.layout = "main";
-    await loadIfc(components);
-
+    const model = await loadIfc(components);
+    setModel(model);
   }
 }
 
