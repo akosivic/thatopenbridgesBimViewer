@@ -9,6 +9,7 @@ import LoginButtonComponent from './components/LoginButtonComponent';
 import { useAuth } from './components/common/authentication';
 import { Navigate } from 'react-router-dom';
 import { JSX } from 'react';
+import { useTranslation } from 'react-i18next';
 
 // Styled component for the container
 const StyledBox = styled(Box)({
@@ -21,6 +22,7 @@ const StyledBox = styled(Box)({
 
 function App(): JSX.Element {
   const { isAuthenticated } = useAuth();
+  const { t } = useTranslation();
 
   if (isAuthenticated) {
     return <Navigate to="/worldviewer" />;
@@ -37,7 +39,7 @@ function App(): JSX.Element {
             cursor: 'default',
           }}
         >
-          BIM Manager
+          {t('bimManager')}
         </Typography>
         <Divider orientation="vertical" flexItem />
         <LoginButtonComponent />
