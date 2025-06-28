@@ -21,6 +21,7 @@
     "@thatopen/fragments": "^3.0.2",
     "@thatopen/ui": "^2.4.5",
     "@thatopen/ui-obc": "^2.4.3",
+    "i18next": "^23.10.1",
     "jszip": "^3.10.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

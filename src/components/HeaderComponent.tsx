@@ -1,8 +1,7 @@
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
-// import Button from '@mui/material/Button';
-import { Box, Button } from '@mui/material';
+import { Box, Button, MenuItem, Select } from '@mui/material';
 import SvgIcon from '@mui/material/SvgIcon';
 import Divider from '@mui/material/Divider';
 import { logout } from './common/Authentication';
@@ -10,7 +9,11 @@ import AuthGuard from './common/AuthGuard';
 import { useTranslation } from 'react-i18next';
 
 const HeaderComponent = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  
+  const handleLanguageChange = (event: React.ChangeEvent<{ value: unknown }>) => {
+    i18n.changeLanguage(event.target.value as string);
+  };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function BridgesIcon(props: any) {
     return (
@@ -40,12 +43,24 @@ const HeaderComponent = () => {
             cursor: 'default',
             marginLeft: '1em'
           }}>
-            BIM Manager
+            {t('bimManager')}
           </Typography>
         </Box>
-        <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'flex-end' }}>
-          {/* <LanguageSelector>
-          </LanguageSelector> */}
+        <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+          <Select
+            value={i18n.language}
+            onChange={handleLanguageChange as any}
+            size="small"
+            sx={{ 
+              color: 'white', 
+              mr: 2,
+              '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255, 255, 255, 0.5)' },
+              '& .MuiSvgIcon-root': { color: 'white' }
+            }}
+          >
+            <MenuItem value="en">English</MenuItem>
+            <MenuItem value="ja">日本語</MenuItem>
+          </Select>
           <AuthGuard>
             <Button color="inherit" onClick={handleLogOff}>
               {t('logout')}
