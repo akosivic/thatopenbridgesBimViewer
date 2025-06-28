@@ -1,46 +1,46 @@
-/**
- * Utility module for creating and managing loading overlays
- */
+let activeOverlay: HTMLElement | null = null;
 
-/**
- * Creates a loading overlay element with spinner and text
- * @param text Optional custom loading text (defaults to "Loading...")
- * @returns HTMLElement The created loading overlay element
- */
-export function createLoadingOverlay(text: string = 'Loading...'): HTMLElement {
+export function showLoadingOverlay(text: string = 'Loading...'): HTMLElement {
+  // If there's already an active overlay, update its text and return it
+  if (activeOverlay) {
+    updateLoadingText(text);
+    return activeOverlay;
+  }
+  
+  // Create new overlay
   const overlay = document.createElement('div');
   overlay.className = 'loading-overlay';
-
+  
   const spinner = document.createElement('div');
   spinner.className = 'loading-spinner';
-
+  
   const textElement = document.createElement('div');
   textElement.className = 'loading-text';
+  textElement.id = 'loading-text';
   textElement.textContent = text;
-
+  
   overlay.appendChild(spinner);
   overlay.appendChild(textElement);
-
-  return overlay;
-}
-
-/**
- * Shows a loading overlay on the page
- * @param text Optional custom loading text
- * @returns The created overlay element
- */
-export function showLoadingOverlay(text?: string): HTMLElement {
-  const overlay = createLoadingOverlay(text);
   document.body.appendChild(overlay);
+  
+  activeOverlay = overlay;
   return overlay;
 }
 
-/**
- * Removes a loading overlay from the page
- * @param overlay The overlay element to remove
- */
+export function updateLoadingText(text: string): void {
+  if (activeOverlay) {
+    const textElement = activeOverlay.querySelector('#loading-text');
+    if (textElement) {
+      textElement.textContent = text;
+    }
+  }
+}
+
 export function hideLoadingOverlay(overlay: HTMLElement): void {
   if (overlay && overlay.parentNode) {
     document.body.removeChild(overlay);
+    if (activeOverlay === overlay) {
+      activeOverlay = null;
+    }
   }
 }

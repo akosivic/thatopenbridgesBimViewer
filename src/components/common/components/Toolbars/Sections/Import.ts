@@ -5,6 +5,7 @@ import * as BUI from "@thatopen/ui";
 import * as CUI from "@thatopen/ui-obc";
 import * as FRAGS from "@thatopen/fragments";
 import Zip from "jszip";
+import { showLoadingOverlay, hideLoadingOverlay, updateLoadingText } from "../../../utils/LoadingOverlay";
 
 const input = document.createElement("input");
 const askForFile = (extension: string) => {
@@ -45,13 +46,17 @@ export default (components: OBC.Components) => {
   const fragments = components.get(OBC.FragmentsManager);
   const indexer = components.get(OBC.IfcRelationsIndexer);
 
-  const loadFragments = async () => {
+  const loadingOverlay = showLoadingOverlay('Loading...');
 
+  const loadFragments = async () => {
+    updateLoadingText('Loading Fragments...');
     try {
+      updateLoadingText('Select fragment file...');
       const fragmentsZip = await askForFile(".zip");
       if (!fragmentsZip) {
         return;
       }
+      updateLoadingText('Reading fragment file...');
       const zipBuffer = await fragmentsZip.arrayBuffer();
       const zip = new Zip();
       await zip.loadAsync(zipBuffer);
@@ -61,11 +66,13 @@ export default (components: OBC.Components) => {
         return;
       }
 
+      updateLoadingText('Extracting geometry data...');
       const geometry = await geometryBuffer.async("uint8array");
 
       let properties: FRAGS.IfcProperties | undefined;
       const propsFile = zip.file("properties.json");
       if (propsFile) {
+        updateLoadingText('Loading properties...');
         const json = await propsFile.async("string");
         properties = JSON.parse(json);
       }
@@ -73,10 +80,12 @@ export default (components: OBC.Components) => {
       let relationsMap: OBC.RelationsMap | undefined;
       const relationsMapFile = zip.file("relations-map.json");
       if (relationsMapFile) {
+        updateLoadingText('Loading relations...');
         const json = await relationsMapFile.async("string");
         relationsMap = indexer.getRelationsMapFromJSON(json);
       }
 
+      updateLoadingText('Rendering model...');
       await fragments.load(geometry, { properties, relationsMap });
     } catch (error) {
       console.error('Error loading fragments:', error);
@@ -111,12 +120,13 @@ export default (components: OBC.Components) => {
   };
 
   async function loadTiles() {
-
+    updateLoadingText('Loading Tiles...');
     try {
       let currentDirectory: any | null = null;
       const directoryInitialized = false;
 
       try {
+        updateLoadingText('Select tiles directory...');
         // @ts-ignore
         currentDirectory = await window.showDirectoryPicker();
       } catch (e) {
@@ -126,6 +136,7 @@ export default (components: OBC.Components) => {
       const geometryFilePattern = /-processed.json$/;
       const propertiesFilePattern = /-processed-properties.json$/;
 
+      updateLoadingText('Scanning directory for tiles...');
       let geometryData: any | undefined;
       let propertiesData: any | undefined;
 
@@ -148,6 +159,7 @@ export default (components: OBC.Components) => {
       }
 
       if (geometryData) {
+        updateLoadingText('Loading tile data...');
         await streamer.load(geometryData, false, propertiesData);
       }
     } catch (error) {
@@ -172,15 +184,18 @@ export default (components: OBC.Components) => {
 
 // Function to load the test IFC file from the API
 export async function loadIfc(components: OBC.Components) {
+  updateLoadingText('Loading IFC Model...');
   try {
     const apiUrl = '/api/streamIfc';
 
     // Load the IFC file directly using the IFC loader
     const ifcLoader = components.get(OBC.IfcLoader);
+    updateLoadingText('Fetching IFC file...');
     const file = await fetchFile(apiUrl);
     const arrayBuffer = await file.arrayBuffer();
 
     // Use the existing IFC loader to process the file
+    updateLoadingText('Processing IFC model...');
     const retval = await ifcLoader.load(new Uint8Array(arrayBuffer));
 
     return retval
