@@ -180,11 +180,6 @@ export default async (components: OBC.Components, isDebug: boolean, highlighter:
       `;
   }, dataPointState);
 
-  // Add a public method to update the model
-  (panel as any).updateModel = (newModel: any) => {
-    model = newModel;
-  };
-
   return [panel, updateState];
 };
 

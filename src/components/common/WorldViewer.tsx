@@ -11,6 +11,7 @@ import {
   IfcLoader,
   Cullers,
 } from "@thatopen/components";
+import { showLoadingOverlay, hideLoadingOverlay } from "./utils/LoadingOverlay";
 import {
   PostproductionRenderer,
   IfcStreamer,
@@ -43,6 +44,9 @@ export class WorldViewer extends HTMLElement {
   }
 
   private async initializeWorldViewer() {
+    // Show loading overlay immediately when app initializes
+    const loadingOverlay = showLoadingOverlay('Initializing viewer...');
+    
     // Check if debug mode is enabled via URL parameter
     const isDebugMode = window.location.search.includes('?debug') ||
       window.location.search.includes('&debug');
@@ -379,6 +383,9 @@ export class WorldViewer extends HTMLElement {
     viewportGrid.layout = "main";
     const model = await loadIfc(components);
     setModel(model);
+    
+    // Hide the initial loading overlay now that everything is initialized
+    hideLoadingOverlay(loadingOverlay);
   }
 }
 
