@@ -79,7 +79,8 @@ const dataPointMap = {
     { "729214": "Favorites.Light.TestRM.ST" },
     { "729427": "Favorites.Light.StockRM.ST" },
     { "729248": "Favorites.Light.Office.01.ST" },
-    { "729249": "Favorites.Light.ConfRM.01.ST" }
+    { "729249": "Favorites.Light.ConfRM.01.ST" },
+    { "729247": "Favorites.Light.ConfRM.01.ST" }
   ],
   "ER": [
     { "729279": "Favorites.Light.Lounge.01.ST" },

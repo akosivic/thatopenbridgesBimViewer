@@ -2,6 +2,7 @@ import * as OBC from "@thatopen/components";
 import * as OBF from "@thatopen/components-front";
 import * as BUI from "@thatopen/ui";
 import * as FRAGS from "@thatopen/fragments";
+import i18n from "../../../utils/i18n";
 
 type MeasureComponent =
   | OBF.EdgeMeasurement
@@ -151,13 +152,14 @@ export default (world: OBC.World, components: OBC.Components) => {
   };
 
   const dropDown = BUI.Component.create<BUI.Dropdown>(() => {
+    const t = (key: string) => i18n.t(key);
     return BUI.html`      
         <bim-dropdown id="measurement-dropdown" @change="${onToolChanged}">
-            <bim-option label="Edge"></bim-option>
-            <bim-option label="Face"></bim-option>
-            <bim-option label="Volume"></bim-option>
-            <bim-option label="Length"></bim-option>
-            <bim-option label="Area"></bim-option>
+            <bim-option label="${t('edge')}"></bim-option>
+            <bim-option label="${t('face')}"></bim-option>
+            <bim-option label="${t('volume')}"></bim-option>
+            <bim-option label="${t('length')}"></bim-option>
+            <bim-option label="${t('area')}"></bim-option>
         </bim-dropdown>       
     `;
   });
@@ -165,10 +167,11 @@ export default (world: OBC.World, components: OBC.Components) => {
   dropDown.value = ["Edge"];
 
   return BUI.Component.create<BUI.PanelSection>(() => {
+    const t = (key: string) => i18n.t(key);
     return BUI.html`
-      <bim-toolbar-section label="Measurements" icon="tdesign:measurement-1" style="pointer-events: auto">
-        <bim-checkbox id="measurement-checkbox" @change="${onEnabled}" label="Enabled" icon="material-symbols:fit-screen-rounded"></bim-checkbox>
-        <bim-button @click="${deleteAll}" label="Delete all" icon="material-symbols:fit-screen-rounded"></bim-button>        
+      <bim-toolbar-section label="${t('measurements')}" icon="tdesign:measurement-1" style="pointer-events: auto">
+        <bim-checkbox id="measurement-checkbox" @change="${onEnabled}" label="${t('enabled')}" icon="material-symbols:fit-screen-rounded"></bim-checkbox>
+        <bim-button @click="${deleteAll}" label="${t('deleteAll')}" icon="material-symbols:fit-screen-rounded"></bim-button>        
         ${dropDown}    
       </bim-toolbar-section>
     `;

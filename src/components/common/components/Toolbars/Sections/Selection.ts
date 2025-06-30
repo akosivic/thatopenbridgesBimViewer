@@ -3,6 +3,7 @@ import * as OBC from "@thatopen/components";
 import * as OBF from "@thatopen/components-front";
 import * as BUI from "@thatopen/ui";
 import * as FRAGS from "@thatopen/fragments";
+import i18n from "../../../utils/i18n";
 
 export default (components: OBC.Components, world?: OBC.World) => {
   const highlighter = components.get(OBF.Highlighter);
@@ -158,12 +159,13 @@ export default (components: OBC.Components, world?: OBC.World) => {
   };
 
   return BUI.Component.create<BUI.PanelSection>(() => {
+    const t = (key: string) => i18n.t(key);
     return BUI.html`
-      <bim-toolbar-section label="Selection" icon="ph:cursor-fill">
-        <bim-button @click=${onShowAll} label="Show All" icon="tabler:eye-filled" tooltip-title="Show All" tooltip-text="Shows all elements in all models."></bim-button>
-        <bim-button @click=${onToggleVisibility} label="Toggle Visibility" icon="tabler:square-toggle" tooltip-title="Toggle Visibility" tooltip-text="From the current selection, hides visible elements and shows hidden elements."></bim-button>
-        <bim-button @click=${onIsolate} label="Isolate" icon="prime:filter-fill" tooltip-title="Isolate" tooltip-text="Isolates the current selection."></bim-button>
-        <bim-button @click=${onFocusSelection} label="Focus" icon="ri:focus-mode" tooltip-title="Focus" tooltip-text="Focus the camera to the current selection."></bim-button>
+      <bim-toolbar-section label="${t('selection')}" icon="ph:cursor-fill">
+        <bim-button @click=${onShowAll} label="${t('showAll')}" icon="tabler:eye-filled" tooltip-title="${t('showAll')}" tooltip-text="${t('showAllTooltip')}"></bim-button>
+        <bim-button @click=${onToggleVisibility} label="${t('toggleVisibility')}" icon="tabler:square-toggle" tooltip-title="${t('toggleVisibility')}" tooltip-text="${t('toggleVisibilityTooltip')}"></bim-button>
+        <bim-button @click=${onIsolate} label="${t('isolate')}" icon="prime:filter-fill" tooltip-title="${t('isolate')}" tooltip-text="${t('isolateTooltip')}"></bim-button>
+        <bim-button @click=${onFocusSelection} label="${t('focus')}" icon="ri:focus-mode" tooltip-title="${t('focus')}" tooltip-text="${t('focusTooltip')}"></bim-button>
       </bim-toolbar-section> 
     `;
   });

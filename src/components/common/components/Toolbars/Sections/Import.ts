@@ -6,6 +6,7 @@ import * as CUI from "@thatopen/ui-obc";
 import * as FRAGS from "@thatopen/fragments";
 import Zip from "jszip";
 import { showLoadingOverlay, hideLoadingOverlay, updateLoadingText } from "../../../utils/LoadingOverlay";
+import i18n from "../../../utils/i18n";
 
 const input = document.createElement("input");
 const askForFile = (extension: string) => {
@@ -38,10 +39,9 @@ const fetchFile = async (url: string): Promise<File> => {
 
 export default (components: OBC.Components) => {
   const [loadBtn] = CUI.buttons.loadIfc({ components });
-  loadBtn.label = "IFC";
-  loadBtn.tooltipTitle = "Load IFC";
-  loadBtn.tooltipText =
-    "Loads an IFC file into the scene. The IFC gets automatically converted to Fragments.";
+  loadBtn.label = i18n.t('ifc');
+  loadBtn.tooltipTitle = i18n.t('loadIfc');
+  loadBtn.tooltipText = i18n.t('loadIfcTooltip');
 
   const fragments = components.get(OBC.FragmentsManager);
   const indexer = components.get(OBC.IfcRelationsIndexer);
@@ -168,15 +168,14 @@ export default (components: OBC.Components) => {
   }
 
   return BUI.Component.create<BUI.PanelSection>(() => {
+    const t = (key: string) => i18n.t(key);
     return BUI.html`
-      <bim-toolbar-section label="Import" icon="solar:import-bold">
+      <bim-toolbar-section label="${t('import')}" icon="solar:import-bold">
         ${loadBtn}
-        <bim-button @click=${loadFragments} label="Fragments" icon="fluent:puzzle-cube-piece-20-filled" tooltip-title="Load Fragments"
-          tooltip-text="Loads a pre-converted IFC from a Fragments file. Use this option if you want to avoid the conversion from IFC to Fragments."></bim-button>
-        <bim-button @click=${loadTiles} label="Tiles" icon="fe:tiled" tooltip-title="Load BIM Tiles"
-        tooltip-text="Loads a pre-converted IFC from a Tiles file to stream the model. Perfect for big models."></bim-button>
-        <bim-button @click=${loadIfc(components)} label="Load Default IFC" icon="mdi:bridge" tooltip-title="Load Test Bridge"
-        tooltip-text="Loads the default bridge IFC file from the API."></bim-button>
+        <bim-button @click=${loadFragments} label="${t('fragments')}" icon="fluent:puzzle-cube-piece-20-filled" tooltip-title="${t('loadFragments')}"
+          tooltip-text="${t('loadFragmentsTooltip')}"></bim-button>
+        <bim-button @click=${loadTiles} label="${t('tiles')}" icon="fe:tiled" tooltip-title="${t('loadTiles')}"
+        tooltip-text="${t('loadTilesTooltip')}"></bim-button>
       </bim-toolbar-section>
     `;
   });
