@@ -2,6 +2,7 @@ import * as OBC from "@thatopen/components";
 import * as OBF from "@thatopen/components-front";
 import * as BUI from "@thatopen/ui";
 import * as FRAGS from "@thatopen/fragments";
+import i18n from "../../utils/i18n";
 
 interface GroupingsUIState {
   components: OBC.Components;
@@ -54,7 +55,7 @@ export default (state: GroupingsUIState) => {
       return BUI.html`
       <div style=" display: flex; justify-content: space-between; flex: 1; align-items: center;">
         <bim-label>${value}</bim-label>
-        <bim-button @click=${onDeleteGroup} style="flex: 0" icon="majesticons:delete-bin"></bim-button>
+        <bim-button @click=${onDeleteGroup} style="flex: 0" icon="majesticons:delete-bin" title="${i18n.t('delete')}"></bim-button>
       </div> 
       `;
     },
@@ -95,11 +96,18 @@ export default (state: GroupingsUIState) => {
     };
   });
 
-  return BUI.Component.create<BUI.Table, GroupingsUIState>(
+  const [tableComponent, updateTable] = BUI.Component.create<BUI.Table, GroupingsUIState>(
     (state: GroupingsUIState) => {
       table.data = computeTableData(state.components);
       return BUI.html`${table}`;
     },
     state,
   );
+
+  // Listen for language changes
+  i18n.on('languageChanged', () => {
+    updateTable(state);
+  });
+
+  return tableComponent;
 };

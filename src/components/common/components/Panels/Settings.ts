@@ -1,6 +1,7 @@
 import * as BUI from "@thatopen/ui";
 import * as CUI from "@thatopen/ui-obc";
 import * as OBC from "@thatopen/components";
+import i18n from "../../utils/i18n";
 
 export default (components: OBC.Components, isDebug: boolean) => {
   const html = document.querySelector("html")!;
@@ -19,34 +20,36 @@ export default (components: OBC.Components, isDebug: boolean) => {
     }
   };
 
-  const [worldsTable] = CUI.tables.worldsConfiguration({ components });
+  const worldsTable = CUI.tables.worldsConfiguration({ components });
 
   const onWorldConfigSearch = (e: Event) => {
     const input = e.target as BUI.TextInput;
     worldsTable.queryString = input.value;
   };
 
-  return BUI.Component.create<BUI.Panel>(() => {
+  const panel = BUI.Component.create<BUI.Panel>(() => {
+    const t = (key: string) => i18n.t(key);
+
     if (isDebug) {
       return BUI.html`
       <bim-panel>
-        <bim-panel-section label="Aspect" icon="mage:box-3d-fill">
+        <bim-panel-section label="${t('aspect')}" icon="mage:box-3d-fill">
           <bim-selector vertical @change=${onThemeChange}>
             <bim-option
               value="0"
-              label="System"
+              label="${t('system')}"
               icon="majesticons:laptop"
               .checked=${!html.classList.contains("bim-ui-dark") &&
         !html.classList.contains("bim-ui-light")
         }>
             </bim-option>
-            <bim-option value="1" label="Dark" icon="solar:moon-bold" .checked=${html.classList.contains("bim-ui-dark")}></bim-option>
-            <bim-option value="2" label="Light" icon="solar:sun-bold" .checked=${html.classList.contains("bim-ui-light")}></bim-option>
+            <bim-option value="1" label="${t('dark')}" icon="solar:moon-bold" .checked=${html.classList.contains("bim-ui-dark")}></bim-option>
+            <bim-option value="2" label="${t('light')}" icon="solar:sun-bold" .checked=${html.classList.contains("bim-ui-light")}></bim-option>
           </bim-selector>
         </bim-panel-section>
-        <bim-panel-section label="Worlds" icon="tabler:world">
+        <bim-panel-section label="${t('worlds')}" icon="tabler:world">
           <div style="display: flex; gap: 0.375rem;">
-            <bim-text-input @input=${onWorldConfigSearch} vertical placeholder="Search..." debounce="200"></bim-text-input>
+            <bim-text-input @input=${onWorldConfigSearch} vertical placeholder="${t('search')}" debounce="200"></bim-text-input>
             <bim-button style="flex: 0;" @click=${() => (worldsTable.expanded = !worldsTable.expanded)} icon="eva:expand-fill"></bim-button>
           </div>
           ${worldsTable}
@@ -57,22 +60,29 @@ export default (components: OBC.Components, isDebug: boolean) => {
     else {
       return BUI.html`
       <bim-panel>
-        <bim-panel-section label="Aspect" icon="mage:box-3d-fill">
+        <bim-panel-section label="${t('aspect')}" icon="mage:box-3d-fill">
           <bim-selector vertical @change=${onThemeChange}>
             <bim-option
               value="0"
-              label="System"
+              label="${t('system')}"
               icon="majesticons:laptop"
               .checked=${!html.classList.contains("bim-ui-dark") &&
         !html.classList.contains("bim-ui-light")
         }>
             </bim-option>
-            <bim-option value="1" label="Dark" icon="solar:moon-bold" .checked=${html.classList.contains("bim-ui-dark")}></bim-option>
-            <bim-option value="2" label="Light" icon="solar:sun-bold" .checked=${html.classList.contains("bim-ui-light")}></bim-option>
+            <bim-option value="1" label="${t('dark')}" icon="solar:moon-bold" .checked=${html.classList.contains("bim-ui-dark")}></bim-option>
+            <bim-option value="2" label="${t('light')}" icon="solar:sun-bold" .checked=${html.classList.contains("bim-ui-light")}></bim-option>
           </bim-selector>
         </bim-panel-section>
       </bim-panel> 
     `;
     }
   });
+
+  // // Listen for language changes
+  // i18n.on('languageChanged', () => {
+  //   updatePanel();
+  // });
+
+  return panel;
 };

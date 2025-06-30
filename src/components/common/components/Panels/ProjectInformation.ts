@@ -4,6 +4,7 @@ import * as CUI from "@thatopen/ui-obc";
 import groupings from "./Sections/Groupings";
 import { Highlighter } from "@thatopen/components-front";
 import { FragmentsGroup } from "@thatopen/fragments";
+import i18n from "../../utils/i18n";
 
 interface DataPointState {
   keys: string[];
@@ -149,7 +150,7 @@ export default async (components: OBC.Components, isDebug: boolean, highlighter:
           style="${buttonStyle}"
           @click=${() => updateDataPoint(key)}
           icon="solar:lamp-bold"
-          label="${key + (isActive ? " (On)" : " (Off)")}">
+          label="${key + (isActive ? " (" + i18n.t('on') + ")" : " (" + i18n.t('off') + ")")}">
         </bim-button>
       `;
     });
@@ -157,23 +158,32 @@ export default async (components: OBC.Components, isDebug: boolean, highlighter:
 
   await renderDataPointButtons();
 
+  // Create a function to update the panel when language changes
+  const updatePanelOnLanguageChange = () => {
+    updateState({ ...dataPointState });
+  };
+
+  // Listen for language changes
+  i18n.on('languageChanged', updatePanelOnLanguageChange);
+
   const [panel, updateState] = BUI.Component.create<HTMLElement, DataPointState>((dpState) => {
     const isVisible = !isDebug ? "display:none;" : "display:block;";
+    const t = (key: string) => i18n.t(key);
     return BUI.html`
         <bim-panel>
-          <bim-panel-section label="Loaded Models" icon="mage:box-3d-fill"  style="${isVisible}">
+          <bim-panel-section label="${t('loadedModels')}" icon="mage:box-3d-fill"  style="${isVisible}">
             ${modelsList}
           </bim-panel-section>
-          <bim-panel-section label="Spatial Structures" icon="ph:tree-structure-fill" style="${isVisible}">
+          <bim-panel-section label="${t('spatialStructures')}" icon="ph:tree-structure-fill" style="${isVisible}">
             <div style="display: flex; gap: 0.375rem;">
-              <bim-text-input @input=${search} vertical placeholder="Search..." debounce="200"></bim-text-input>
+              <bim-text-input @input=${search} vertical placeholder="${t('search')}" debounce="200"></bim-text-input>
               <bim-button style="flex: 0;" @click=${() => (relationsTree.expanded = !relationsTree.expanded)} icon="eva:expand-fill"></bim-button>
               <bim-button style="flex: 0;" @click=${() => getByQuery("")} icon="solar:refresh-bold"></bim-button>
             </div>
             ${relationsTree}
           </bim-panel-section>
           ${groupings(components, isDebug)}
-          <bim-panel-section label="Lights" icon="solar:lamp-bold">
+          <bim-panel-section label="${t('lights')}" icon="solar:lamp-bold">
             ${dpState.buttons}
           </bim-panel-section>
         </bim-panel>
