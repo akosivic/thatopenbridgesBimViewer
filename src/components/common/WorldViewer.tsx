@@ -46,7 +46,7 @@ export class WorldViewer extends HTMLElement {
   private async initializeWorldViewer() {
     // Show loading overlay immediately when app initializes
     const loadingOverlay = showLoadingOverlay('Initializing...');
-    
+
     // Check if debug mode is enabled via URL parameter
     const isDebugMode = window.location.search.includes('?debug') ||
       window.location.search.includes('&debug');
@@ -81,13 +81,26 @@ export class WorldViewer extends HTMLElement {
     world.camera = new OrthoPerspectiveCamera(components);
 
     // Set initial camera position and rotation for horizontal view
-    world.camera.controls.setPosition(0, 0.50, 5); // Set initial position (x, y, z) - y is eye level
+    const eyeLevel = 1.6; // Eye level at 1600mm (1.6m)
+
+    // Function to maintain eye level
+    const maintainEyeLevel = () => {
+      const position = world.camera.controls.getPosition(new THREE.Vector3());
+      if (position.y !== eyeLevel) {
+        console.log('Correcting eye level from', position.y, 'to', eyeLevel);
+        world.camera.controls.setPosition(position.x, 0.50, position.z);
+      }
+    };
+
+    world.camera.controls.setPosition(0, eyeLevel, 5); // Set initial position (x, y, z) - y is eye level
     world.camera.controls.azimuthAngle = Math.PI / 2; // Set initial rotation to look forward horizontally
     world.camera.controls.polarAngle = Math.PI / 2; // Set polar angle to horizontal view
 
-    // Add walking mode camera controls with limited vertical freedom (10 degrees total)
-    world.camera.controls.maxPolarAngle = Math.PI / 2 + Math.PI / 36; // 5 degrees down
-    world.camera.controls.minPolarAngle = Math.PI / 2 - Math.PI / 36; // 5 degrees up
+    console.log('Initial camera position set:', world.camera.controls.getPosition(new THREE.Vector3()));
+
+    // Lock vertical movement completely
+    world.camera.controls.maxPolarAngle = Math.PI / 2; // Lock to horizontal view
+    world.camera.controls.minPolarAngle = Math.PI / 2; // Lock to horizontal view
 
     // Add keyboard controls for walking
     const moveSpeed = 2; // Speed of camera movement
@@ -128,7 +141,7 @@ export class WorldViewer extends HTMLElement {
           const position = world.camera.controls.getPosition(new THREE.Vector3());
           position.x += direction.x * moveSpeed;
           position.z += direction.z * moveSpeed;
-          world.camera.controls.setPosition(position.x, position.y, position.z);
+          world.camera.controls.setPosition(position.x, position.y, position.z); // Maintain constant eye level
         };
 
         // Add animation loop for smooth movement
@@ -147,7 +160,7 @@ export class WorldViewer extends HTMLElement {
       }
     });
 
-    // Add mouse wheel event for zooming (same as 'w' key)
+    // Disable mouse wheel zooming
     viewport.addEventListener('wheel', (e) => {
       e.preventDefault();
       const direction = new THREE.Vector3();
@@ -169,7 +182,7 @@ export class WorldViewer extends HTMLElement {
       const position = world.camera.controls.getPosition(new THREE.Vector3());
       position.x += direction.x * moveSpeed * 0.5; // Reduced speed for smoother zooming
       position.z += direction.z * moveSpeed * 0.5;
-      world.camera.controls.setPosition(position.x, position.y, position.z);
+      world.camera.controls.setPosition(position.x, eyeLevel, position.z); // Maintain constant eye level
     }, { passive: false });
 
     const worldGrid = components.get(Grids).create(world);
@@ -240,8 +253,19 @@ export class WorldViewer extends HTMLElement {
       culler.needsUpdate = true;
       tilesLoader.cancel = true;
       tilesLoader.culler.needsUpdate = true;
+
+      // Force eye level to 1.6m
+      const position = world.camera.controls.getPosition(new THREE.Vector3());
+      world.camera.controls.setPosition(position.x, eyeLevel, position.z);
     });
 
+    // // Add event listener for camera changes to force eye level
+    // world.camera.controls.addEventListener("update", () => {
+    //   const position = world.camera.controls.getPosition(new THREE.Vector3());
+    //   if (position.y !== eyeLevel) {
+    //     world.camera.controls.setPosition(position.x, eyeLevel, position.z);
+    //   }
+    // });
 
     fragments.onFragmentsLoaded.add(async (model) => {
       if (model.hasProperties) {
@@ -260,7 +284,14 @@ export class WorldViewer extends HTMLElement {
 
       if (!model.isStreamed) {
         setTimeout(async () => {
+          console.log('Camera position before fit:', world.camera.controls.getPosition(new THREE.Vector3()));
           world.camera.fit(world.meshes, 0.8);
+          console.log('Camera position after fit:', world.camera.controls.getPosition(new THREE.Vector3()));
+
+          // Restore eye level after camera fit
+          const position = world.camera.controls.getPosition(new THREE.Vector3());
+          world.camera.controls.setPosition(position.x, eyeLevel, position.z);
+          console.log('Camera position after eye level correction:', world.camera.controls.getPosition(new THREE.Vector3()));
         }, 50);
       }
     });
@@ -385,7 +416,7 @@ export class WorldViewer extends HTMLElement {
     updateLoadingText('Loading IFC model...');
     const model = await loadIfc(components);
     setModel(model);
-    
+
     // Hide the loading overlay now that everything is initialized
     hideLoadingOverlay(loadingOverlay);
   }
