@@ -83,14 +83,6 @@ export class WorldViewer extends HTMLElement {
     // Set initial camera position and rotation for horizontal view
     const eyeLevel = 1.6; // Eye level at 1600mm (1.6m)
 
-    // Function to maintain eye level
-    const maintainEyeLevel = () => {
-      const position = world.camera.controls.getPosition(new THREE.Vector3());
-      if (position.y !== eyeLevel) {
-        console.log('Correcting eye level from', position.y, 'to', eyeLevel);
-        world.camera.controls.setPosition(position.x, 0.50, position.z);
-      }
-    };
 
     world.camera.controls.setPosition(0, eyeLevel, 5); // Set initial position (x, y, z) - y is eye level
     world.camera.controls.azimuthAngle = Math.PI / 2; // Set initial rotation to look forward horizontally
@@ -105,10 +97,10 @@ export class WorldViewer extends HTMLElement {
     // Add keyboard controls for walking
     const moveSpeed = 2; // Speed of camera movement
     const keys: Record<string, boolean> = {
-      w: false,
-      s: false,
-      a: false,
-      d: false
+      arrowup: false,
+      arrowdown: false,
+      arrowleft: false,
+      arrowright: false
     };
 
     window.addEventListener('keydown', (e) => {
@@ -120,19 +112,19 @@ export class WorldViewer extends HTMLElement {
           const direction = new THREE.Vector3();
           const rotation = world.camera.controls.azimuthAngle;
 
-          if (keys.w) {
+          if (keys.arrowup) {
             direction.z = -Math.cos(rotation);
             direction.x = -Math.sin(rotation);
           }
-          if (keys.s) {
+          if (keys.arrowdown) {
             direction.z = Math.cos(rotation);
             direction.x = Math.sin(rotation);
           }
-          if (keys.a) {
+          if (keys.arrowleft) {
             direction.x = -Math.cos(rotation);
             direction.z = Math.sin(rotation);
           }
-          if (keys.d) {
+          if (keys.arrowright) {
             direction.x = Math.cos(rotation);
             direction.z = -Math.sin(rotation);
           }
@@ -167,12 +159,12 @@ export class WorldViewer extends HTMLElement {
       const rotation = world.camera.controls.azimuthAngle;
 
       // Determine zoom direction based on wheel delta
-      // Negative delta means zoom in (forward movement like 'w' key)
+      // Negative delta means zoom in (forward movement like arrow up key)
       if (e.deltaY < 0) {
         direction.z = -Math.cos(rotation);
         direction.x = -Math.sin(rotation);
       }
-      // Positive delta means zoom out (backward movement like 's' key)
+      // Positive delta means zoom out (backward movement like arrow down key)
       else if (e.deltaY > 0) {
         direction.z = Math.cos(rotation);
         direction.x = Math.sin(rotation);
