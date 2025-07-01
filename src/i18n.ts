@@ -156,8 +156,8 @@ i18n
         translation: jaTranslations
       }
     },
-    lng: 'en',
-    fallbackLng: 'en',
+    lng: 'ja',
+    fallbackLng: 'ja',
     interpolation: {
       escapeValue: false
     }

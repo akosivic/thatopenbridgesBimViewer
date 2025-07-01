@@ -159,7 +159,8 @@ export default async (components: OBC.Components, isDebug: boolean, highlighter:
   await renderDataPointButtons();
 
   // Create a function to update the panel when language changes
-  const updatePanelOnLanguageChange = () => {
+  const updatePanelOnLanguageChange = async () => {
+    await renderDataPointButtons();
     updateState({ ...dataPointState });
   };
 

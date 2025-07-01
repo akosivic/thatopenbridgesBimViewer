@@ -6,7 +6,7 @@ import i18n from "../../../utils/i18n";
 
 export default (components: OBC.Components, isDebug: boolean) => {
   if (isDebug) {
-    const [customSelectionsTable, updateCustomSelections] = customSelections({
+    const customSelectionsTable = customSelections({
       components,
     });
     const highlighter = components.get(OBF.Highlighter);
@@ -54,7 +54,7 @@ export default (components: OBC.Components, isDebug: boolean) => {
         map: highlighter.selection.select,
         id: null,
       };
-      updateCustomSelections();
+      // updateCustomSelections();
       groupNameInput.value = "";
     };
 
@@ -71,7 +71,7 @@ export default (components: OBC.Components, isDebug: boolean) => {
     };
 
     // Create the component
-    const [panelSection, updatePanelSection] = BUI.Component.create<BUI.PanelSection>(() => {
+    const panelSection = BUI.Component.create<BUI.PanelSection>(() => {
       const t = (key: string) => i18n.t(key);
       return BUI.html`
       <bim-panel-section label="${t('customSelections')}" icon="clarity:blocks-group-solid">
@@ -86,10 +86,10 @@ export default (components: OBC.Components, isDebug: boolean) => {
     `;
     });
 
-    // Listen for language changes
-    i18n.on('languageChanged', () => {
-      updatePanelSection();
-    });
+    // // Listen for language changes
+    // i18n.on('languageChanged', () => {
+    //   updatePanelSection();
+    // });
 
     return panelSection;
   }

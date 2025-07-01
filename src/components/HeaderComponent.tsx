@@ -7,10 +7,15 @@ import Divider from '@mui/material/Divider';
 import { logout } from './common/Authentication';
 import AuthGuard from './common/AuthGuard';
 import { useTranslation } from 'react-i18next';
+import { useEffect } from 'react';
 
 const HeaderComponent = () => {
   const { t, i18n } = useTranslation();
-  
+
+  useEffect(() => {
+    i18n.changeLanguage('ja');
+  }, [i18n]);
+
   const handleLanguageChange = (event: React.ChangeEvent<{ value: unknown }>) => {
     i18n.changeLanguage(event.target.value as string);
   };
@@ -51,15 +56,15 @@ const HeaderComponent = () => {
             value={i18n.language}
             onChange={handleLanguageChange as any}
             size="small"
-            sx={{ 
-              color: 'white', 
+            sx={{
+              color: 'white',
               mr: 2,
               '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255, 255, 255, 0.5)' },
               '& .MuiSvgIcon-root': { color: 'white' }
             }}
           >
-            <MenuItem value="en">English</MenuItem>
             <MenuItem value="ja">日本語</MenuItem>
+            <MenuItem value="en">English</MenuItem>
           </Select>
           <AuthGuard>
             <Button color="inherit" onClick={handleLogOff}>
