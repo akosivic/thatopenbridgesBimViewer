@@ -11,6 +11,7 @@ import {
   IfcLoader,
   Cullers,
 } from "@thatopen/components";
+import i18n from "./utils/i18n";
 import { showLoadingOverlay, hideLoadingOverlay, updateLoadingText } from "./utils/LoadingOverlay";
 import {
   PostproductionRenderer,
@@ -335,13 +336,13 @@ export class WorldViewer extends HTMLElement {
       if (isDebugMode) {
         return html`
         <bim-tabs switchers-full>
-          <bim-tab name="project" label="Project" icon="ph:building-fill">
+          <bim-tab name="project" label="${i18n.t('project')}" icon="ph:building-fill">
             ${projectInformationPanel}
           </bim-tab>
-          <bim-tab name="settings" label="Settings" icon="solar:settings-bold">
+          <bim-tab name="settings" label="${i18n.t('settings')}" icon="solar:settings-bold">
             ${settings(components, isDebugMode)}
           </bim-tab>
-          <bim-tab name="help" label="Help" icon="material-symbols:help">
+          <bim-tab name="help" label="${i18n.t('help')}" icon="material-symbols:help">
             ${help}
           </bim-tab>
         </bim-tabs>
@@ -349,10 +350,10 @@ export class WorldViewer extends HTMLElement {
       }
       else {
         return html` <bim-tabs switchers-full>
-          <bim-tab name="project" label="Project" icon="ph:building-fill">
+          <bim-tab name="project" label="${i18n.t('project')}" icon="ph:building-fill">
             ${projectInformationPanel}
           </bim-tab>
-          <bim-tab name="settings" label="Settings" icon="solar:settings-bold">
+          <bim-tab name="settings" label="${i18n.t('settings')}" icon="solar:settings-bold">
             ${settings(components, isDebugMode)}
           </bim-tab>
         </bim-tabs>
