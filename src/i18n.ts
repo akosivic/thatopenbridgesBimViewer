@@ -6,6 +6,9 @@ const enTranslations = {
   logout: 'Logout',
   login: 'Login',
   bimManager: 'BIM Manager',
+  project: 'Project',
+  settings: 'Settings',
+  help: 'Help',
   // Selection toolbar
   selection: 'Selection',
   showAll: 'Show All',
@@ -78,6 +81,9 @@ const jaTranslations = {
   logout: 'ログアウト',
   login: 'ログイン',
   bimManager: 'BIMマネージャー',
+  project: 'プロジェクト',
+  settings: '設定',
+  help: 'ヘルプ',
   // Selection toolbar
   selection: '選択',
   showAll: 'すべて表示',
