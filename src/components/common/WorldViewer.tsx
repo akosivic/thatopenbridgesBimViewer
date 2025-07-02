@@ -31,7 +31,13 @@ import selection from "./components/Toolbars/Sections/Selection";
 import { AppManager } from "./components/bim-components";
 import { loadIfc } from "./components/Toolbars/Sections/Import";
 
+interface State {
+  update: [];
+}
 
+const dataState: State = {
+  update: [],
+};
 export class WorldViewer extends HTMLElement {
   constructor() {
     super();
@@ -46,7 +52,7 @@ export class WorldViewer extends HTMLElement {
 
   private async initializeWorldViewer() {
     // Show loading overlay immediately when app initializes
-    const loadingOverlay = showLoadingOverlay('Initializing...');
+    const loadingOverlay = showLoadingOverlay('initializing');
 
     // Check if debug mode is enabled via URL parameter
     const isDebugMode = window.location.search.includes('?debug') ||
@@ -207,7 +213,7 @@ export class WorldViewer extends HTMLElement {
     classifier.list.CustomSelections = {};
 
     const ifcLoader = components.get(IfcLoader);
-    updateLoadingText('Setting up IFC loader...');
+    updateLoadingText('settingUpIfcLoader');
     await ifcLoader.setup();
 
     const tilesLoader = components.get(IfcStreamer);
@@ -252,14 +258,6 @@ export class WorldViewer extends HTMLElement {
       world.camera.controls.setPosition(position.x, eyeLevel, position.z);
     });
 
-    // // Add event listener for camera changes to force eye level
-    // world.camera.controls.addEventListener("update", () => {
-    //   const position = world.camera.controls.getPosition(new THREE.Vector3());
-    //   if (position.y !== eyeLevel) {
-    //     world.camera.controls.setPosition(position.x, eyeLevel, position.z);
-    //   }
-    // });
-
     fragments.onFragmentsLoaded.add(async (model) => {
       if (model.hasProperties) {
         await indexer.process(model);
@@ -301,7 +299,7 @@ export class WorldViewer extends HTMLElement {
     const projectInformationPanel = await projectInformation(components, isDebugMode, highlighter);
     const elementDataPanel = elementData(components, isDebugMode);
 
-    const toolbar = Component.create(() => {
+    const [toolbar, updateToolbar] = Component.create<HTMLElement, State>((state) => {
       if (isDebugMode) {
         return html`
         <bim-tabs floating style="justify-self: center; border-radius: 0.5rem;padding:30px">
@@ -322,7 +320,7 @@ export class WorldViewer extends HTMLElement {
       else {
         return html`
         <bim-tabs floating style="justify-self: center; border-radius: 0.5rem;padding:30px">
-          <bim-tab label="Options">
+          <bim-tab label="${i18n.t('options')}">
             <bim-toolbar>
               ${camera(world)} ${selection(components, world)}
             </bim-toolbar>
@@ -330,9 +328,18 @@ export class WorldViewer extends HTMLElement {
         </bim-tabs>
       `;
       }
-    });
+    }, dataState);
 
-    const leftPanel = Component.create(() => {
+    // Create a function to update the panel when language changes
+    const updatePanelOnLanguageChange = () => {
+      updateLeftPanel();
+      updateToolbar();
+    };
+
+    // Add language change listener
+    i18n.on('languageChanged', updatePanelOnLanguageChange);
+
+    const [leftPanel, updateLeftPanel] = Component.create<HTMLElement, State>((state) => {
       if (isDebugMode) {
         return html`
         <bim-tabs switchers-full>
@@ -359,7 +366,7 @@ export class WorldViewer extends HTMLElement {
         </bim-tabs>
         `
       }
-    });
+    }, dataState);
 
     const app = document.getElementsByTagName("world-viewer")[0];
     const grid = document.createElement("bim-grid") as Grid;
