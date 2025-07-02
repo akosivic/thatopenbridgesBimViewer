@@ -1,9 +1,11 @@
+import i18n from './i18n';
+
 let activeOverlay: HTMLElement | null = null;
 
-export function showLoadingOverlay(text: string = 'Loading...'): HTMLElement {
+export function showLoadingOverlay(textKey: string = 'loading'): HTMLElement {
   // If there's already an active overlay, update its text and return it
   if (activeOverlay) {
-    updateLoadingText(text);
+    updateLoadingText(textKey);
     return activeOverlay;
   }
   
@@ -17,7 +19,7 @@ export function showLoadingOverlay(text: string = 'Loading...'): HTMLElement {
   const textElement = document.createElement('div');
   textElement.className = 'loading-text';
   textElement.id = 'loading-text';
-  textElement.textContent = text;
+  textElement.textContent = i18n.t(textKey, { defaultValue: textKey });
   
   overlay.appendChild(spinner);
   overlay.appendChild(textElement);
@@ -27,11 +29,11 @@ export function showLoadingOverlay(text: string = 'Loading...'): HTMLElement {
   return overlay;
 }
 
-export function updateLoadingText(text: string): void {
+export function updateLoadingText(textKey: string): void {
   if (activeOverlay) {
     const textElement = activeOverlay.querySelector('#loading-text');
     if (textElement) {
-      textElement.textContent = text;
+      textElement.textContent = i18n.t(textKey, { defaultValue: textKey });
     }
   }
 }

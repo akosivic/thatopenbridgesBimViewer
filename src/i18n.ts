@@ -3,6 +3,12 @@ import { initReactI18next } from 'react-i18next';
 
 // English translations
 const enTranslations = {
+  // Loading messages
+  loading: 'Loading...',
+  initializing: 'Initializing...',
+  settingUpIfcLoader: 'Setting up IFC loader...',
+
+  options: 'Options',
   logout: 'Logout',
   login: 'Login',
   bimManager: 'BIM Manager',
@@ -78,6 +84,13 @@ const enTranslations = {
 
 // Japanese translations
 const jaTranslations = {
+  // Loading messages
+  loading: '読み込み中...',
+  initializing: '初期化中...',
+  settingUpIfcLoader: 'IFCローダーを設定中...',
+
+  options: 'オプション',
+
   logout: 'ログアウト',
   login: 'ログイン',
   bimManager: 'BIMマネージャー',
