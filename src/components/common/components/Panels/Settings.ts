@@ -22,10 +22,10 @@ export default (components: OBC.Components, isDebug: boolean) => {
 
   const worldsTable = CUI.tables.worldsConfiguration({ components });
 
-  const onWorldConfigSearch = (e: Event) => {
-    const input = e.target as BUI.TextInput;
-    worldsTable.queryString = input.value;
-  };
+  // const onWorldConfigSearch = (e: Event) => {
+  //   const input = e.target as BUI.TextInput;
+  //   // worldsTable.queryString = input.value;
+  // };
 
   const panel = BUI.Component.create<BUI.Panel>(() => {
     const t = (key: string) => i18n.t(key);
@@ -48,10 +48,6 @@ export default (components: OBC.Components, isDebug: boolean) => {
           </bim-selector>
         </bim-panel-section>
         <bim-panel-section label="${t('worlds')}" icon="tabler:world">
-          <div style="display: flex; gap: 0.375rem;">
-            <bim-text-input @input=${onWorldConfigSearch} vertical placeholder="${t('search')}" debounce="200"></bim-text-input>
-            <bim-button style="flex: 0;" @click=${() => (worldsTable.expanded = !worldsTable.expanded)} icon="eva:expand-fill"></bim-button>
-          </div>
           ${worldsTable}
         </bim-panel-section>
       </bim-panel> 

@@ -5,7 +5,7 @@ import * as BUI from "@thatopen/ui";
 import * as CUI from "@thatopen/ui-obc";
 import * as FRAGS from "@thatopen/fragments";
 import Zip from "jszip";
-import { showLoadingOverlay, hideLoadingOverlay, updateLoadingText } from "../../../utils/LoadingOverlay";
+import { showLoadingOverlay, updateLoadingText } from "../../../utils/LoadingOverlay";
 import i18n from "../../../utils/i18n";
 
 const input = document.createElement("input");
@@ -45,8 +45,6 @@ export default (components: OBC.Components) => {
 
   const fragments = components.get(OBC.FragmentsManager);
   const indexer = components.get(OBC.IfcRelationsIndexer);
-
-  const loadingOverlay = showLoadingOverlay('Loading...');
 
   const loadFragments = async () => {
     updateLoadingText('Loading Fragments...');

@@ -225,12 +225,12 @@ export class WorldViewer extends HTMLElement {
     const highlighter = components.get(Highlighter);
     highlighter.setup({ world });
     highlighter.zoomToSelection = true;
-    
+
     // Define constants for ground level and eye elevation
     const groundLevelZ = 0.05; // 50mm in meters
     const eyeElevationZ = 1.6; // 1600mm in meters
     const distanceFromLight = 1.7; // 1700mm in meters
-    
+
     // Calculate zoom factor based on the distance from light to eye and ground
     // This creates a proportional zoom effect based on the viewing geometry
     const zoomDistance = distanceFromLight / (eyeElevationZ - groundLevelZ);
@@ -309,6 +309,7 @@ export class WorldViewer extends HTMLElement {
     const elementDataPanel = elementData(components, isDebugMode);
 
     const [toolbar, updateToolbar] = Component.create<HTMLElement, State>((state) => {
+      console.log('Updating toolbar with state:', state);
       if (isDebugMode) {
         return html`
         <bim-tabs floating style="justify-self: center; border-radius: 0.5rem;padding:30px">
@@ -349,6 +350,7 @@ export class WorldViewer extends HTMLElement {
     i18n.on('languageChanged', updatePanelOnLanguageChange);
 
     const [leftPanel, updateLeftPanel] = Component.create<HTMLElement, State>((state) => {
+      console.log('Updating left panel with state:', state);
       if (isDebugMode) {
         return html`
         <bim-tabs switchers-full>
