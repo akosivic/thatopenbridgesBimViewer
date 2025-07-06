@@ -225,7 +225,16 @@ export class WorldViewer extends HTMLElement {
     const highlighter = components.get(Highlighter);
     highlighter.setup({ world });
     highlighter.zoomToSelection = true;
-    highlighter.zoomFactor = 1;
+    
+    // Define constants for ground level and eye elevation
+    const groundLevelZ = 0.05; // 50mm in meters
+    const eyeElevationZ = 1.6; // 1600mm in meters
+    const distanceFromLight = 1.7; // 1700mm in meters
+    
+    // Calculate zoom factor based on the distance from light to eye and ground
+    // This creates a proportional zoom effect based on the viewing geometry
+    const zoomDistance = distanceFromLight / (eyeElevationZ - groundLevelZ);
+    highlighter.zoomFactor = zoomDistance;
 
     // Set up HighlighterConfig according to the type definition
     highlighter.config = {

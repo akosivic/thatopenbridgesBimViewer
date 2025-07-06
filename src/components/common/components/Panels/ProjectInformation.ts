@@ -191,7 +191,7 @@ export default async (components: OBC.Components, isDebug: boolean, highlighter:
       `;
   }, dataPointState);
 
-  return [panel, updateState];
+  return panel;
 };
 
 export const setModel = (newModel: FragmentsGroup | undefined) => {
