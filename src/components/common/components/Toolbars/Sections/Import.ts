@@ -5,7 +5,7 @@ import * as BUI from "@thatopen/ui";
 import * as CUI from "@thatopen/ui-obc";
 import * as FRAGS from "@thatopen/fragments";
 import Zip from "jszip";
-import { showLoadingOverlay, updateLoadingText } from "../../../utils/LoadingOverlay";
+import { updateLoadingText } from "../../../utils/LoadingOverlay";
 import i18n from "../../../utils/i18n";
 
 const input = document.createElement("input");
