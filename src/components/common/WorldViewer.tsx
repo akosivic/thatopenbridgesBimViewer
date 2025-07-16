@@ -97,12 +97,29 @@ export class WorldViewer extends HTMLElement {
 
     console.log('Initial camera position set:', world.camera.controls.getPosition(new THREE.Vector3()));
 
+    // Create camera position display
+    const positionDisplay = document.createElement('div');
+    positionDisplay.style.cssText = `
+      position: fixed;
+      bottom: 10px;
+      right: 10px;
+      background: rgba(0,0,0,0.7);
+      color: white;
+      padding: 10px;
+      font-family: monospace;
+      font-size: 12px;
+      border-radius: 4px;
+      z-index: 1000;
+    `;
+    document.body.appendChild(positionDisplay);
+
     // Lock vertical movement completely
     world.camera.controls.maxPolarAngle = Math.PI / 2; // Lock to horizontal view
     world.camera.controls.minPolarAngle = Math.PI / 2; // Lock to horizontal view
 
-    // Add keyboard controls for walking
-    const moveSpeed = 2; // Speed of camera movement
+    // FPS-style controls
+    const moveSpeed = 0.1; // Speed of camera movement per frame
+    const enableCollisionDetection = false; // Configurable collision detection (default: false)
     const keys: Record<string, boolean> = {
       arrowup: false,
       arrowdown: false,
@@ -110,45 +127,69 @@ export class WorldViewer extends HTMLElement {
       arrowright: false
     };
 
+    // Collision detection function
+    const checkCollision = (newPosition: THREE.Vector3): boolean => {
+      if (!enableCollisionDetection) return false;
+
+      const raycaster = new THREE.Raycaster();
+      const direction = new THREE.Vector3();
+      const currentPos = world.camera.controls.getPosition(new THREE.Vector3());
+
+      direction.subVectors(newPosition, currentPos).normalize();
+      raycaster.set(currentPos, direction);
+
+      const intersects = raycaster.intersectObjects(world.scene.three.children, true);
+      return intersects.length > 0 && intersects[0].distance < 0.5; // 0.5m collision buffer
+    };
+
+    // Continuous movement update function
+    const updateMovement = () => {
+      if (keys.arrowup || keys.arrowdown || keys.arrowleft || keys.arrowright) {
+        const currentPosition = world.camera.controls.getPosition(new THREE.Vector3());
+        const newPosition = currentPosition.clone();
+        const azimuth = world.camera.controls.azimuthAngle;
+
+        // Forward/backward movement
+        if (keys.arrowup) {
+          newPosition.x -= Math.sin(azimuth) * moveSpeed;
+          newPosition.z -= Math.cos(azimuth) * moveSpeed;
+        }
+        if (keys.arrowdown) {
+          newPosition.x += Math.sin(azimuth) * moveSpeed;
+          newPosition.z += Math.cos(azimuth) * moveSpeed;
+        }
+
+        // Left/right strafing (perpendicular to view direction)
+        if (keys.arrowleft) {
+          newPosition.x -= Math.cos(azimuth) * moveSpeed;
+          newPosition.z += Math.sin(azimuth) * moveSpeed;
+        }
+        if (keys.arrowright) {
+          newPosition.x += Math.cos(azimuth) * moveSpeed;
+          newPosition.z -= Math.sin(azimuth) * moveSpeed;
+        }
+
+        // Apply movement with optional collision check
+        if (!checkCollision(newPosition)) {
+          world.camera.controls.setPosition(newPosition.x, newPosition.y, newPosition.z);
+        }
+
+        // Update position display
+        const pos = world.camera.controls.getPosition(new THREE.Vector3());
+        const azimuthdisplay = world.camera.controls.azimuthAngle;
+        positionDisplay.innerHTML = `
+          Position: X: ${pos.x.toFixed(2)}, Y: ${pos.y.toFixed(2)}, Z: ${pos.z.toFixed(2)}<br>
+          Rotation: ${(azimuthdisplay * 180 / Math.PI).toFixed(1)}°
+        `;
+      }
+      requestAnimationFrame(updateMovement);
+    };
+    updateMovement();
+
     window.addEventListener('keydown', (e) => {
       const key = e.key.toLowerCase();
       if (key in keys) {
         keys[key] = true;
-        // Update camera position based on key presses
-        const updateCameraPosition = () => {
-          const direction = new THREE.Vector3();
-          const rotation = world.camera.controls.azimuthAngle;
-
-          if (keys.arrowup) {
-            direction.z = -Math.cos(rotation);
-            direction.x = -Math.sin(rotation);
-          }
-          if (keys.arrowdown) {
-            direction.z = Math.cos(rotation);
-            direction.x = Math.sin(rotation);
-          }
-          if (keys.arrowleft) {
-            direction.x = -Math.cos(rotation);
-            direction.z = Math.sin(rotation);
-          }
-          if (keys.arrowright) {
-            direction.x = Math.cos(rotation);
-            direction.z = -Math.sin(rotation);
-          }
-
-          direction.normalize();
-          const position = world.camera.controls.getPosition(new THREE.Vector3());
-          position.x += direction.x * moveSpeed;
-          position.z += direction.z * moveSpeed;
-          world.camera.controls.setPosition(position.x, position.y, position.z); // Maintain constant eye level
-        };
-
-        // Add animation loop for smooth movement
-        const animate = () => {
-          //requestAnimationFrame(animate);
-          updateCameraPosition();
-        };
-        animate();
       }
     });
 
