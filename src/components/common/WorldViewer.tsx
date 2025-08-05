@@ -89,12 +89,13 @@ export class WorldViewer extends HTMLElement {
     await world.camera.controls.setLookAt(68, 23, -8.5, 21.5, -5.5, 23);
     // Set initial camera position and rotation for horizontal view
     const eyeLevel = 1.6; // Eye level at 1600mm (1.6m)
+    const entranceXposition = -9.71; // Entrance X position
+    const entranceZposition = 0.63; // Entrance Z position
 
+    world.camera.controls.setPosition(entranceXposition, eyeLevel, entranceZposition); // Set initial position (x, y, z) - y is eye level
+    world.camera.controls.azimuthAngle = (273.1 * Math.PI) / 180; // Set initial rotation to 273.1 degrees
+    world.camera.controls.polarAngle = Math.PI / 2; // Set polar angle to horizontal view
 
-    world.camera.controls.setPosition(0, eyeLevel, 5); // Set initial position (x, y, z) - y is eye level
-    // world.camera.controls.azimuthAngle = Math.PI / 2; // Set initial rotation to look forward horizontally
-    // world.camera.controls.polarAngle = Math.PI / 2; // Set polar angle to horizontal view
-    world.camera.mode.id = "FirstPerson";
     console.log('Initial camera position set:', world.camera.controls.getPosition(new THREE.Vector3()));
 
     // Create camera position display
@@ -326,13 +327,13 @@ export class WorldViewer extends HTMLElement {
       if (!model.isStreamed) {
         setTimeout(async () => {
           console.log('Camera position before fit:', world.camera.controls.getPosition(new THREE.Vector3()));
-          world.camera.fit(world.meshes, 0.8);
-          console.log('Camera position after fit:', world.camera.controls.getPosition(new THREE.Vector3()));
+          // Skip automatic camera fitting to maintain entrance position
+          // world.camera.fit(world.meshes, 0.8);
+          console.log('Camera position maintained at entrance:', world.camera.controls.getPosition(new THREE.Vector3()));
 
-          // Restore eye level after camera fit
-          const position = world.camera.controls.getPosition(new THREE.Vector3());
-          world.camera.controls.setPosition(position.x, eyeLevel, position.z);
-          console.log('Camera position after eye level correction:', world.camera.controls.getPosition(new THREE.Vector3()));
+          // Ensure we maintain the entrance position and eye level
+          world.camera.controls.setPosition(entranceXposition, eyeLevel, entranceZposition);
+          console.log('Camera position after entrance restoration:', world.camera.controls.getPosition(new THREE.Vector3()));
         }, 50);
       }
     });
