@@ -91,7 +91,8 @@ export class WorldViewer extends HTMLElement {
     const eyeLevel = 1.6; // Eye level at 1600mm (1.6m)
     const entranceXposition = -9.71; // Entrance X position
     const entranceZposition = 0.63; // Entrance Z position
-
+    world.camera.mode.enabled = true;
+    world.camera.mode.id = "FirstPerson";
     world.camera.controls.setPosition(entranceXposition, eyeLevel, entranceZposition); // Set initial position (x, y, z) - y is eye level
     world.camera.controls.azimuthAngle = (273.1 * Math.PI) / 180; // Set initial rotation to 273.1 degrees
     world.camera.controls.polarAngle = Math.PI / 2; // Set polar angle to horizontal view
@@ -117,6 +118,14 @@ export class WorldViewer extends HTMLElement {
     // Lock vertical movement completely
     world.camera.controls.maxPolarAngle = Math.PI / 2; // Lock to horizontal view
     world.camera.controls.minPolarAngle = Math.PI / 2; // Lock to horizontal view
+
+    // Lock vertical position for mouse movement - use update event instead
+    world.camera.controls.addEventListener('update', () => {
+      const position = world.camera.controls.getPosition(new THREE.Vector3());
+      if (Math.abs(position.y - eyeLevel) > 0.001) { // Use small tolerance for floating point comparison
+        world.camera.controls.setPosition(position.x, eyeLevel, position.z);
+      }
+    });
 
     // FPS-style controls
     const moveSpeed = 0.1; // Speed of camera movement per frame
@@ -201,30 +210,30 @@ export class WorldViewer extends HTMLElement {
       }
     });
 
-    // Disable mouse wheel zooming
-    // viewport.addEventListener('wheel', (e) => {
-    //   e.preventDefault();
-    //   const direction = new THREE.Vector3();
-    //   const rotation = world.camera.controls.azimuthAngle;
+    //Disable mouse wheel zooming
+    viewport.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const direction = new THREE.Vector3();
+      const rotation = world.camera.controls.azimuthAngle;
 
-    //   // Determine zoom direction based on wheel delta
-    //   // Negative delta means zoom in (forward movement like arrow up key)
-    //   if (e.deltaY < 0) {
-    //     direction.z = -Math.cos(rotation);
-    //     direction.x = -Math.sin(rotation);
-    //   }
-    //   // Positive delta means zoom out (backward movement like arrow down key)
-    //   else if (e.deltaY > 0) {
-    //     direction.z = Math.cos(rotation);
-    //     direction.x = Math.sin(rotation);
-    //   }
+      // Determine zoom direction based on wheel delta
+      // Negative delta means zoom in (forward movement like arrow up key)
+      if (e.deltaY < 0) {
+        direction.z = -Math.cos(rotation);
+        direction.x = -Math.sin(rotation);
+      }
+      // Positive delta means zoom out (backward movement like arrow down key)
+      else if (e.deltaY > 0) {
+        direction.z = Math.cos(rotation);
+        direction.x = Math.sin(rotation);
+      }
 
-    //   direction.normalize();
-    //   const position = world.camera.controls.getPosition(new THREE.Vector3());
-    //   position.x += direction.x * moveSpeed * 0.5; // Reduced speed for smoother zooming
-    //   position.z += direction.z * moveSpeed * 0.5;
-    //   world.camera.controls.setPosition(position.x, eyeLevel, position.z); // Maintain constant eye level
-    // }, { passive: false });
+      direction.normalize();
+      const position = world.camera.controls.getPosition(new THREE.Vector3());
+      position.x += direction.x * moveSpeed * 0.5; // Reduced speed for smoother zooming
+      position.z += direction.z * moveSpeed * 0.5;
+      world.camera.controls.setPosition(position.x, eyeLevel, position.z); // Maintain constant eye level
+    }, { passive: false });
 
     const worldGrid = components.get(Grids).create(world);
     worldGrid.material.uniforms.uColor.value = new THREE.Color(0x424242);
