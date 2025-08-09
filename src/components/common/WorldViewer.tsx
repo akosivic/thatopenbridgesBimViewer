@@ -291,17 +291,17 @@ export class WorldViewer extends HTMLElement {
     highlighter.config = {
       selectName: "select",
       /** Toggles the select functionality. */
-      selectEnabled: false,
+      selectEnabled: isDebugMode, // Enable selection only in debug mode
       /** Name of the hover event. */
       hoverName: "hover",
       /** Toggles the hover functionality. */
-      hoverEnabled: false,
+      hoverEnabled: isDebugMode, // Enable hover only in debug mode
       /** Color used for selection. */
       selectionColor: new THREE.Color(1, 1, 0),
       /** Color used for hover. */
       hoverColor: new THREE.Color(1, 1, 1),
       /** Whether to automatically highlight fragments on click. */
-      autoHighlightOnClick: true,
+      autoHighlightOnClick: isDebugMode, // Enable auto highlight only in debug mode
       /** The world in which the highlighter operates. */
       world: world
     };
@@ -336,13 +336,17 @@ export class WorldViewer extends HTMLElement {
       if (!model.isStreamed) {
         setTimeout(async () => {
           console.log('Camera position before fit:', world.camera.controls.getPosition(new THREE.Vector3()));
-          // Skip automatic camera fitting to maintain entrance position
-          // world.camera.fit(world.meshes, 0.8);
-          console.log('Camera position maintained at entrance:', world.camera.controls.getPosition(new THREE.Vector3()));
-
-          // Ensure we maintain the entrance position and eye level
-          world.camera.controls.setPosition(entranceXposition, eyeLevel, entranceZposition);
-          console.log('Camera position after entrance restoration:', world.camera.controls.getPosition(new THREE.Vector3()));
+          
+          // Only fit model when NOT in debug mode
+          if (!isDebugMode) {
+            world.camera.fit(world.meshes, 0.8);
+            console.log('Camera fitted to model (non-debug mode)');
+          } else {
+            console.log('Camera position maintained at entrance (debug mode)');
+            // Ensure we maintain the entrance position and eye level in debug mode
+            world.camera.controls.setPosition(entranceXposition, eyeLevel, entranceZposition);
+            console.log('Camera position after entrance restoration:', world.camera.controls.getPosition(new THREE.Vector3()));
+          }
         }, 50);
       }
     });
