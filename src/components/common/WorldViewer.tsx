@@ -86,15 +86,14 @@ export class WorldViewer extends HTMLElement {
     const { postproduction } = world.renderer;
 
     world.camera = new OrthoPerspectiveCamera(components);
-    await world.camera.controls.setLookAt(68, 23, -8.5, 21.5, -5.5, 23);
+
     // Set initial camera position and rotation for horizontal view
     const eyeLevel = 1.6; // Eye level at 1600mm (1.6m)
     const entranceXposition = -9.71; // Entrance X position
     const entranceZposition = 0.63; // Entrance Z position
-    world.camera.mode.enabled = true;
-    world.camera.mode.id = "FirstPerson";
+
     world.camera.controls.setPosition(entranceXposition, eyeLevel, entranceZposition); // Set initial position (x, y, z) - y is eye level
-    world.camera.controls.azimuthAngle = (273.1 * Math.PI) / 180; // Set initial rotation to 273.1 degrees
+    world.camera.controls.lookInDirectionOf(entranceXposition, eyeLevel, entranceZposition, true); // Look north (positive Z direction)
     world.camera.controls.polarAngle = Math.PI / 2; // Set polar angle to horizontal view
 
     console.log('Initial camera position set:', world.camera.controls.getPosition(new THREE.Vector3()));
@@ -118,14 +117,6 @@ export class WorldViewer extends HTMLElement {
     // Lock vertical movement completely
     world.camera.controls.maxPolarAngle = Math.PI / 2; // Lock to horizontal view
     world.camera.controls.minPolarAngle = Math.PI / 2; // Lock to horizontal view
-
-    // Lock vertical position for mouse movement - use update event instead
-    world.camera.controls.addEventListener('update', () => {
-      const position = world.camera.controls.getPosition(new THREE.Vector3());
-      if (Math.abs(position.y - eyeLevel) > 0.001) { // Use small tolerance for floating point comparison
-        world.camera.controls.setPosition(position.x, eyeLevel, position.z);
-      }
-    });
 
     // FPS-style controls
     const moveSpeed = 0.1; // Speed of camera movement per frame
@@ -181,7 +172,29 @@ export class WorldViewer extends HTMLElement {
 
         // Apply movement with optional collision check
         if (!checkCollision(newPosition)) {
-          world.camera.controls.setPosition(newPosition.x, newPosition.y, newPosition.z);
+          // Prevent camera from being at forbidden positions
+          let finalX = newPosition.x;
+          let finalZ = newPosition.z;
+
+          // Forbidden position 1: X: -0.03, Z: 0.00
+          if (Math.abs(finalX - (-0.03)) < 0.03 && Math.abs(finalZ - 0.00) < 2.20) {
+            finalX = 1.43;
+            finalZ = -1.82;
+          }
+
+          // Forbidden position 2: X: 10.96, Z: -0.99
+          if (Math.abs(finalX - 10.96) < 0.02 && Math.abs(finalZ - (-0.99)) < 0.02) {
+            finalX = finalX < 10.96 ? 10.94 : 10.98;
+            finalZ = finalZ < -0.99 ? -1.01 : -0.97;
+          }
+
+          world.camera.controls.lookInDirectionOf(finalX, eyeLevel, finalZ, true); // Look north (positive Z direction)
+          world.camera.controls.setPosition(finalX, eyeLevel, finalZ); // Force eye level
+          // Reset zoom when moving with arrow keys
+          if (world.camera.controls.camera) {
+            world.camera.controls.camera.zoom = 1;
+            world.camera.controls.camera.updateProjectionMatrix();
+          }
         }
 
         // Update position display
@@ -195,6 +208,16 @@ export class WorldViewer extends HTMLElement {
       requestAnimationFrame(updateMovement);
     };
     updateMovement();
+
+    // Continuous eye level enforcement - runs every frame
+    const enforceEyeLevel = () => {
+      const currentPosition = world.camera.controls.getPosition(new THREE.Vector3());
+      if (Math.abs(currentPosition.y - eyeLevel) > 0.01) { // Only update if significantly different
+        world.camera.controls.setPosition(currentPosition.x, eyeLevel, currentPosition.z);
+      }
+      requestAnimationFrame(enforceEyeLevel);
+    };
+    enforceEyeLevel();
 
     window.addEventListener('keydown', (e) => {
       const key = e.key.toLowerCase();
@@ -210,7 +233,7 @@ export class WorldViewer extends HTMLElement {
       }
     });
 
-    //Disable mouse wheel zooming
+    // Disable mouse wheel zooming
     viewport.addEventListener('wheel', (e) => {
       e.preventDefault();
       const direction = new THREE.Vector3();
@@ -232,14 +255,48 @@ export class WorldViewer extends HTMLElement {
       const position = world.camera.controls.getPosition(new THREE.Vector3());
       position.x += direction.x * moveSpeed * 0.5; // Reduced speed for smoother zooming
       position.z += direction.z * moveSpeed * 0.5;
-      world.camera.controls.setPosition(position.x, eyeLevel, position.z); // Maintain constant eye level
+
+      // Prevent camera from being at forbidden positions
+      let finalX = position.x;
+      let finalZ = position.z;
+
+      // Forbidden position 1: X: -0.03, Z: 0.00
+      if (Math.abs(finalX - (-0.03)) < 0.01 && Math.abs(finalZ - 0.00) < 0.01) {
+        finalX = finalX < -0.03 ? -0.04 : -0.02;
+        finalZ = finalZ < 0 ? -0.01 : 0.01;
+      }
+
+      // Forbidden position 2: X: 1.48, Z: -4.30
+      if (Math.abs(finalX - 1.48) < 0.01 && Math.abs(finalZ - (-4.30)) < 0.01) {
+        finalX = finalX < 1.48 ? 1.47 : 1.49;
+        finalZ = finalZ < -4.30 ? -4.31 : -4.29;
+      }
+
+      // Forbidden position 3: X: 10.96, Z: -0.99
+      if (Math.abs(finalX - 10.96) < 0.01 && Math.abs(finalZ - (-0.99)) < 0.01) {
+        finalX = finalX < 10.96 ? 10.95 : 10.97;
+        finalZ = finalZ < -0.99 ? -1.00 : -0.98;
+      }
+
+      world.camera.controls.setPosition(finalX, eyeLevel, finalZ); // Maintain constant eye level
+
+      // Reset selection when using mouse wheel
+      if (highlighter) {
+        highlighter.clear("select");
+      }
+
+      // Reset zoom when scrolling with mouse wheel
+      if (world.camera.controls.camera) {
+        world.camera.controls.camera.zoom = 1;
+        world.camera.controls.camera.updateProjectionMatrix();
+      }
     }, { passive: false });
 
     const worldGrid = components.get(Grids).create(world);
     worldGrid.material.uniforms.uColor.value = new THREE.Color(0x424242);
     worldGrid.material.uniforms.uSize1.value = 2;
     worldGrid.material.uniforms.uSize2.value = 8;
-    worldGrid.fade = true;
+
     const resizeWorld = () => {
       world.renderer?.resize();
       world.camera.updateAspect();
@@ -285,23 +342,24 @@ export class WorldViewer extends HTMLElement {
     // Calculate zoom factor based on the distance from light to eye and ground
     // This creates a proportional zoom effect based on the viewing geometry
     const zoomDistance = distanceFromLight / (eyeElevationZ - groundLevelZ);
+    console.log('Zoom distance calculated:', zoomDistance);
     highlighter.zoomFactor = zoomDistance;
 
     // Set up HighlighterConfig according to the type definition
     highlighter.config = {
       selectName: "select",
       /** Toggles the select functionality. */
-      selectEnabled: isDebugMode, // Enable selection only in debug mode
+      selectEnabled: isDebugMode,
       /** Name of the hover event. */
       hoverName: "hover",
       /** Toggles the hover functionality. */
-      hoverEnabled: isDebugMode, // Enable hover only in debug mode
+      hoverEnabled: isDebugMode,
       /** Color used for selection. */
       selectionColor: new THREE.Color(1, 1, 0),
       /** Color used for hover. */
       hoverColor: new THREE.Color(1, 1, 1),
       /** Whether to automatically highlight fragments on click. */
-      autoHighlightOnClick: isDebugMode, // Enable auto highlight only in debug mode
+      autoHighlightOnClick: isDebugMode,
       /** The world in which the highlighter operates. */
       world: world
     };
@@ -336,17 +394,13 @@ export class WorldViewer extends HTMLElement {
       if (!model.isStreamed) {
         setTimeout(async () => {
           console.log('Camera position before fit:', world.camera.controls.getPosition(new THREE.Vector3()));
-          
-          // Only fit model when NOT in debug mode
-          if (!isDebugMode) {
-            world.camera.fit(world.meshes, 0.8);
-            console.log('Camera fitted to model (non-debug mode)');
-          } else {
-            console.log('Camera position maintained at entrance (debug mode)');
-            // Ensure we maintain the entrance position and eye level in debug mode
-            world.camera.controls.setPosition(entranceXposition, eyeLevel, entranceZposition);
-            console.log('Camera position after entrance restoration:', world.camera.controls.getPosition(new THREE.Vector3()));
-          }
+          // Skip automatic camera fitting to maintain entrance position
+          // world.camera.fit(world.meshes, 0.8);
+          console.log('Camera position maintained at entrance:', world.camera.controls.getPosition(new THREE.Vector3()));
+
+          // Ensure we maintain the entrance position and eye level
+          world.camera.controls.setPosition(entranceXposition, eyeLevel, entranceZposition);
+          console.log('Camera position after entrance restoration:', world.camera.controls.getPosition(new THREE.Vector3()));
         }, 50);
       }
     });
@@ -387,7 +441,7 @@ export class WorldViewer extends HTMLElement {
         <bim-tabs floating style="justify-self: center; border-radius: 0.5rem;padding:30px">
           <bim-tab label="${i18n.t('options')}">
             <bim-toolbar>
-              ${camera(world)} ${selection(components, world)}
+              ${camera(world)} 
             </bim-toolbar>
           </bim-tab>
         </bim-tabs>
