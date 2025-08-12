@@ -137,15 +137,38 @@ export default async (components: OBC.Components, isDebug: boolean, highlighter:
     }
   };
 
-  // Render datapoint buttons
-  const renderDataPointButtons = async () => {
-    await getAllDataPointKeys();
-    dataPointState.buttons = dataPointState.keys.map((key) => {
-      const isActive = dataPointState.buttonStates[key] || false;
-      const buttonStyle = isActive
-        ? "flex: 0; background-color: #4CAF50;"
-        : "flex: 0; background-color: #f44336;";
-      return BUI.html`
+  const getDpsValues = async (): Promise<string[]> => {
+    try {
+      const response = await fetch("/api/getDpsValues");
+      console.log("Response from /api/getDpsValues:", response);
+      return response.json();
+      // if (!response.ok) throw new Error("Failed to fetch datapoint keys");
+      // const data: DataPointKeysResponse = await response.json();
+      // if (Array.isArray(data.keys)) {
+      //   dataPointState.keys = data.keys;
+      //   dataPointState.buttonStates = {};
+      //   data.keys.forEach((key) => {
+      //     dataPointState.buttonStates[key] = false;
+      //   });
+      //   keysFetched = true;
+      //   return data.keys;
+    // }
+    } catch (error) {
+    console.error("Error fetching datapoint keys:", error);
+  }
+  return [];
+};
+
+// Render datapoint buttons
+const renderDataPointButtons = async () => {
+  await getAllDataPointKeys();
+  await getDpsValues();
+  dataPointState.buttons = dataPointState.keys.map((key) => {
+    const isActive = dataPointState.buttonStates[key] || false;
+    const buttonStyle = isActive
+      ? "flex: 0; background-color: #4CAF50;"
+      : "flex: 0; background-color: #f44336;";
+    return BUI.html`
         <bim-button
           style="${buttonStyle}"
           @click=${() => updateDataPoint(key)}
@@ -153,24 +176,24 @@ export default async (components: OBC.Components, isDebug: boolean, highlighter:
           label="${key + (isActive ? " (" + i18n.t('on') + ")" : " (" + i18n.t('off') + ")")}">
         </bim-button>
       `;
-    });
-  };
+  });
+};
 
+await renderDataPointButtons();
+
+// Create a function to update the panel when language changes
+const updatePanelOnLanguageChange = async () => {
   await renderDataPointButtons();
+  updateState({ ...dataPointState });
+};
 
-  // Create a function to update the panel when language changes
-  const updatePanelOnLanguageChange = async () => {
-    await renderDataPointButtons();
-    updateState({ ...dataPointState });
-  };
+// Listen for language changes
+i18n.on('languageChanged', updatePanelOnLanguageChange);
 
-  // Listen for language changes
-  i18n.on('languageChanged', updatePanelOnLanguageChange);
-
-  const [panel, updateState] = BUI.Component.create<HTMLElement, DataPointState>((dpState) => {
-    const isVisible = !isDebug ? "display:none;" : "display:block;";
-    const t = (key: string) => i18n.t(key);
-    return BUI.html`
+const [panel, updateState] = BUI.Component.create<HTMLElement, DataPointState>((dpState) => {
+  const isVisible = !isDebug ? "display:none;" : "display:block;";
+  const t = (key: string) => i18n.t(key);
+  return BUI.html`
         <bim-panel>
           <bim-panel-section label="${t('loadedModels')}" icon="mage:box-3d-fill"  style="${isVisible}">
             ${modelsList}
@@ -189,9 +212,9 @@ export default async (components: OBC.Components, isDebug: boolean, highlighter:
           </bim-panel-section>
         </bim-panel>
       `;
-  }, dataPointState);
+}, dataPointState);
 
-  return panel;
+return panel;
 };
 
 export const setModel = (newModel: FragmentsGroup | undefined) => {

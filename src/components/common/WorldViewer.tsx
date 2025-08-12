@@ -87,16 +87,114 @@ export class WorldViewer extends HTMLElement {
 
     world.camera = new OrthoPerspectiveCamera(components);
 
-    // Set initial camera position and rotation for horizontal view
+    // Define model bounds and cardinal direction positions
     const eyeLevel = 1.6; // Eye level at 1600mm (1.6m)
-    const entranceXposition = -9.71; // Entrance X position
-    const entranceZposition = 0.63; // Entrance Z position
+    const modelCenterX = 5.5; // Approximate model center X
+    const modelCenterZ = -2.0; // Approximate model center Z
+    const viewDistance = 15.0; // Distance from model center (bigger than model)
 
-    world.camera.controls.setPosition(entranceXposition, eyeLevel, entranceZposition); // Set initial position (x, y, z) - y is eye level
-    world.camera.controls.lookInDirectionOf(entranceXposition, eyeLevel, entranceZposition, true); // Look north (positive Z direction)
+    // Cardinal direction viewpoints around the model
+    interface ViewPoint {
+      name: string;
+      x: number;
+      z: number;
+      lookAtX: number;
+      lookAtZ: number;
+      direction: string;
+    }
+
+    const cardinalPositions: ViewPoint[] = [
+      {
+        name: "North",
+        x: modelCenterX,
+        z: modelCenterZ + viewDistance, // North is positive Z
+        lookAtX: modelCenterX,
+        lookAtZ: modelCenterZ,
+        direction: "south" // Looking south towards model
+      },
+      {
+        name: "South",
+        x: modelCenterX,
+        z: modelCenterZ - viewDistance, // South is negative Z
+        lookAtX: modelCenterX,
+        lookAtZ: modelCenterZ,
+        direction: "north" // Looking north towards model
+      },
+      {
+        name: "East",
+        x: modelCenterX + viewDistance, // East is positive X
+        z: modelCenterZ,
+        lookAtX: modelCenterX,
+        lookAtZ: modelCenterZ,
+        direction: "west" // Looking west towards model
+      },
+      {
+        name: "West",
+        x: modelCenterX - viewDistance, // West is negative X
+        z: modelCenterZ,
+        lookAtX: modelCenterX,
+        lookAtZ: modelCenterZ,
+        direction: "east" // Looking east towards model
+      }
+    ];
+
+    // Set initial camera position to North viewpoint (looking south at model)
+    const initialPosition = cardinalPositions[0]; // North position
+    world.camera.controls.setPosition(initialPosition.x, eyeLevel, initialPosition.z);
+    world.camera.controls.lookInDirectionOf(initialPosition.lookAtX, eyeLevel, initialPosition.lookAtZ, true);
     world.camera.controls.polarAngle = Math.PI / 2; // Set polar angle to horizontal view
 
-    console.log('Initial camera position set:', world.camera.controls.getPosition(new THREE.Vector3()));
+    console.log('Initial camera position set to North viewpoint:', world.camera.controls.getPosition(new THREE.Vector3()));
+
+    // Function to find nearest cardinal position
+    const findNearestCardinalPosition = (currentX: number, currentZ: number): ViewPoint => {
+      let nearestPosition = cardinalPositions[0];
+      let minDistance = Number.MAX_VALUE;
+
+      for (const position of cardinalPositions) {
+        const dx = currentX - position.x;
+        const dz = currentZ - position.z;
+        const distance = dx * dx + dz * dz; // Squared distance for performance
+
+        if (distance < minDistance) {
+          minDistance = distance;
+          nearestPosition = position;
+        }
+      }
+
+      return nearestPosition;
+    };
+
+    // Function to smoothly move camera to cardinal position
+    const moveToCardinalPosition = (targetPosition: ViewPoint, smooth: boolean = true) => {
+      if (smooth) {
+        // Smooth transition to target position
+        const currentPos = world.camera.controls.getPosition(new THREE.Vector3());
+        const steps = 30; // Number of animation steps
+        let step = 0;
+
+        const animate = () => {
+          step++;
+          const progress = step / steps;
+          const easeProgress = 1 - Math.pow(1 - progress, 3); // Ease-out cubic
+
+          const x = currentPos.x + (targetPosition.x - currentPos.x) * easeProgress;
+          const z = currentPos.z + (targetPosition.z - currentPos.z) * easeProgress;
+
+          world.camera.controls.setPosition(x, eyeLevel, z);
+          world.camera.controls.lookInDirectionOf(targetPosition.lookAtX, eyeLevel, targetPosition.lookAtZ, true);
+
+          if (step < steps) {
+            requestAnimationFrame(animate);
+          }
+        };
+        animate();
+      } else {
+        // Instant movement
+        world.camera.controls.setPosition(targetPosition.x, eyeLevel, targetPosition.z);
+        world.camera.controls.lookInDirectionOf(targetPosition.lookAtX, eyeLevel, targetPosition.lookAtZ, true);
+      }
+    };
 
     // Create camera position display
     const positionDisplay = document.createElement('div');
@@ -118,7 +216,7 @@ export class WorldViewer extends HTMLElement {
     world.camera.controls.maxPolarAngle = Math.PI / 2; // Lock to horizontal view
     world.camera.controls.minPolarAngle = Math.PI / 2; // Lock to horizontal view
 
-    // FPS-style controls
+    // FPS-style controls with cardinal position navigation
     const moveSpeed = 0.1; // Speed of camera movement per frame
     const enableCollisionDetection = false; // Configurable collision detection (default: false)
     const keys: Record<string, boolean> = {
@@ -144,6 +242,7 @@ export class WorldViewer extends HTMLElement {
     };
 
     // Continuous movement update function
+    // Continuous movement update function with cardinal position navigation
     const updateMovement = () => {
       if (keys.arrowup || keys.arrowdown || keys.arrowleft || keys.arrowright) {
         const currentPosition = world.camera.controls.getPosition(new THREE.Vector3());
@@ -187,7 +286,17 @@ export class WorldViewer extends HTMLElement {
             finalX = finalX < 10.96 ? 10.94 : 10.98;
             finalZ = finalZ < -0.99 ? -1.01 : -0.97;
           }
-
+          // Reset zoom when moving with arrow keys
+          if (world.camera.controls.camera) {
+            if (highlighter.zoomFactor !== 1.5) {
+              const nearestPosition = findNearestCardinalPosition(currentPosition.x, currentPosition.z);
+              if (nearestPosition) {
+                moveToCardinalPosition(nearestPosition, true);
+              }
+            }
+            world.camera.controls.camera.zoom = 1;
+            world.camera.controls.camera.updateProjectionMatrix();
+          }
           world.camera.controls.lookInDirectionOf(finalX, eyeLevel, finalZ, true); // Look north (positive Z direction)
           world.camera.controls.setPosition(finalX, eyeLevel, finalZ); // Force eye level
           // Reset zoom when moving with arrow keys
@@ -233,52 +342,30 @@ export class WorldViewer extends HTMLElement {
       }
     });
 
-    // Disable mouse wheel zooming
+    // Disable mouse wheel zooming and implement cardinal position navigation
     viewport.addEventListener('wheel', (e) => {
       e.preventDefault();
-      const direction = new THREE.Vector3();
-      const rotation = world.camera.controls.azimuthAngle;
 
-      // Determine zoom direction based on wheel delta
-      // Negative delta means zoom in (forward movement like arrow up key)
+      const currentPosition = world.camera.controls.getPosition(new THREE.Vector3());
+
+      // Determine direction for cardinal position selection
+      // Negative delta means zoom in (forward movement), positive means zoom out (backward)
       if (e.deltaY < 0) {
-        direction.z = -Math.cos(rotation);
-        direction.x = -Math.sin(rotation);
+        // Forward movement - find closest cardinal position in forward direction
+        const nearestPosition = findNearestCardinalPosition(currentPosition.x, currentPosition.z);
+        if (nearestPosition) {
+          moveToCardinalPosition(nearestPosition, true);
+        }
+      } else if (e.deltaY > 0) {
+        // Backward movement - cycle to next cardinal position
+        const nearestPosition = findNearestCardinalPosition(currentPosition.x, currentPosition.z);
+        if (nearestPosition) {
+          // Find next cardinal position in cycle
+          const currentIndex = cardinalPositions.findIndex(p => p.name === nearestPosition.name);
+          const nextIndex = (currentIndex + 1) % cardinalPositions.length;
+          moveToCardinalPosition(cardinalPositions[nextIndex], true);
+        }
       }
-      // Positive delta means zoom out (backward movement like arrow down key)
-      else if (e.deltaY > 0) {
-        direction.z = Math.cos(rotation);
-        direction.x = Math.sin(rotation);
-      }
-
-      direction.normalize();
-      const position = world.camera.controls.getPosition(new THREE.Vector3());
-      position.x += direction.x * moveSpeed * 0.5; // Reduced speed for smoother zooming
-      position.z += direction.z * moveSpeed * 0.5;
-
-      // Prevent camera from being at forbidden positions
-      let finalX = position.x;
-      let finalZ = position.z;
-
-      // Forbidden position 1: X: -0.03, Z: 0.00
-      if (Math.abs(finalX - (-0.03)) < 0.01 && Math.abs(finalZ - 0.00) < 0.01) {
-        finalX = finalX < -0.03 ? -0.04 : -0.02;
-        finalZ = finalZ < 0 ? -0.01 : 0.01;
-      }
-
-      // Forbidden position 2: X: 1.48, Z: -4.30
-      if (Math.abs(finalX - 1.48) < 0.01 && Math.abs(finalZ - (-4.30)) < 0.01) {
-        finalX = finalX < 1.48 ? 1.47 : 1.49;
-        finalZ = finalZ < -4.30 ? -4.31 : -4.29;
-      }
-
-      // Forbidden position 3: X: 10.96, Z: -0.99
-      if (Math.abs(finalX - 10.96) < 0.01 && Math.abs(finalZ - (-0.99)) < 0.01) {
-        finalX = finalX < 10.96 ? 10.95 : 10.97;
-        finalZ = finalZ < -0.99 ? -1.00 : -0.98;
-      }
-
-      world.camera.controls.setPosition(finalX, eyeLevel, finalZ); // Maintain constant eye level
 
       // Reset selection when using mouse wheel
       if (highlighter) {
@@ -338,7 +425,7 @@ export class WorldViewer extends HTMLElement {
     const groundLevelZ = 0.05; // 50mm in meters
     const eyeElevationZ = 1.6; // 1600mm in meters
     const distanceFromLight = 1.7; // 1700mm in meters
-
+    console.log('Zoom distance:', highlighter.zoomFactor);
     // Calculate zoom factor based on the distance from light to eye and ground
     // This creates a proportional zoom effect based on the viewing geometry
     const zoomDistance = distanceFromLight / (eyeElevationZ - groundLevelZ);
@@ -394,13 +481,15 @@ export class WorldViewer extends HTMLElement {
       if (!model.isStreamed) {
         setTimeout(async () => {
           console.log('Camera position before fit:', world.camera.controls.getPosition(new THREE.Vector3()));
-          // Skip automatic camera fitting to maintain entrance position
+          // Skip automatic camera fitting to maintain cardinal position
           // world.camera.fit(world.meshes, 0.8);
-          console.log('Camera position maintained at entrance:', world.camera.controls.getPosition(new THREE.Vector3()));
+          console.log('Camera position maintained at cardinal position:', world.camera.controls.getPosition(new THREE.Vector3()));
 
-          // Ensure we maintain the entrance position and eye level
-          world.camera.controls.setPosition(entranceXposition, eyeLevel, entranceZposition);
-          console.log('Camera position after entrance restoration:', world.camera.controls.getPosition(new THREE.Vector3()));
+          // Ensure we maintain the North cardinal position and eye level
+          const northPosition = cardinalPositions[0]; // North viewpoint
+          world.camera.controls.setPosition(northPosition.x, eyeLevel, northPosition.z);
+          world.camera.controls.lookInDirectionOf(northPosition.lookAtX, eyeLevel, northPosition.lookAtZ, true);
+          console.log('Camera position after North cardinal restoration:', world.camera.controls.getPosition(new THREE.Vector3()));
         }, 50);
       }
     });
