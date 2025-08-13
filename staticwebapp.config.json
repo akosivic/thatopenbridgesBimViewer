@@ -61,17 +61,6 @@
         "owner",
         "reader"
       ]
-    },
-    {
-      "route": "/api/getDataPoint",
-      "methods": [
-        "GET"
-      ],
-      "allowedRoles": [
-        "contributor",
-        "owner",
-        "reader"
-      ]
     }
   ],
   "platform": {
