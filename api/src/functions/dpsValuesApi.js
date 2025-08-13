@@ -77,63 +77,6 @@ app.http('getDataPoint', {
           },
           body: JSON.stringify(dataPoint)
         };
-app.http('getDataPoint', {
-  methods: ['GET'],
-  authLevel: 'anonymous',
-  handler: async (request, context) => {
-    logMessage(context, 'getDataPoint function started');
-    
-    try {
-      // Parse the URL string to get searchParams
-      const url = new URL(request.url, `http://${request.headers.host || 'localhost'}`);
-      const key = url.searchParams.get('key');
-
-      if (!key) {
-        return {
-          status: 400,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-          },
-          body: JSON.stringify({ error: 'Missing key parameter' })
-        };
-      }
-
-      // Get the response from DPS API
-      const response = await GetDpsMapKeys(request, context);
-      
-      // Check if the API call was successful
-      if (response.status !== 200) {
-        return {
-          status: response.status,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-          },
-          body: JSON.stringify({ error: 'Failed to fetch data from DPS API' })
-        };
-      }
-
-      // Parse the response body to get the actual data
-      const data = JSON.parse(response.body);
-      
-      console.log('Parsed data:', data);
-      console.log('Looking for key:', key);
-      
-      // Check if the key exists in the data
-      if (data.hasOwnProperty(key)) {
-        const dataPoint = data[key];
-        console.log(`Data point found for key: ${key}`, dataPoint);
-        logMessage(context, `Data point found for key: ${key}`);
-
-        return {
-          status: 200,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-          },
-          body: JSON.stringify(dataPoint)
-        };
       } else {
         logMessage(context, `No data point found for key: ${key}`);
         console.log('Available keys:', Object.keys(data));
@@ -171,96 +114,7 @@ app.http('getDpValue', {
   authLevel: 'anonymous',
   handler: async (request, context) => {
     logMessage(context, 'GET single DP value request received');
-    
-    try {
-      // Parse the URL string to get searchParams
-      const urlObj = new URL(request.url, `http://${request.headers.host || 'localhost'}`);
-      const dp = urlObj.searchParams.get('dp');
-
-      if (!dp) {
-        return {
-          status: 400,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-          },
-          body: JSON.stringify({ error: 'Missing dp parameter' })
-        };
-      }
-
-      // Check if we're in Azure environment (where we can't reach private IPs)
-      const isAzureEnvironment = process.env.AZURE_FUNCTIONS_ENVIRONMENT || process.env.WEBSITE_SITE_NAME;
-      
-      if (isAzureEnvironment && targetHost.startsWith('192.168.')) {
-        logMessage(context, 'Azure environment detected with private IP, returning mock data');
-        // Return mock data for a single datapoint
-        return {
-          status: 200,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-          },
-          body: JSON.stringify({ [dp]: false })
-        };
-      }
-
-      // Create a custom path for the single datapoint request
-      const requestPath = `/api/GetDpValue?dp=${encodeURIComponent(dp)}`;
-
-      // Create a promise to handle the HTTP request
-      const response = await new Promise((resolve, reject) => {
-        const options = {
-          hostname: targetHost,
-          port: targetPort,
-          path: requestPath,
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json'
-          }
-        };
-
-        logMessage(context, `GET request to: http://${targetHost}:${targetPort}${requestPath}`);
-
-        const req = http.request(options, (res) => {
-          let data = '';
-
-          res.on('data', (chunk) => {
-            data += chunk;
-          });
-
-          res.on('end', () => {
-            logMessage(context, `Data received from DPS API for datapoint: ${dp}`);
-            resolve({
-              status: res.statusCode,
-              headers: {
-                'Content-Type': res.headers['content-type'] || 'application/json',
-                'Access-Control-Allow-Origin': '*'
-              },
-              body: data
-            });
-          });
-        });
-
-        req.on('error', (error) => {
-          logError(context, `Error connecting to DPS API:`, error);
-          reject(error);
-        });
-
-        req.end();
-      });
-
-      return response;
-    } catch (error) {
-      logError(context, `Error fetching DP value:`, error);
-      return {
-        status: 500,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        },
-        body: JSON.stringify({ error: `Error fetching DP value: ` + error.message })
-      };
-    }
+    return await getDpValue(request, context);
   }
 });
 
@@ -348,44 +202,10 @@ async function GetDpsMapKeys(request, context) {
   logMessage(context, 'DPS Values function started');
 
   try {
+
     const queryString = request.url.searchParams?.toString();
     const requestPath = queryString ? `${targetPath}?${queryString}` : targetPath;
     console.log('request', request);
-    
-    // Check if we're in Azure environment (where we can't reach private IPs)
-    const isAzureEnvironment = process.env.AZURE_FUNCTIONS_ENVIRONMENT || process.env.WEBSITE_SITE_NAME;
-    
-    if (isAzureEnvironment && targetHost.startsWith('192.168.')) {
-      logMessage(context, 'Azure environment detected with private IP, returning mock data');
-      // Return mock data for Azure deployment
-      const mockData = {
-        "O1": [
-          { "729149": "Favorites.Light.Lounge.01.ST" },
-          { "729153": "Favorites.Light.Lounge.02.ST" },
-          { "729154": "Favorites.Light.TestRM.ST" }
-        ],
-        "O2": [
-          { "729150": "Favorites.Light.Lounge.01.ST" },
-          { "729151": "Favorites.Light.Lounge.02.ST" },
-          { "729152": "Favorites.Light.TestRM.ST" }
-        ],
-        "O3": [
-          { "729310": "Favorites.Light.Lounge.01.ST" },
-          { "729311": "Favorites.Light.Lounge.02.ST" },
-          { "729312": "Favorites.Light.TestRM.ST" }
-        ]
-      };
-      
-      return {
-        status: 200,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        },
-        body: JSON.stringify(mockData)
-      };
-    }
-
     // Create a promise to handle the HTTP request
     const response = await new Promise((resolve, reject) => {
       const options = {
@@ -423,11 +243,6 @@ async function GetDpsMapKeys(request, context) {
       req.on('error', (error) => {
         logError(context, `Error connecting to DPS API:`, error);
         reject(error);
-      });
-
-      req.setTimeout(5000, () => {
-        req.destroy();
-        reject(new Error('Request timeout'));
       });
 
       req.end();
@@ -509,4 +324,85 @@ async function putDpsValues(request, context) {
 }
 
 
+
 // {"test":{"Favorites.Light.Lounge.01.ST":false,"Favorites.Light.Lounge.02.ST":false,"Favorites.Light.TestRM.ST":false,"Favorites.Light.StockRM.ST":false,"Favorites.Light.Office.01.ST":false,"Favorites.Light.Office.02.ST":false,"Favorites.Light.Office.03.ST":false,"Favorites.Light.Office.04.ST":false,"Favorites.Light.ConfRM.01.ST":false,"Favorites.Light.ConfRM.02.ST":false,"Favorites.Light.ConfRM.03.ST":false,"Favorites.Light.ConfRM.04.ST":false}}
+
+// Function to get a single datapoint value
+async function getDpValue(request, context) {
+  logMessage(context, 'Get single DP value function started');
+
+  try {
+    // Parse the URL string to get searchParams
+    const urlObj = new URL(request.url, `http://${request.headers.host || 'localhost'}`);
+    const dp = urlObj.searchParams.get('dp');
+
+    if (!dp) {
+      return {
+        status: 400,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({ error: 'Missing dp parameter' })
+      };
+    }
+
+    // Create a custom path for the single datapoint request
+    const requestPath = `/api/GetDpValue?dp=${encodeURIComponent(dp)}`;
+
+    // Create a promise to handle the HTTP request
+    const response = await new Promise((resolve, reject) => {
+      const options = {
+        hostname: targetHost,
+        port: targetPort,
+        path: requestPath,
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json'
+        }
+      };
+
+      logMessage(context, `GET request to: http://${targetHost}:${targetPort}${requestPath}`);
+
+      const req = http.request(options, (res) => {
+        let data = '';
+
+        res.on('data', (chunk) => {
+          data += chunk;
+        });
+
+        res.on('end', () => {
+          logMessage(context, `Data received from DPS API for datapoint: ${dp}`);
+          resolve({
+            status: res.statusCode,
+            headers: {
+              'Content-Type': res.headers['content-type'] || 'application/json',
+              'Access-Control-Allow-Origin': '*'
+            },
+            body: data
+          });
+        });
+      });
+
+      req.on('error', (error) => {
+        logError(context, `Error connecting to DPS API:`, error);
+        reject(error);
+      });
+
+      req.end();
+    });
+
+    return response;
+  } catch (error) {
+    logError(context, `Error fetching DP value:`, error);
+    return {
+      status: 500,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({ error: `Error fetching DP value: ` + error.message })
+    };
+  }
+}
+
