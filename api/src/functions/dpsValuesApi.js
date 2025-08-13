@@ -5,16 +5,106 @@ const { logMessage, logError } = require('../logger');
 // Target endpoint
 const targetHost = process.env.DPS_API_HOST || '192.168.50.179';
 const targetPort = process.env.DPS_API_PORT || '8083';
-const targetPath = process.env.DPS_API_PATH || '/api/GetDpsValues';
+const targetPath = process.env.DPS_API_PATH || '/api/GetDpsMapValues';
 
 // Forward any query parameters from the original request
 
 // Register the getDpsValues function
-app.http('getDpsValues', {
+app.http('GetDpsMapKeys', {
+
   methods: ['GET', 'PUT'],
   authLevel: 'anonymous',
   handler: async (request, context) => {
-    return await getDpsValues(request, context);
+    console.log("GetDpsMapKeys");
+    return await GetDpsMapKeys(request, context);
+  }
+});
+
+app.http('getDataPoint', {
+  methods: ['GET'],
+  authLevel: 'anonymous',
+  handler: async (request, context) => {
+    logMessage(context, 'getDataPoint function started');
+    
+    try {
+      // Parse the URL string to get searchParams
+      const url = new URL(request.url, `http://${request.headers.host || 'localhost'}`);
+      const key = url.searchParams.get('key');
+
+      if (!key) {
+        return {
+          status: 400,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          },
+          body: JSON.stringify({ error: 'Missing key parameter' })
+        };
+      }
+
+      // Get the response from DPS API
+      const response = await GetDpsMapKeys(request, context);
+      
+      // Check if the API call was successful
+      if (response.status !== 200) {
+        return {
+          status: response.status,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          },
+          body: JSON.stringify({ error: 'Failed to fetch data from DPS API' })
+        };
+      }
+
+      // Parse the response body to get the actual data
+      const data = JSON.parse(response.body);
+      
+      console.log('Parsed data:', data);
+      console.log('Looking for key:', key);
+      
+      // Check if the key exists in the data
+      if (data.hasOwnProperty(key)) {
+        const dataPoint = data[key];
+        console.log(`Data point found for key: ${key}`, dataPoint);
+        logMessage(context, `Data point found for key: ${key}`);
+
+        return {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          },
+          body: JSON.stringify(dataPoint)
+        };
+      } else {
+        logMessage(context, `No data point found for key: ${key}`);
+        console.log('Available keys:', Object.keys(data));
+
+        return {
+          status: 404,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          },
+          body: JSON.stringify({ 
+            error: `No data point found for key: ${key}`,
+            availableKeys: Object.keys(data)
+          })
+        };
+      }
+    } catch (error) {
+      logError(context, `Error processing getDataPoint request:`, error);
+
+      return {
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({ error: `Error processing request: ${error.message}` })
+      };
+    }
   }
 });
 
@@ -108,7 +198,7 @@ app.http('setDpValue', {
   }
 });
 
-async function getDpsValues(request, context) {
+async function GetDpsMapKeys(request, context) {
   logMessage(context, 'DPS Values function started');
 
   try {
@@ -157,7 +247,7 @@ async function getDpsValues(request, context) {
 
       req.end();
     });
-
+    console.log(Object.keys(response));
     return response;
   } catch (error) {
     logError(context, `Error ${request.method === 'PUT' ? 'updating' : 'fetching'} DPS values:`, error);

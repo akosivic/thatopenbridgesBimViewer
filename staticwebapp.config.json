@@ -52,6 +52,17 @@
       ]
     },
     {
+      "route": "/api/GetDpsMapValues",
+      "methods": [
+        "GET"
+      ],
+      "allowedRoles": [
+        "contributor",
+        "owner",
+        "reader"
+      ]
+    },
+    {
       "route": "/api/getDataPoint",
       "methods": [
         "GET"
