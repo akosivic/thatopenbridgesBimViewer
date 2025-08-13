@@ -50,9 +50,19 @@ export default async (components: OBC.Components, isDebug: boolean, highlighter:
   const getAllDataPointKeys = async (forceRefresh = false): Promise<string[]> => {
     if (keysFetched && !forceRefresh) return dataPointState.keys;
     try {
+      console.log('Fetching datapoint keys from:', "/api/GetDpsMapKeys");
       const response = await fetch("/api/GetDpsMapKeys");
-      if (!response.ok) throw new Error("Failed to fetch datapoint keys");
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API Error:', response.status, errorText);
+        throw new Error(`Failed to fetch datapoint keys: ${response.status} - ${errorText}`);
+      }
+      
       const data: DataPointKeysResponse = await response.json();
+      console.log('Received data:', data);
       const keys = Object.keys(data);
       if (keys) {
         dataPointState.keys = keys;
@@ -65,6 +75,8 @@ export default async (components: OBC.Components, isDebug: boolean, highlighter:
       }
     } catch (error) {
       console.error("Error fetching datapoint keys:", error);
+      // Show user-friendly error
+      console.error("Make sure you're authenticated and have the required permissions");
     }
     return [];
   };
@@ -78,8 +90,15 @@ export default async (components: OBC.Components, isDebug: boolean, highlighter:
         console.log(`Turning off datapoint for key: ${key}`);
       } else {
         console.log(`Turning on datapoint for key: ${key}`);
+        console.log('Fetching data from:', `/api/getDataPoint?key=${key}`);
         const response = await fetch(`/api/getDataPoint?key=${key}`);
-        if (!response.ok) throw new Error(`Failed to update datapoint for key: ${key}`);
+        console.log('getDataPoint response status:', response.status);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('getDataPoint API Error:', response.status, errorText);
+          throw new Error(`Failed to update datapoint for key: ${key} - ${response.status}: ${errorText}`);
+        }
 
         // Zoom to the selected key
         const data: [{ key: string; name: string }] = await response.json();
