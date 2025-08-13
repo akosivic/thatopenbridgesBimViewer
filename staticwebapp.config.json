@@ -46,34 +46,17 @@
         "GET"
       ],
       "allowedRoles": [
-        "anonymous",
-        "authenticated",
         "contributor",
         "owner",
         "reader"
       ]
     },
     {
-      "route": "/api/GetDpsMapKeys",
+      "route": "/api/GetDpsMapValues",
       "methods": [
         "GET"
       ],
       "allowedRoles": [
-        "anonymous",
-        "authenticated",
-        "contributor",
-        "owner",
-        "reader"
-      ]
-    },
-    {
-      "route": "/api/getDataPoint",
-      "methods": [
-        "GET"
-      ],
-      "allowedRoles": [
-        "anonymous",
-        "authenticated",
         "contributor",
         "owner",
         "reader"
