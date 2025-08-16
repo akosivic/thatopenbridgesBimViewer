@@ -243,8 +243,7 @@ export class WorldViewer extends HTMLElement {
           Speed: ${keys.shift ? 'FAST' : 'Normal'}<br>
           <div style="font-size: 10px; color: #ccc; margin-top: 5px;">
             WASD/Arrows: Move | Q/E: Up/Down | Shift: Fast<br>
-            Mouse: Look | Wheel: Zoom | All restrictions removed!
-          </div>
+            Mouse: Look | Wheel: Zoom | 
         `;
       }
       requestAnimationFrame(updateMovement);
@@ -267,7 +266,7 @@ export class WorldViewer extends HTMLElement {
         Speed: ${keys.shift ? 'FAST' : 'Normal'}<br>
         <div style="font-size: 10px; color: #ccc; margin-top: 5px;">
           WASD/Arrows: Move | Q/E: Up/Down | Shift: Fast<br>
-          Mouse: Look | Wheel: Zoom | All restrictions removed!
+          Mouse: Look | Wheel: Zoom |
         </div>
       `;
       
