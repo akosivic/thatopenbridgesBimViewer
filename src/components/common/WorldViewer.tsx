@@ -185,6 +185,10 @@ export class WorldViewer extends HTMLElement {
       
       if (keys.arrowup || keys.arrowdown || keys.arrowleft || keys.arrowright || 
           keys.w || keys.a || keys.s || keys.d || keys.q || keys.e) {
+        
+        // Clear highlighter selection when camera moves via keyboard
+        highlighter.clear("select");
+        
         const currentPosition = world.camera.controls.getPosition(new THREE.Vector3());
         const newPosition = currentPosition.clone();
         const azimuth = world.camera.controls.azimuthAngle;
@@ -377,6 +381,32 @@ export class WorldViewer extends HTMLElement {
       // Remove eye level enforcement - allow free camera positioning
     });
 
+    // Add camera movement detection to clear selection when camera moves
+    const lastCameraPosition = world.camera.controls.getPosition(new THREE.Vector3());
+    let lastCameraAzimuth = world.camera.controls.azimuthAngle;
+    let lastCameraPolar = world.camera.controls.polarAngle;
+    
+    // Check for camera movement changes and clear selection
+    const checkCameraMovement = () => {
+      const currentPosition = world.camera.controls.getPosition(new THREE.Vector3());
+      const currentAzimuth = world.camera.controls.azimuthAngle;
+      const currentPolar = world.camera.controls.polarAngle;
+      
+      const positionChanged = !lastCameraPosition.equals(currentPosition);
+      const rotationChanged = Math.abs(lastCameraAzimuth - currentAzimuth) > 0.01 || 
+                             Math.abs(lastCameraPolar - currentPolar) > 0.01;
+      
+      if (positionChanged || rotationChanged) {
+        // highlighter.clear("select");
+        lastCameraPosition.copy(currentPosition);
+        lastCameraAzimuth = currentAzimuth;
+        lastCameraPolar = currentPolar;
+      }
+      
+      requestAnimationFrame(checkCameraMovement);
+    };
+    checkCameraMovement();
+
     fragments.onFragmentsLoaded.add(async (model) => {
       if (model.hasProperties) {
         await indexer.process(model);
@@ -447,7 +477,7 @@ export class WorldViewer extends HTMLElement {
           </bim-tab>
           <bim-tab label="Selection">
             <bim-toolbar>
-              ${camera(world)} ${selection(components, world)}
+              ${camera(world, highlighter)} ${selection(components, world)}
             </bim-toolbar>
           </bim-tab>
           <bim-tab label="Measurement">
@@ -461,7 +491,7 @@ export class WorldViewer extends HTMLElement {
         <bim-tabs floating style="justify-self: center; border-radius: 0.5rem;padding:30px">
           <bim-tab label="${i18n.t('options')}">
             <bim-toolbar>
-              ${camera(world)} 
+              ${camera(world, highlighter)} 
             </bim-toolbar>
           </bim-tab>
         </bim-tabs>

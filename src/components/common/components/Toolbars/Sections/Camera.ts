@@ -1,9 +1,10 @@
 import * as OBC from "@thatopen/components";
+import * as OBF from "@thatopen/components-front";
 import * as BUI from "@thatopen/ui";
 import * as THREE from "three";
 import i18n from "../../../utils/i18n";
 
-export default (world: OBC.World) => {
+export default (world: OBC.World, highlighter?: OBF.Highlighter) => {
   const { camera } = world;
 
   const onFitModel = () => {
@@ -29,7 +30,7 @@ export default (world: OBC.World) => {
 
   const moveCamera = (direction: 'forward' | 'backward' | 'left' | 'right' | 'up' | 'down') => {
     if (!camera.controls) return;
-    
+
     const currentPos = camera.controls.getPosition(new THREE.Vector3());
     const azimuth = camera.controls.azimuthAngle;
     const newPos = currentPos.clone();
@@ -38,24 +39,48 @@ export default (world: OBC.World) => {
       case 'forward':
         newPos.x -= Math.sin(azimuth) * moveStep;
         newPos.z -= Math.cos(azimuth) * moveStep;
+        // Clear highlighter selection when camera moves via UI controls
+        if (highlighter) {
+          highlighter.clear("select");
+        }
         break;
       case 'backward':
         newPos.x += Math.sin(azimuth) * moveStep;
         newPos.z += Math.cos(azimuth) * moveStep;
+        // Clear highlighter selection when camera moves via UI controls
+        if (highlighter) {
+          highlighter.clear("select");
+        }
         break;
       case 'left':
         newPos.x -= Math.cos(azimuth) * moveStep;
         newPos.z += Math.sin(azimuth) * moveStep;
+        // Clear highlighter selection when camera moves via UI controls
+        if (highlighter) {
+          highlighter.clear("select");
+        }
         break;
       case 'right':
         newPos.x += Math.cos(azimuth) * moveStep;
         newPos.z -= Math.sin(azimuth) * moveStep;
+        // Clear highlighter selection when camera moves via UI controls
+        if (highlighter) {
+          highlighter.clear("select");
+        }
         break;
       case 'up':
         newPos.y += moveStep;
+        // Clear highlighter selection when camera moves via UI controls
+        if (highlighter) {
+          highlighter.clear("select");
+        }
         break;
       case 'down':
         newPos.y -= moveStep;
+        // Clear highlighter selection when camera moves via UI controls
+        if (highlighter) {
+          highlighter.clear("select");
+        }
         break;
     }
 
@@ -64,7 +89,7 @@ export default (world: OBC.World) => {
 
   const rotateCamera = (direction: 'left' | 'right' | 'up' | 'down') => {
     if (!camera.controls) return;
-    
+
     const currentAzimuth = camera.controls.azimuthAngle;
     const currentPolar = camera.controls.polarAngle;
     const radStep = (rotationStep * Math.PI) / 180;
@@ -72,34 +97,55 @@ export default (world: OBC.World) => {
     switch (direction) {
       case 'left':
         camera.controls.azimuthAngle = currentAzimuth - radStep;
+        // Clear highlighter selection when camera rotates via UI controls
+        if (highlighter) {
+          highlighter.clear("select");
+        }
         break;
       case 'right':
         camera.controls.azimuthAngle = currentAzimuth + radStep;
+        // Clear highlighter selection when camera rotates via UI controls
+        if (highlighter) {
+          highlighter.clear("select");
+        }
         break;
       case 'up':
         camera.controls.polarAngle = Math.max(0.1, currentPolar - radStep);
+        // Clear highlighter selection when camera rotates via UI controls
+        if (highlighter) {
+          highlighter.clear("select");
+        }
         break;
       case 'down':
         camera.controls.polarAngle = Math.min(Math.PI - 0.1, currentPolar + radStep);
+        // Clear highlighter selection when camera rotates via UI controls
+        if (highlighter) {
+          highlighter.clear("select");
+        }
         break;
     }
   };
 
   const zoomCamera = (direction: 'in' | 'out') => {
     if (!camera.controls?.camera) return;
-    
+
+    // Clear highlighter selection when camera zooms via UI controls
+    if (highlighter) {
+      highlighter.clear("select");
+    }
+
     const currentZoom = camera.controls.camera.zoom;
-    const newZoom = direction === 'in' ? 
-      currentZoom + zoomStep : 
+    const newZoom = direction === 'in' ?
+      currentZoom + zoomStep :
       Math.max(0.1, currentZoom - zoomStep);
-    
+
     camera.controls.camera.zoom = newZoom;
     camera.controls.camera.updateProjectionMatrix();
   };
 
   const resetCamera = () => {
     if (!camera.controls) return;
-    
+
     // Use the same default position as set on load
     const defaultPos = new THREE.Vector3(-0.42, 0.39, 1.36);
     camera.controls.setPosition(defaultPos.x, defaultPos.y, defaultPos.z);
@@ -121,7 +167,7 @@ export default (world: OBC.World) => {
   // Position preset functions
   const setTopView = () => {
     if (!camera.controls) return;
-    
+
     const currentPos = camera.controls.getPosition(new THREE.Vector3());
     camera.controls.setPosition(currentPos.x, currentPos.y + 10, currentPos.z);
     camera.controls.polarAngle = 0.1; // Almost top-down
@@ -133,14 +179,14 @@ export default (world: OBC.World) => {
 
   const setFrontView = () => {
     if (!camera.controls) return;
-    
+
     camera.controls.azimuthAngle = 0;
     camera.controls.polarAngle = Math.PI / 2;
   };
 
   const setSideView = () => {
     if (!camera.controls) return;
-    
+
     camera.controls.azimuthAngle = Math.PI / 2;
     camera.controls.polarAngle = Math.PI / 2;
   };
@@ -181,15 +227,6 @@ export default (world: OBC.World) => {
             <bim-button icon="material-symbols:rotate-left" @click=${() => rotateCamera('left')} style="width: 30px; height: 30px;"></bim-button>
             <bim-button icon="material-symbols:rotate-right" @click=${() => rotateCamera('down')} style="width: 30px; height: 30px;"></bim-button>
             <bim-button icon="material-symbols:rotate-right" @click=${() => rotateCamera('right')} style="width: 30px; height: 30px;"></bim-button>
-          </div>
-        </div>
-
-        <!-- Zoom Controls -->
-        <div style="display: flex; flex-direction: column; gap: 5px; margin: 10px 0; padding: 10px; border: 1px solid #333; border-radius: 4px;">
-          <div style="font-size: 12px; font-weight: bold; color: #ccc;">Zoom Controls</div>
-          <div style="display: flex; gap: 5px;">
-            <bim-button label="Zoom In" icon="material-symbols:zoom-in" @click=${() => zoomCamera('in')} style="flex: 1;"></bim-button>
-            <bim-button label="Zoom Out" icon="material-symbols:zoom-out" @click=${() => zoomCamera('out')} style="flex: 1;"></bim-button>
           </div>
         </div>
 
