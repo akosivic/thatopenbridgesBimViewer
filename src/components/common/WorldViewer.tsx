@@ -87,13 +87,13 @@ export class WorldViewer extends HTMLElement {
 
     world.camera = new OrthoPerspectiveCamera(components);
 
-    // Set initial camera position and angles from user specification  
-    // User values: Position: X: -8, Y: 1.27, Z: 1.78, Azimuth: -6.6°, Polar: 91.6°
-    const defaultX = -8.00;
-    const defaultY = 1.27;
-    const defaultZ = 1.78;
-    const defaultAzimuth = -6.6 * Math.PI / 180;  // Convert -6.6° to radians 
-    const defaultPolar = 91.6 * Math.PI / 180;    // Convert 91.6° to radians
+    // Set initial camera position and angles from screenshot specification  
+    // Screenshot values: Position: X: -1.29, Y: 0.34, Z: 1.14, Azimuth: 346.7°, Polar: 78.4°
+    const defaultX = -1.29;
+    const defaultY = 1.6;
+    const defaultZ = 1.14;
+    const defaultAzimuth = 346.7 * Math.PI / 180;  // Convert 346.7° to radians 
+    const defaultPolar = 78.4 * Math.PI / 180;     // Convert 78.4° to radians
 
     // Initialize the camera controls with position and angles
     world.camera.controls.setPosition(defaultX, defaultY, defaultZ);
@@ -446,12 +446,12 @@ export class WorldViewer extends HTMLElement {
             world.camera.controls.camera.updateProjectionMatrix();
           }
           
-          // User specified values: Position: X: -8, Y: 1.27, Z: 1.78, Azimuth: -6.6°, Polar: 91.6°
-          const defaultX = -8.00;
-          const defaultY = 1.27;
-          const defaultZ = 1.78;
-          const defaultAzimuth = -6.6 * Math.PI / 180;  // -6.6°
-          const defaultPolar = 91.6 * Math.PI / 180;    // 91.6°
+          // Screenshot values: Position: X: -1.29, Y: 0.34, Z: 1.14, Azimuth: 346.7°, Polar: 78.4°
+          const defaultX = -1.29;
+          const defaultY = 1.6;
+          const defaultZ = 1.14;
+          const defaultAzimuth = 346.7 * Math.PI / 180;  // 346.7°
+          const defaultPolar = 78.4 * Math.PI / 180;     // 78.4°
           
           // Calculate target point that makes these values consistent
           const dirX = Math.sin(defaultPolar) * Math.sin(defaultAzimuth);

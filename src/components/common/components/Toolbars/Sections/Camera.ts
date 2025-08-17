@@ -183,24 +183,18 @@ export default (world: OBC.World, highlighter?: OBF.Highlighter) => {
   const resetCamera = () => {
     if (!camera.controls) return;
 
-    // Target coordinates: Position: X: -8, Y: 1.27, Z: 1.78, Azimuth: -6.6°, Polar: 91.6°
-    const targetPosition = new THREE.Vector3(-8.00, 1.27, 1.78);
-    const targetAzimuth = -6.6 * Math.PI / 180;
-    const targetPolar = 91.6 * Math.PI / 180;
+    // Target coordinates from screenshot: Position: X: -1.29, Y: 0.34, Z: 1.14, Azimuth: 346.7°, Polar: 78.4°
+    const targetPosition = new THREE.Vector3(-1.29, 0.34, 1.14);
+    const targetAzimuth = 346.7 * Math.PI / 180;
+    const targetPolar = 78.4 * Math.PI / 180;
     
-    console.log('=== MATHEMATICAL APPROACH: Calculate compatible target ===');
+    console.log('=== RESETTING TO SCREENSHOT VALUES ===');
+    console.log('Target position:', targetPosition);
+    console.log('Target azimuth:', 346.7, '° (', targetAzimuth, 'rad)');
+    console.log('Target polar:', 78.4, '° (', targetPolar, 'rad)');
     
     // Calculate what target point would give us the desired position and angles
-    // From spherical coordinates: 
-    // x = target.x + distance * sin(polar) * sin(azimuth)
-    // y = target.y + distance * cos(polar) 
-    // z = target.z + distance * sin(polar) * cos(azimuth)
-    
-    // We need to work backwards: given position and angles, find target and distance
-    // Let's assume a reasonable distance (like current distance from origin)
     const currentDistance = targetPosition.length(); // Distance from origin
-    
-    console.log('Current distance from origin:', currentDistance);
     
     // Calculate the target point that would place the camera at our desired position
     // when looking with our desired angles
@@ -211,7 +205,7 @@ export default (world: OBC.World, highlighter?: OBF.Highlighter) => {
     );
     
     console.log('Calculated target point:', target);
-    console.log('Setting target, distance, and angles...');
+    console.log('Calculated distance:', currentDistance);
     
     // Set the target using object property access to avoid TypeScript errors
     const controls = camera.controls as any;
@@ -228,26 +222,26 @@ export default (world: OBC.World, highlighter?: OBF.Highlighter) => {
     camera.controls.azimuthAngle = targetAzimuth;
     camera.controls.polarAngle = targetPolar;
     
-    // Set zoom
+    // Set zoom to 1.00 as shown in screenshot
     if (camera.controls.camera) {
       camera.controls.camera.zoom = 1.00;
       camera.controls.camera.updateProjectionMatrix();
     }
     
-    // Update the controls to apply all changes - need delta time
+    // Update the controls to apply all changes
     if ('update' in camera.controls && typeof controls.update === 'function') {
       controls.update(0);
     }
     
     // Check results after a delay
     setTimeout(() => {
-      console.log('=== MATHEMATICAL APPROACH RESULTS ===');
+      console.log('=== SCREENSHOT RESET RESULTS ===');
       console.log('Position:', camera.controls?.getPosition(new THREE.Vector3()));
-      console.log('Target:', controls.target);
-      console.log('Distance:', controls.distance);
       console.log('Azimuth:', (camera.controls?.azimuthAngle ?? 0) * 180 / Math.PI, '°');
       console.log('Polar:', (camera.controls?.polarAngle ?? 0) * 180 / Math.PI, '°');
-      console.log('Expected position:', targetPosition);
+      console.log('Zoom:', camera.controls?.camera?.zoom);
+      console.log('Target:', controls.target);
+      console.log('Distance:', controls.distance);
     }, 100);
   };
 
