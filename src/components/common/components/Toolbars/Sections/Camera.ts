@@ -183,115 +183,72 @@ export default (world: OBC.World, highlighter?: OBF.Highlighter) => {
   const resetCamera = () => {
     if (!camera.controls) return;
 
-    console.log('=== RESET CAMERA STARTED ===');
-    console.log('Reset camera - Before:', camera.controls.getPosition(new THREE.Vector3()));
-    console.log('Current azimuth before reset (degrees):', camera.controls.azimuthAngle * 180 / Math.PI);
-    console.log('Current polar before reset (degrees):', camera.controls.polarAngle * 180 / Math.PI);
-    console.log('Current zoom before reset:', camera.controls.camera?.zoom);
-    console.log('Camera controls target (if available):', (camera.controls as any).target);
-    console.log('Camera controls center (if available):', (camera.controls as any).center);
-    
-    // Target coordinates from user specification: Position: X: -8, Y: 1.27, Z: 1.78, Azimuth: -6.6°, Polar: 91.6°
+    // Target coordinates: Position: X: -8, Y: 1.27, Z: 1.78, Azimuth: -6.6°, Polar: 91.6°
     const targetPosition = new THREE.Vector3(-8.00, 1.27, 1.78);
+    const targetAzimuth = -6.6 * Math.PI / 180;
+    const targetPolar = 91.6 * Math.PI / 180;
     
-    /*
-     * AZIMUTH ANGLE COMPUTATION DOCUMENTATION:
-     * 
-     * The azimuth angle represents horizontal rotation around the Y-axis (up vector).
-     * In spherical coordinates with Three.js camera controls:
-     * 
-     * - Azimuth = 0° points towards negative Z-axis (south)
-     * - Azimuth = 90° (π/2) points towards positive X-axis (east)  
-     * - Azimuth = 180° (π) points towards positive Z-axis (north)
-     * - Azimuth = 270° (3π/2) points towards negative X-axis (west)
-     * 
-     * CRITICAL TIMING ISSUE:
-     * The setPosition() method internally recalculates angles based on the new position
-     * relative to the target (usually origin). This means:
-     * 
-     * 1. If we set azimuth BEFORE setPosition(), it gets overridden
-     * 2. We must use "position-first approach": 
-     *    - Call setPosition() immediately 
-     *    - Set angles in a setTimeout callback after position is established
-     * 
-     * ANGLE CALCULATION:
-     * When camera is at position (-8.00, 1.27, 1.78) looking towards origin (0,0,0):
-     * - The vector from camera to target is (8.00, -1.27, -1.78)
-     * - Projected onto XZ plane: (8.00, -1.78)
-     * - Azimuth = atan2(x, z) = atan2(8.00, -1.78) ≈ -6.6° (negative angle)
-     * 
-     * This explains why our target azimuth of -6.6° matches the user specification.
-     */
+    console.log('=== MATHEMATICAL APPROACH: Calculate compatible target ===');
     
-    const targetAzimuth = -6.6 * Math.PI / 180; // -6.6° from user specification
-    const targetPolar = 91.6 * Math.PI / 180;   // 91.6° from user specification
+    // Calculate what target point would give us the desired position and angles
+    // From spherical coordinates: 
+    // x = target.x + distance * sin(polar) * sin(azimuth)
+    // y = target.y + distance * cos(polar) 
+    // z = target.z + distance * sin(polar) * cos(azimuth)
     
-    console.log('Applying user specified coordinates with position-first approach');
+    // We need to work backwards: given position and angles, find target and distance
+    // Let's assume a reasonable distance (like current distance from origin)
+    const currentDistance = targetPosition.length(); // Distance from origin
     
-    // Set zoom to user specification
+    console.log('Current distance from origin:', currentDistance);
+    
+    // Calculate the target point that would place the camera at our desired position
+    // when looking with our desired angles
+    const target = new THREE.Vector3(
+      targetPosition.x - currentDistance * Math.sin(targetPolar) * Math.sin(targetAzimuth),
+      targetPosition.y - currentDistance * Math.cos(targetPolar),
+      targetPosition.z - currentDistance * Math.sin(targetPolar) * Math.cos(targetAzimuth)
+    );
+    
+    console.log('Calculated target point:', target);
+    console.log('Setting target, distance, and angles...');
+    
+    // Set the target using object property access to avoid TypeScript errors
+    const controls = camera.controls as any;
+    if (controls.target && controls.target.set) {
+      controls.target.set(target.x, target.y, target.z);
+    }
+    
+    // Set distance if available
+    if ('distance' in camera.controls) {
+      controls.distance = currentDistance;
+    }
+    
+    // Set angles
+    camera.controls.azimuthAngle = targetAzimuth;
+    camera.controls.polarAngle = targetPolar;
+    
+    // Set zoom
     if (camera.controls.camera) {
       camera.controls.camera.zoom = 1.00;
       camera.controls.camera.updateProjectionMatrix();
     }
     
-    // STEP 1: Set position FIRST (this will internally recalculate angles)
-    console.log('Setting position to:', targetPosition.x, targetPosition.y, targetPosition.z);
-    camera.controls.setPosition(targetPosition.x, targetPosition.y, targetPosition.z);
-    console.log('Position immediately after setPosition:', camera.controls.getPosition(new THREE.Vector3()));
-    console.log('Angles immediately after setPosition - Azimuth:', camera.controls.azimuthAngle * 180 / Math.PI, '° Polar:', camera.controls.polarAngle * 180 / Math.PI, '°');
-    
-    // Try alternative approaches in case setPosition doesn't work as expected
-    if (camera.controls.camera && camera.controls.camera.position) {
-      console.log('Also setting camera.position directly:', targetPosition.x, targetPosition.y, targetPosition.z);
-      camera.controls.camera.position.set(targetPosition.x, targetPosition.y, targetPosition.z);
-      console.log('Direct camera position after set:', camera.controls.camera.position);
+    // Update the controls to apply all changes - need delta time
+    if ('update' in camera.controls && typeof controls.update === 'function') {
+      controls.update(0);
     }
     
-    // STEP 2: Set target point first, then position and angles
+    // Check results after a delay
     setTimeout(() => {
-      if (camera.controls) {
-        console.log('Position before setting target/angles (in timeout):', camera.controls.getPosition(new THREE.Vector3()));
-        
-        // Set target to origin (0,0,0) - this is what we want to look at
-        if ((camera.controls as any).target) {
-          (camera.controls as any).target.set(0, 0, 0);
-          console.log('Set camera target to origin: (0, 0, 0)');
-        }
-        
-        // With target at origin, set position
-        camera.controls.setPosition(targetPosition.x, targetPosition.y, targetPosition.z);
-        console.log('Set position to:', targetPosition.x, targetPosition.y, targetPosition.z);
-        
-        // Then set angles - these should now work with the origin target
-        camera.controls.azimuthAngle = targetAzimuth;
-        camera.controls.polarAngle = targetPolar;
-        console.log('Set angles - Azimuth:', targetAzimuth * 180 / Math.PI, '° Polar:', targetPolar * 180 / Math.PI, '°');
-        
-        if (camera.controls.camera) {
-          camera.controls.camera.updateProjectionMatrix();
-        }
-        
-        // Check results immediately
-        setTimeout(() => {
-          console.log('Reset camera - Immediate check:');
-          console.log('Position:', camera.controls?.getPosition(new THREE.Vector3()));
-          console.log('Azimuth (degrees):', (camera.controls?.azimuthAngle ?? 0) * 180 / Math.PI);
-          console.log('Polar (degrees):', (camera.controls?.polarAngle ?? 0) * 180 / Math.PI);
-          console.log('Target (if available):', (camera.controls as any)?.target);
-        }, 10);
-        
-        setTimeout(() => {
-          console.log('=== FINAL CHECK AFTER ADDITIONAL DELAY ===');
-          console.log('Position after additional delay:', camera.controls?.getPosition(new THREE.Vector3()));
-          console.log('Azimuth after additional delay (degrees):', (camera.controls?.azimuthAngle ?? 0) * 180 / Math.PI);
-          console.log('Polar after additional delay (degrees):', (camera.controls?.polarAngle ?? 0) * 180 / Math.PI);
-        }, 200);
-      }
-    }, 50);
-    
-    console.log('Reset camera - Position set first, angles will be set in 50ms');
-    console.log('Reset camera - Target azimuth:', targetAzimuth * 180 / Math.PI, '°');
-    console.log('Reset camera - Target polar:', targetPolar * 180 / Math.PI, '°');
+      console.log('=== MATHEMATICAL APPROACH RESULTS ===');
+      console.log('Position:', camera.controls?.getPosition(new THREE.Vector3()));
+      console.log('Target:', controls.target);
+      console.log('Distance:', controls.distance);
+      console.log('Azimuth:', (camera.controls?.azimuthAngle ?? 0) * 180 / Math.PI, '°');
+      console.log('Polar:', (camera.controls?.polarAngle ?? 0) * 180 / Math.PI, '°');
+      console.log('Expected position:', targetPosition);
+    }, 100);
   };
 
   const toggleProjection = () => {
