@@ -88,11 +88,11 @@ export class WorldViewer extends HTMLElement {
     world.camera = new OrthoPerspectiveCamera(components);
 
     // Set initial camera position and rotation from user preference
-    const defaultX = -0.42;
-    const defaultY = 0.39;
-    const defaultZ = 1.36;
-    const defaultAzimuth = 343.1 * Math.PI / 180; // Convert 343.1° to radians
-    const defaultPolar = 74.7 * Math.PI / 180; // Convert 74.7° to radians
+    const defaultX = 0.18;
+    const defaultY = 1.63;
+    const defaultZ = -10.51;
+    const defaultAzimuth = 178.8 * Math.PI / 180; // Convert 178.8° to radians
+    const defaultPolar = 77.90 * Math.PI / 180; // Convert 77.90° to radians
 
     // Initialize the camera controls first
     world.camera.controls.setPosition(defaultX, defaultY, defaultZ);
@@ -122,21 +122,24 @@ export class WorldViewer extends HTMLElement {
     console.log('Initial camera azimuth:', world.camera.controls.azimuthAngle * 180 / Math.PI, '°');
     console.log('Initial camera polar:', world.camera.controls.polarAngle * 180 / Math.PI, '°');
 
-    // Create camera position display
-    const positionDisplay = document.createElement('div');
-    positionDisplay.style.cssText = `
-      position: fixed;
-      bottom: 10px;
-      right: 10px;
-      background: rgba(0,0,0,0.7);
-      color: white;
-      padding: 10px;
-      font-family: monospace;
-      font-size: 12px;
-      border-radius: 4px;
-      z-index: 1000;
-    `;
-    document.body.appendChild(positionDisplay);
+    // Create camera position display only in debug mode
+    let positionDisplay: HTMLElement | null = null;
+    if (isDebugMode) {
+      positionDisplay = document.createElement('div');
+      positionDisplay.style.cssText = `
+        position: fixed;
+        bottom: 10px;
+        right: 10px;
+        background: rgba(0,0,0,0.7);
+        color: white;
+        padding: 10px;
+        font-family: monospace;
+        font-size: 12px;
+        border-radius: 4px;
+        z-index: 1000;
+      `;
+      document.body.appendChild(positionDisplay);
+    }
 
     // Remove camera movement restrictions - allow full freedom
     // Previously locked polar angles are now removed for full 3D movement
@@ -232,7 +235,33 @@ export class WorldViewer extends HTMLElement {
           }
         }
 
-        // Update position display with comprehensive camera information
+        // Update position display with comprehensive camera information (only in debug mode)
+        if (positionDisplay) {
+          const pos = world.camera.controls.getPosition(new THREE.Vector3());
+          const azimuthdisplay = world.camera.controls.azimuthAngle;
+          const polardisplay = world.camera.controls.polarAngle;
+          const zoom = world.camera.controls.camera ? world.camera.controls.camera.zoom : 1;
+          
+          positionDisplay.innerHTML = `
+            <div style="font-weight: bold; color: #00ff00; margin-bottom: 5px;">Camera Controls</div>
+            Position: X: ${pos.x.toFixed(2)}, Y: ${pos.y.toFixed(2)}, Z: ${pos.z.toFixed(2)}<br>
+            Azimuth: ${(azimuthdisplay * 180 / Math.PI).toFixed(1)}°<br>
+            Polar: ${(polardisplay * 180 / Math.PI).toFixed(1)}°<br>
+            Zoom: ${zoom.toFixed(2)}<br>
+            Speed: ${keys.shift ? 'FAST' : 'Normal'}<br>
+            <div style="font-size: 10px; color: #ccc; margin-top: 5px;">
+              WASD/Arrows: Move | Q/E: Up/Down | Shift: Fast<br>
+              Mouse: Look | Wheel: Zoom | 
+          `;
+        }
+      }
+      requestAnimationFrame(updateMovement);
+    };
+    updateMovement();
+
+    // Continuous position display update for all camera changes (including mouse drag)
+    const updatePositionDisplay = () => {
+      if (positionDisplay) {
         const pos = world.camera.controls.getPosition(new THREE.Vector3());
         const azimuthdisplay = world.camera.controls.azimuthAngle;
         const polardisplay = world.camera.controls.polarAngle;
@@ -247,36 +276,16 @@ export class WorldViewer extends HTMLElement {
           Speed: ${keys.shift ? 'FAST' : 'Normal'}<br>
           <div style="font-size: 10px; color: #ccc; margin-top: 5px;">
             WASD/Arrows: Move | Q/E: Up/Down | Shift: Fast<br>
-            Mouse: Look | Wheel: Zoom | 
+            Mouse: Look | Wheel: Zoom |
+          </div>
         `;
       }
-      requestAnimationFrame(updateMovement);
-    };
-    updateMovement();
-
-    // Continuous position display update for all camera changes (including mouse drag)
-    const updatePositionDisplay = () => {
-      const pos = world.camera.controls.getPosition(new THREE.Vector3());
-      const azimuthdisplay = world.camera.controls.azimuthAngle;
-      const polardisplay = world.camera.controls.polarAngle;
-      const zoom = world.camera.controls.camera ? world.camera.controls.camera.zoom : 1;
-      
-      positionDisplay.innerHTML = `
-        <div style="font-weight: bold; color: #00ff00; margin-bottom: 5px;">Camera Controls</div>
-        Position: X: ${pos.x.toFixed(2)}, Y: ${pos.y.toFixed(2)}, Z: ${pos.z.toFixed(2)}<br>
-        Azimuth: ${(azimuthdisplay * 180 / Math.PI).toFixed(1)}°<br>
-        Polar: ${(polardisplay * 180 / Math.PI).toFixed(1)}°<br>
-        Zoom: ${zoom.toFixed(2)}<br>
-        Speed: ${keys.shift ? 'FAST' : 'Normal'}<br>
-        <div style="font-size: 10px; color: #ccc; margin-top: 5px;">
-          WASD/Arrows: Move | Q/E: Up/Down | Shift: Fast<br>
-          Mouse: Look | Wheel: Zoom |
-        </div>
-      `;
       
       requestAnimationFrame(updatePositionDisplay);
     };
-    updatePositionDisplay();
+    if (isDebugMode) {
+      updatePositionDisplay();
+    }
 
     // Camera controls are now unrestricted - removed eye level enforcement
 
@@ -429,11 +438,11 @@ export class WorldViewer extends HTMLElement {
           // world.camera.fit(world.meshes, 0.8);
           
           // Restore the desired default position instead
-          const defaultX = -0.42;
-          const defaultY = 0.39;
-          const defaultZ = 1.36;
-          const defaultAzimuth = 343.1 * Math.PI / 180;
-          const defaultPolar = 74.7 * Math.PI / 180;
+          const defaultX = 0.18;
+          const defaultY = 1.63;
+          const defaultZ = -10.51;
+          const defaultAzimuth = 178.8 * Math.PI / 180;
+          const defaultPolar = 77.90 * Math.PI / 180;
           
           world.camera.controls.setPosition(defaultX, defaultY, defaultZ);
           world.camera.controls.azimuthAngle = defaultAzimuth;

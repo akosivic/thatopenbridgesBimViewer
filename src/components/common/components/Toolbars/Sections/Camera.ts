@@ -147,10 +147,10 @@ export default (world: OBC.World, highlighter?: OBF.Highlighter) => {
     if (!camera.controls) return;
 
     // Use the same default position as set on load
-    const defaultPos = new THREE.Vector3(-0.42, 0.39, 1.36);
+    const defaultPos = new THREE.Vector3(0.18, 1.63, -10.51);
     camera.controls.setPosition(defaultPos.x, defaultPos.y, defaultPos.z);
-    camera.controls.azimuthAngle = 343.1 * Math.PI / 180; // 343.1°
-    camera.controls.polarAngle = 74.7 * Math.PI / 180; // 74.7°
+    camera.controls.azimuthAngle = 178.8 * Math.PI / 180; // 178.8°
+    camera.controls.polarAngle = 77.90 * Math.PI / 180; // 77.90°
     if (camera.controls.camera) {
       camera.controls.camera.zoom = 1.00;
       camera.controls.camera.updateProjectionMatrix();
