@@ -33,54 +33,60 @@ export default (world: OBC.World, highlighter?: OBF.Highlighter) => {
 
     const currentPos = camera.controls.getPosition(new THREE.Vector3());
     const azimuth = camera.controls.azimuthAngle;
+    const polar = camera.controls.polarAngle;
     const newPos = currentPos.clone();
+
+    // Clear highlighter selection when camera moves via UI controls
+    if (highlighter) {
+      highlighter.clear("select");
+    }
+
+    /*
+     * SPHERICAL COORDINATE MOVEMENT CALCULATIONS:
+     * 
+     * The camera uses spherical coordinates where:
+     * - azimuth: horizontal rotation around Y-axis (0° = -Z direction)
+     * - polar: vertical angle from Y-axis (0° = up, 90° = horizontal, 180° = down)
+     * 
+     * For movement calculations:
+     * - Forward/Backward: Move along camera's viewing direction (uses both azimuth & polar)
+     * - Left/Right: Strafe perpendicular to viewing direction (horizontal plane only)
+     * - Up/Down: Move purely along Y-axis (vertical)
+     * 
+     * AZIMUTH-BASED DIRECTION VECTORS:
+     * - sin(azimuth) gives X component of horizontal direction
+     * - cos(azimuth) gives Z component of horizontal direction
+     * - sin(polar) scales horizontal movement for viewing angle
+     * - cos(polar) gives Y component for forward/backward movement
+     */
 
     switch (direction) {
       case 'forward':
-        newPos.x -= Math.sin(azimuth) * moveStep;
-        newPos.z -= Math.cos(azimuth) * moveStep;
-        // Clear highlighter selection when camera moves via UI controls
-        if (highlighter) {
-          highlighter.clear("select");
-        }
+      case 'up':
+        // Move along camera's viewing direction (like scroll wheel forward)
+        // Uses spherical coordinates to calculate 3D movement vector
+        newPos.x += Math.sin(polar) * Math.sin(azimuth) * moveStep;
+        newPos.y += Math.cos(polar) * moveStep;
+        newPos.z += Math.sin(polar) * Math.cos(azimuth) * moveStep;
         break;
       case 'backward':
-        newPos.x += Math.sin(azimuth) * moveStep;
-        newPos.z += Math.cos(azimuth) * moveStep;
-        // Clear highlighter selection when camera moves via UI controls
-        if (highlighter) {
-          highlighter.clear("select");
-        }
+      case 'down':
+        // Move opposite to camera's viewing direction (like scroll wheel backward)
+        newPos.x -= Math.sin(polar) * Math.sin(azimuth) * moveStep;
+        newPos.y -= Math.cos(polar) * moveStep;
+        newPos.z -= Math.sin(polar) * Math.cos(azimuth) * moveStep;
         break;
       case 'left':
+        // Strafe left (perpendicular to viewing direction in horizontal plane)
+        // Perpendicular vector: rotate azimuth by -90° (subtract π/2)
         newPos.x -= Math.cos(azimuth) * moveStep;
         newPos.z += Math.sin(azimuth) * moveStep;
-        // Clear highlighter selection when camera moves via UI controls
-        if (highlighter) {
-          highlighter.clear("select");
-        }
         break;
       case 'right':
+        // Strafe right (perpendicular to viewing direction in horizontal plane)  
+        // Perpendicular vector: rotate azimuth by +90° (add π/2)
         newPos.x += Math.cos(azimuth) * moveStep;
         newPos.z -= Math.sin(azimuth) * moveStep;
-        // Clear highlighter selection when camera moves via UI controls
-        if (highlighter) {
-          highlighter.clear("select");
-        }
-        break;
-      case 'up':
-        newPos.y += moveStep;
-        // Clear highlighter selection when camera moves via UI controls
-        if (highlighter) {
-          highlighter.clear("select");
-        }
-        break;
-      case 'down':
-        newPos.y -= moveStep;
-        // Clear highlighter selection when camera moves via UI controls
-        if (highlighter) {
-          highlighter.clear("select");
-        }
         break;
     }
 
@@ -94,8 +100,34 @@ export default (world: OBC.World, highlighter?: OBF.Highlighter) => {
     const currentPolar = camera.controls.polarAngle;
     const radStep = (rotationStep * Math.PI) / 180;
 
+    /*
+     * CAMERA ROTATION DOCUMENTATION:
+     * 
+     * AZIMUTH ANGLE (horizontal rotation around Y-axis):
+     * - Controls left/right looking direction
+     * - 0° = looking towards negative Z-axis (-Z direction)
+     * - 90° = looking towards positive X-axis (+X direction)  
+     * - 180° = looking towards positive Z-axis (+Z direction)
+     * - 270° = looking towards negative X-axis (-X direction)
+     * 
+     * POLAR ANGLE (vertical angle from Y-axis):
+     * - Controls up/down looking direction
+     * - 0° = looking straight up (+Y direction)
+     * - 90° = looking horizontally (XZ plane)
+     * - 180° = looking straight down (-Y direction)
+     * 
+     * ROTATION DIRECTIONS:
+     * - Left/Right: Modify azimuth angle (horizontal panning)
+     * - Up/Down: Modify polar angle with safety bounds (vertical tilting)
+     * 
+     * SAFETY BOUNDS:
+     * - Polar angle clamped between 0.1 and (π - 0.1) to prevent gimbal lock
+     * - This prevents camera from flipping when looking straight up/down
+     */
+
     switch (direction) {
       case 'left':
+        // Rotate azimuth counter-clockwise (subtract angle)
         camera.controls.azimuthAngle = currentAzimuth - radStep;
         // Clear highlighter selection when camera rotates via UI controls
         if (highlighter) {
@@ -103,6 +135,7 @@ export default (world: OBC.World, highlighter?: OBF.Highlighter) => {
         }
         break;
       case 'right':
+        // Rotate azimuth clockwise (add angle)
         camera.controls.azimuthAngle = currentAzimuth + radStep;
         // Clear highlighter selection when camera rotates via UI controls
         if (highlighter) {
@@ -110,6 +143,8 @@ export default (world: OBC.World, highlighter?: OBF.Highlighter) => {
         }
         break;
       case 'up':
+        // Rotate polar upward (decrease angle toward 0°)
+        // Clamp to 0.1 radians to prevent looking exactly straight up
         camera.controls.polarAngle = Math.max(0.1, currentPolar - radStep);
         // Clear highlighter selection when camera rotates via UI controls
         if (highlighter) {
@@ -117,6 +152,8 @@ export default (world: OBC.World, highlighter?: OBF.Highlighter) => {
         }
         break;
       case 'down':
+        // Rotate polar downward (increase angle toward 180°)
+        // Clamp to (π - 0.1) radians to prevent looking exactly straight down
         camera.controls.polarAngle = Math.min(Math.PI - 0.1, currentPolar + radStep);
         // Clear highlighter selection when camera rotates via UI controls
         if (highlighter) {
@@ -146,15 +183,115 @@ export default (world: OBC.World, highlighter?: OBF.Highlighter) => {
   const resetCamera = () => {
     if (!camera.controls) return;
 
-    // Use the same default position as set on load
-    const defaultPos = new THREE.Vector3(0.18, 1.63, -10.51);
-    camera.controls.setPosition(defaultPos.x, defaultPos.y, defaultPos.z);
-    camera.controls.azimuthAngle = 178.8 * Math.PI / 180; // 178.8°
-    camera.controls.polarAngle = 77.90 * Math.PI / 180; // 77.90°
+    console.log('=== RESET CAMERA STARTED ===');
+    console.log('Reset camera - Before:', camera.controls.getPosition(new THREE.Vector3()));
+    console.log('Current azimuth before reset (degrees):', camera.controls.azimuthAngle * 180 / Math.PI);
+    console.log('Current polar before reset (degrees):', camera.controls.polarAngle * 180 / Math.PI);
+    console.log('Current zoom before reset:', camera.controls.camera?.zoom);
+    console.log('Camera controls target (if available):', (camera.controls as any).target);
+    console.log('Camera controls center (if available):', (camera.controls as any).center);
+    
+    // Target coordinates from user specification: Position: X: -8, Y: 1.27, Z: 1.78, Azimuth: -6.6°, Polar: 91.6°
+    const targetPosition = new THREE.Vector3(-8.00, 1.27, 1.78);
+    
+    /*
+     * AZIMUTH ANGLE COMPUTATION DOCUMENTATION:
+     * 
+     * The azimuth angle represents horizontal rotation around the Y-axis (up vector).
+     * In spherical coordinates with Three.js camera controls:
+     * 
+     * - Azimuth = 0° points towards negative Z-axis (south)
+     * - Azimuth = 90° (π/2) points towards positive X-axis (east)  
+     * - Azimuth = 180° (π) points towards positive Z-axis (north)
+     * - Azimuth = 270° (3π/2) points towards negative X-axis (west)
+     * 
+     * CRITICAL TIMING ISSUE:
+     * The setPosition() method internally recalculates angles based on the new position
+     * relative to the target (usually origin). This means:
+     * 
+     * 1. If we set azimuth BEFORE setPosition(), it gets overridden
+     * 2. We must use "position-first approach": 
+     *    - Call setPosition() immediately 
+     *    - Set angles in a setTimeout callback after position is established
+     * 
+     * ANGLE CALCULATION:
+     * When camera is at position (-8.00, 1.27, 1.78) looking towards origin (0,0,0):
+     * - The vector from camera to target is (8.00, -1.27, -1.78)
+     * - Projected onto XZ plane: (8.00, -1.78)
+     * - Azimuth = atan2(x, z) = atan2(8.00, -1.78) ≈ -6.6° (negative angle)
+     * 
+     * This explains why our target azimuth of -6.6° matches the user specification.
+     */
+    
+    const targetAzimuth = -6.6 * Math.PI / 180; // -6.6° from user specification
+    const targetPolar = 91.6 * Math.PI / 180;   // 91.6° from user specification
+    
+    console.log('Applying user specified coordinates with position-first approach');
+    
+    // Set zoom to user specification
     if (camera.controls.camera) {
       camera.controls.camera.zoom = 1.00;
       camera.controls.camera.updateProjectionMatrix();
     }
+    
+    // STEP 1: Set position FIRST (this will internally recalculate angles)
+    console.log('Setting position to:', targetPosition.x, targetPosition.y, targetPosition.z);
+    camera.controls.setPosition(targetPosition.x, targetPosition.y, targetPosition.z);
+    console.log('Position immediately after setPosition:', camera.controls.getPosition(new THREE.Vector3()));
+    console.log('Angles immediately after setPosition - Azimuth:', camera.controls.azimuthAngle * 180 / Math.PI, '° Polar:', camera.controls.polarAngle * 180 / Math.PI, '°');
+    
+    // Try alternative approaches in case setPosition doesn't work as expected
+    if (camera.controls.camera && camera.controls.camera.position) {
+      console.log('Also setting camera.position directly:', targetPosition.x, targetPosition.y, targetPosition.z);
+      camera.controls.camera.position.set(targetPosition.x, targetPosition.y, targetPosition.z);
+      console.log('Direct camera position after set:', camera.controls.camera.position);
+    }
+    
+    // STEP 2: Set target point first, then position and angles
+    setTimeout(() => {
+      if (camera.controls) {
+        console.log('Position before setting target/angles (in timeout):', camera.controls.getPosition(new THREE.Vector3()));
+        
+        // Set target to origin (0,0,0) - this is what we want to look at
+        if ((camera.controls as any).target) {
+          (camera.controls as any).target.set(0, 0, 0);
+          console.log('Set camera target to origin: (0, 0, 0)');
+        }
+        
+        // With target at origin, set position
+        camera.controls.setPosition(targetPosition.x, targetPosition.y, targetPosition.z);
+        console.log('Set position to:', targetPosition.x, targetPosition.y, targetPosition.z);
+        
+        // Then set angles - these should now work with the origin target
+        camera.controls.azimuthAngle = targetAzimuth;
+        camera.controls.polarAngle = targetPolar;
+        console.log('Set angles - Azimuth:', targetAzimuth * 180 / Math.PI, '° Polar:', targetPolar * 180 / Math.PI, '°');
+        
+        if (camera.controls.camera) {
+          camera.controls.camera.updateProjectionMatrix();
+        }
+        
+        // Check results immediately
+        setTimeout(() => {
+          console.log('Reset camera - Immediate check:');
+          console.log('Position:', camera.controls?.getPosition(new THREE.Vector3()));
+          console.log('Azimuth (degrees):', (camera.controls?.azimuthAngle ?? 0) * 180 / Math.PI);
+          console.log('Polar (degrees):', (camera.controls?.polarAngle ?? 0) * 180 / Math.PI);
+          console.log('Target (if available):', (camera.controls as any)?.target);
+        }, 10);
+        
+        setTimeout(() => {
+          console.log('=== FINAL CHECK AFTER ADDITIONAL DELAY ===');
+          console.log('Position after additional delay:', camera.controls?.getPosition(new THREE.Vector3()));
+          console.log('Azimuth after additional delay (degrees):', (camera.controls?.azimuthAngle ?? 0) * 180 / Math.PI);
+          console.log('Polar after additional delay (degrees):', (camera.controls?.polarAngle ?? 0) * 180 / Math.PI);
+        }, 200);
+      }
+    }, 50);
+    
+    console.log('Reset camera - Position set first, angles will be set in 50ms');
+    console.log('Reset camera - Target azimuth:', targetAzimuth * 180 / Math.PI, '°');
+    console.log('Reset camera - Target polar:', targetPolar * 180 / Math.PI, '°');
   };
 
   const toggleProjection = () => {

@@ -87,12 +87,13 @@ export class WorldViewer extends HTMLElement {
 
     world.camera = new OrthoPerspectiveCamera(components);
 
-    // Set initial camera position and rotation from user preference
-    const defaultX = 0.18;
-    const defaultY = 1.63;
-    const defaultZ = -10.51;
-    const defaultAzimuth = 178.8 * Math.PI / 180; // Convert 178.8° to radians
-    const defaultPolar = 77.90 * Math.PI / 180; // Convert 77.90° to radians
+    // Set initial camera position and rotation from user specification
+    // User values: Position: X: -8, Y: 1.27, Z: 1.78, Azimuth: -6.6°, Polar: 91.6°
+    const defaultX = -8.00;
+    const defaultY = 1.27;
+    const defaultZ = 1.78;
+    const defaultAzimuth = -6.6 * Math.PI / 180;  // Convert -6.6° to radians 
+    const defaultPolar = 91.6 * Math.PI / 180;    // Convert 91.6° to radians
 
     // Initialize the camera controls first
     world.camera.controls.setPosition(defaultX, defaultY, defaultZ);
@@ -434,33 +435,56 @@ export class WorldViewer extends HTMLElement {
       if (!model.isStreamed) {
         setTimeout(async () => {
           console.log('Camera position before fit:', world.camera.controls.getPosition(new THREE.Vector3()));
+          
           // Skip automatic camera fitting to maintain default position
           // world.camera.fit(world.meshes, 0.8);
           
-          // Restore the desired default position instead
-          const defaultX = 0.18;
-          const defaultY = 1.63;
-          const defaultZ = -10.51;
-          const defaultAzimuth = 178.8 * Math.PI / 180;
-          const defaultPolar = 77.90 * Math.PI / 180;
+          // Use the same position-first approach that works in reset button
+          console.log('Setting initial position first, then angles...');
           
-          world.camera.controls.setPosition(defaultX, defaultY, defaultZ);
-          world.camera.controls.azimuthAngle = defaultAzimuth;
-          world.camera.controls.polarAngle = defaultPolar;
-          
+          // Set zoom first
           if (world.camera.controls.camera) {
             world.camera.controls.camera.zoom = 1.00;
             world.camera.controls.camera.updateProjectionMatrix();
           }
           
-          // Force camera controls to update after restoration
-          world.camera.controls.update(0);
-          if (world.renderer) {
-            world.renderer.update();
-          }
+          /*
+           * POSITION-FIRST APPROACH FOR MODEL LOADING:
+           * Apply user specified coordinates using the same proven method as reset button.
+           * This ensures angles are not overridden by setPosition() method.
+           */
           
-          console.log('Camera position restored to default:', world.camera.controls.getPosition(new THREE.Vector3()));
-        }, 50);
+          // Set position FIRST (this might internally recalculate azimuth)
+          const defaultX = -8.00;  // User specified X coordinate
+          const defaultY = 1.27;   // User specified Y coordinate  
+          const defaultZ = 1.78;   // User specified Z coordinate
+          
+          world.camera.controls.setPosition(defaultX, defaultY, defaultZ);
+          
+          // THEN set angles after position with delay - same approach as reset button
+          setTimeout(() => {
+            const defaultAzimuth = -6.6 * Math.PI / 180;  // -6.6° from user specification
+            const defaultPolar = 91.6 * Math.PI / 180;    // 91.6° from user specification
+            
+            // Set angles first
+            world.camera.controls.azimuthAngle = defaultAzimuth;
+            world.camera.controls.polarAngle = defaultPolar;
+            
+            // DON'T call update(0) as it recalculates position
+            // Then force position again after angles
+            world.camera.controls.setPosition(defaultX, defaultY, defaultZ);
+            
+            if (world.renderer) {
+              world.renderer.update();
+            }
+            
+            console.log('Camera position restored to user specified values (delayed):', world.camera.controls.getPosition(new THREE.Vector3()));
+            console.log('Camera angles set (delayed) - Azimuth:', world.camera.controls.azimuthAngle * 180 / Math.PI, '°');
+            console.log('Camera angles set (delayed) - Polar:', world.camera.controls.polarAngle * 180 / Math.PI, '°');
+          }, 100); // Additional delay for angle setting
+          
+          console.log('Position set first with user specified coordinates, angles will follow in 100ms');
+        }, 200); // Increased initial delay to 200ms
       }
     });
 
