@@ -88,9 +88,9 @@ export class WorldViewer extends HTMLElement {
     world.camera = new OrthoPerspectiveCamera(components);
 
     // Set initial camera position and angles from screenshot specification  
-    // Screenshot values: Position: X: -1.29, Y: 0.34, Z: 1.14, Azimuth: 346.7°, Polar: 78.4°
+    // Screenshot values: Position: X: -1.29, Y: 1.60, Z: 1.14, Azimuth: 346.7°, Polar: 78.4°
     const defaultX = -1.29;
-    const defaultY = 1.6;
+    const defaultY = 1.60;
     const defaultZ = 1.14;
     const defaultAzimuth = 346.7 * Math.PI / 180;  // Convert 346.7° to radians 
     const defaultPolar = 78.4 * Math.PI / 180;     // Convert 78.4° to radians
@@ -195,14 +195,34 @@ export class WorldViewer extends HTMLElement {
         const newPosition = currentPosition.clone();
         const azimuth = world.camera.controls.azimuthAngle;
 
-        // Forward/backward movement (Arrow keys and W/S)
+        // Forward/backward movement (Arrow keys and W/S) - like mousewheel using distance
         if (keys.arrowup || keys.w) {
-          newPosition.x -= Math.sin(azimuth) * currentSpeed;
-          newPosition.z -= Math.cos(azimuth) * currentSpeed;
+          // Move forward like mousewheel - reduce distance to get closer to target
+          const controls = world.camera.controls as any;
+          if (controls.distance !== undefined) {
+            const currentDistance = controls.distance;
+            // Convert linear speed to distance ratio to match left/right movement speed
+            // Use more aggressive movement to allow getting much closer
+            const speedRatio = currentSpeed / 5; // More aggressive scaling for closer movement
+            const moveRatio = 1 - speedRatio; // Reduce distance (move closer)
+            controls.distance = Math.max(0.0001, currentDistance * moveRatio);
+            world.camera.controls.update(0);
+            console.log('Keyboard Forward: distance changed from', currentDistance, 'to', controls.distance, 'ratio:', moveRatio);
+          }
         }
         if (keys.arrowdown || keys.s) {
-          newPosition.x += Math.sin(azimuth) * currentSpeed;
-          newPosition.z += Math.cos(azimuth) * currentSpeed;
+          // Move backward like mousewheel - increase distance to get farther from target
+          const controls = world.camera.controls as any;
+          if (controls.distance !== undefined) {
+            const currentDistance = controls.distance;
+            // Convert linear speed to distance ratio to match left/right movement speed
+            // Use currentSpeed to match the same speed as lateral movement
+            const speedRatio = currentSpeed / 10; // Scale down for distance-based movement
+            const moveRatio = 1 + speedRatio; // Increase distance (move farther)
+            controls.distance = currentDistance * moveRatio;
+            world.camera.controls.update(0);
+            console.log('Keyboard Backward: distance changed from', currentDistance, 'to', controls.distance, 'ratio:', moveRatio);
+          }
         }
 
         // Left/right strafing (Arrow keys and A/D)
@@ -223,8 +243,10 @@ export class WorldViewer extends HTMLElement {
           newPosition.y -= currentSpeed;
         }
 
-        // Apply movement with optional collision check
-        if (!checkCollision(newPosition)) {
+        // Apply movement with optional collision check (only for left/right/up/down movements)
+        // Forward/backward now handled via distance changes above
+        const hasPositionChanges = keys.arrowleft || keys.a || keys.arrowright || keys.d || keys.q || keys.e;
+        if (hasPositionChanges && !checkCollision(newPosition)) {
           // No position restrictions - allow free movement
           world.camera.controls.setPosition(newPosition.x, newPosition.y, newPosition.z);
           
@@ -306,6 +328,21 @@ export class WorldViewer extends HTMLElement {
 
     // Enable normal mouse wheel zooming - remove movement restrictions
     // Note: Default wheel behavior is now handled by the camera controls
+    
+    // Add mousewheel logging to understand the behavior
+    viewport.addEventListener('wheel', (event: WheelEvent) => {
+      console.log('=== MOUSEWHEEL EVENT ===');
+      console.log('Delta:', event.deltaY);
+      console.log('Position before:', world.camera.controls.getPosition(new THREE.Vector3()));
+      const controls = world.camera.controls as any;
+      console.log('Distance before:', controls.distance);
+      
+      setTimeout(() => {
+        console.log('Position after:', world.camera.controls.getPosition(new THREE.Vector3()));
+        console.log('Distance after:', controls.distance);
+        console.log('========================');
+      }, 10);
+    });
 
     const worldGrid = components.get(Grids).create(world);
     worldGrid.material.uniforms.uColor.value = new THREE.Color(0x424242);
@@ -446,9 +483,9 @@ export class WorldViewer extends HTMLElement {
             world.camera.controls.camera.updateProjectionMatrix();
           }
           
-          // Screenshot values: Position: X: -1.29, Y: 0.34, Z: 1.14, Azimuth: 346.7°, Polar: 78.4°
+          // Screenshot values: Position: X: -1.29, Y: 1.60, Z: 1.14, Azimuth: 346.7°, Polar: 78.4°
           const defaultX = -1.29;
-          const defaultY = 1.6;
+          const defaultY = 1.60;
           const defaultZ = 1.14;
           const defaultAzimuth = 346.7 * Math.PI / 180;  // 346.7°
           const defaultPolar = 78.4 * Math.PI / 180;     // 78.4°

@@ -33,7 +33,6 @@ export default (world: OBC.World, highlighter?: OBF.Highlighter) => {
 
     const currentPos = camera.controls.getPosition(new THREE.Vector3());
     const azimuth = camera.controls.azimuthAngle;
-    const polar = camera.controls.polarAngle;
     const newPos = currentPos.clone();
 
     // Clear highlighter selection when camera moves via UI controls
@@ -61,36 +60,95 @@ export default (world: OBC.World, highlighter?: OBF.Highlighter) => {
      */
 
     switch (direction) {
-      case 'forward':
-      case 'up':
-        // Move along camera's viewing direction (like scroll wheel forward)
-        // Uses spherical coordinates to calculate 3D movement vector
-        newPos.x += Math.sin(polar) * Math.sin(azimuth) * moveStep;
-        newPos.y += Math.cos(polar) * moveStep;
-        newPos.z += Math.sin(polar) * Math.cos(azimuth) * moveStep;
+      case 'forward': {
+        // Copy mousewheel forward functionality exactly
+        console.log('=== FORWARD BUTTON (copying mousewheel) ===');
+        const positionBefore = camera.controls.getPosition(new THREE.Vector3());
+        const controls = camera.controls as any;
+        console.log('Position before:', positionBefore);
+        console.log('Distance before:', controls.distance);
+        
+        // Simulate mousewheel forward (negative delta) by changing distance like mousewheel does
+        if (controls.distance !== undefined) {
+          const currentDistance = controls.distance;
+          // Reduce distance to move camera closer (like mousewheel forward)
+          // Use more aggressive reduction to allow getting much closer
+          const newDistance = Math.max(0.0001, currentDistance * 0.95); // Much more aggressive, extremely low minimum
+          console.log('CHANGING DISTANCE FROM', currentDistance, 'TO', newDistance);
+          controls.distance = newDistance;
+          
+          // Force camera controls to update position based on new distance
+          camera.controls.update(0);
+          
+          setTimeout(() => {
+            console.log('Position after:', camera.controls.getPosition(new THREE.Vector3()));
+            console.log('Distance after:', controls.distance);
+            console.log('===============================');
+          }, 10);
+        } else {
+          console.log('ERROR: controls.distance is undefined!');
+        }
         break;
-      case 'backward':
-      case 'down':
-        // Move opposite to camera's viewing direction (like scroll wheel backward)
-        newPos.x -= Math.sin(polar) * Math.sin(azimuth) * moveStep;
-        newPos.y -= Math.cos(polar) * moveStep;
-        newPos.z -= Math.sin(polar) * Math.cos(azimuth) * moveStep;
+      }
+        
+      case 'backward': {
+        // Copy mousewheel backward functionality exactly
+        console.log('=== BACKWARD BUTTON (copying mousewheel) ===');
+        const positionBefore = camera.controls.getPosition(new THREE.Vector3());
+        const controls = camera.controls as any;
+        console.log('Position before:', positionBefore);
+        console.log('Distance before:', controls.distance);
+        
+        // Simulate mousewheel backward (positive delta) by changing distance like mousewheel does
+        if (controls.distance !== undefined) {
+          const currentDistance = controls.distance;
+          // Increase distance to move camera farther (like mousewheel backward)
+          // Use very small increase to match mousewheel behavior
+          const newDistance = currentDistance * 1.001; // Very small change to match mousewheel
+          console.log('CHANGING DISTANCE FROM', currentDistance, 'TO', newDistance);
+          controls.distance = newDistance;
+          
+          // Force camera controls to update position based on new distance
+          camera.controls.update(0);
+          
+          setTimeout(() => {
+            console.log('Position after:', camera.controls.getPosition(new THREE.Vector3()));
+            console.log('Distance after:', controls.distance);
+            console.log('===============================');
+          }, 10);
+        } else {
+          console.log('ERROR: controls.distance is undefined!');
+        }
         break;
+      }
+        
       case 'left':
         // Strafe left (perpendicular to viewing direction in horizontal plane)
         // Perpendicular vector: rotate azimuth by -90° (subtract π/2)
-        newPos.x -= Math.cos(azimuth) * moveStep;
-        newPos.z += Math.sin(azimuth) * moveStep;
+        newPos.x -= Math.cos(camera.controls.azimuthAngle) * moveStep;
+        newPos.z += Math.sin(camera.controls.azimuthAngle) * moveStep;
         break;
       case 'right':
         // Strafe right (perpendicular to viewing direction in horizontal plane)  
         // Perpendicular vector: rotate azimuth by +90° (add π/2)
-        newPos.x += Math.cos(azimuth) * moveStep;
-        newPos.z -= Math.sin(azimuth) * moveStep;
+        newPos.x += Math.cos(camera.controls.azimuthAngle) * moveStep;
+        newPos.z -= Math.sin(camera.controls.azimuthAngle) * moveStep;
+        break;
+      case 'up':
+        // Move up along Y-axis only
+        newPos.y += moveStep;
+        break;
+      case 'down':
+        // Move down along Y-axis only  
+        newPos.y -= moveStep;
         break;
     }
 
-    camera.controls.setPosition(newPos.x, newPos.y, newPos.z);
+    // Only update position for left/right/up/down movements
+    // Forward/backward now use distance instead
+    if (direction !== 'forward' && direction !== 'backward') {
+      camera.controls.setPosition(newPos.x, newPos.y, newPos.z);
+    }
   };
 
   const rotateCamera = (direction: 'left' | 'right' | 'up' | 'down') => {
