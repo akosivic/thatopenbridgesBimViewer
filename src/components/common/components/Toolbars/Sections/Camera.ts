@@ -32,7 +32,6 @@ export default (world: OBC.World, highlighter?: OBF.Highlighter) => {
     if (!camera.controls) return;
 
     const currentPos = camera.controls.getPosition(new THREE.Vector3());
-    const azimuth = camera.controls.azimuthAngle;
     const newPos = currentPos.clone();
 
     // Clear highlighter selection when camera moves via UI controls
