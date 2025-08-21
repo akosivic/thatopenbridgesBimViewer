@@ -20,6 +20,7 @@ import {
 } from "@thatopen/components-front";
 import { Manager, Viewport, Component, html, Grid } from "@thatopen/ui";
 import * as THREE from "three";
+import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 import projectInformation, { setModel } from "./components/Panels/ProjectInformation";
 import elementData from "./components/Panels/Selection";
 import settings from "./components/Panels/Settings";
@@ -87,39 +88,65 @@ export class WorldViewer extends HTMLElement {
 
     world.camera = new OrthoPerspectiveCamera(components);
 
-    // Set initial camera position and angles from screenshot specification  
-    // Screenshot values: Position: X: -1.29, Y: 1.60, Z: 1.14, Azimuth: 346.7°, Polar: 78.4°
+    // First-Person Camera Setup (FPS-style controls)
+    // Set initial camera position at eye level (1.6m height)
     const defaultX = -1.29;
-    const defaultY = 1.60;
+    const defaultY = 1.60; // Eye level height
     const defaultZ = 1.14;
-    const defaultAzimuth = 346.7 * Math.PI / 180;  // Convert 346.7° to radians 
-    const defaultPolar = 78.4 * Math.PI / 180;     // Convert 78.4° to radians
-
-    // Initialize the camera controls with position and angles
-    world.camera.controls.setPosition(defaultX, defaultY, defaultZ);
-    world.camera.controls.azimuthAngle = defaultAzimuth;
-    world.camera.controls.polarAngle = defaultPolar;
     
-    // Set default zoom
-    if (world.camera.controls.camera) {
+    // Create pointer lock controls for first-person navigation
+    let fpControls: PointerLockControls | null = null;
+    
+    // Set camera position directly in world coordinates
+    world.camera.three.position.set(defaultX, defaultY, defaultZ);
+    
+    // Set camera to look slightly downward (more natural for walking)
+    const lookDirection = new THREE.Vector3(0, -0.1, -1).normalize();
+    world.camera.three.lookAt(
+      world.camera.three.position.x + lookDirection.x,
+      world.camera.three.position.y + lookDirection.y,
+      world.camera.three.position.z + lookDirection.z
+    );
+
+    // Initialize pointer lock controls
+    fpControls = new PointerLockControls(world.camera.three, viewport);
+    
+    // Store FPS controls reference for Camera.ts
+    const { setFPControls } = await import('./components/Toolbars/Sections/Camera');
+    setFPControls(fpControls);
+    
+    // DISABLE the original orbit controls to prevent conflicts
+    if (world.camera.controls) {
+      world.camera.controls.enabled = false;
+      console.log('Original orbit controls disabled');
+    }
+    
+    // Override the original camera controls with first-person controls
+    (world.camera as any).fpControls = fpControls;
+    
+    // Add click-to-lock functionality
+    viewport.addEventListener('click', () => {
+      if (fpControls && !fpControls.isLocked) {
+        fpControls.lock();
+      }
+    });
+    
+    // Handle pointer lock events
+    fpControls.addEventListener('lock', () => {
+      console.log('First-person controls locked - use mouse to look around');
+    });
+    
+    fpControls.addEventListener('unlock', () => {
+      console.log('First-person controls unlocked - click to re-enter first-person mode');
+    });
+    
+    // Set default camera properties
+    if (world.camera.controls && world.camera.controls.camera) {
       world.camera.controls.camera.zoom = 1.00;
       world.camera.controls.camera.updateProjectionMatrix();
     }
 
-    // Force camera controls to update and render properly
-    world.camera.controls.update(0);
-    
-    // Force a render update after setting camera position
-    setTimeout(() => {
-      world.camera.controls.update(0);
-      if (world.renderer) {
-        world.renderer.update();
-      }
-    }, 100);
-
-    console.log('Initial camera position set:', world.camera.controls.getPosition(new THREE.Vector3()));
-    console.log('Initial camera azimuth:', world.camera.controls.azimuthAngle * 180 / Math.PI, '°');
-    console.log('Initial camera polar:', world.camera.controls.polarAngle * 180 / Math.PI, '°');
+    console.log('First-person camera initialized at position:', world.camera.three.position);
 
     // Create camera position display only in debug mode
     let positionDisplay: HTMLElement | null = null;
@@ -137,17 +164,11 @@ export class WorldViewer extends HTMLElement {
         border-radius: 4px;
         z-index: 1000;
       `;
-      document.body.appendChild(positionDisplay);
     }
 
-    // Remove camera movement restrictions - allow full freedom
-    // Previously locked polar angles are now removed for full 3D movement
-    world.camera.controls.maxPolarAngle = Math.PI; // Allow full rotation up/down
-    world.camera.controls.minPolarAngle = 0; // Allow full rotation up/down
-
-    // Enhanced FPS-style controls with additional keys
-    const moveSpeed = 0.1; // Speed of camera movement per frame
-    const enableCollisionDetection = false; // Configurable collision detection (default: false)
+    // FPS-style movement controls
+    const moveSpeed = 5.0; // Units per second for FPS movement
+    const sprintMultiplier = 2.0; // Sprint speed multiplier
     const keys: Record<string, boolean> = {
       // Arrow keys
       arrowup: false,
@@ -163,152 +184,86 @@ export class WorldViewer extends HTMLElement {
       q: false, // Up
       e: false, // Down
       // Speed modifier
-      shift: false, // Fast movement
+      shift: false, // Sprint
     };
 
-    // Collision detection function
-    const checkCollision = (newPosition: THREE.Vector3): boolean => {
-      if (!enableCollisionDetection) return false;
+    // Movement vectors for FPS navigation
+    const direction = new THREE.Vector3();
+    const sideways = new THREE.Vector3();
+    const upVector = new THREE.Vector3(0, 1, 0);
 
-      const raycaster = new THREE.Raycaster();
-      const direction = new THREE.Vector3();
-      const currentPos = world.camera.controls.getPosition(new THREE.Vector3());
+    // FPS movement update function
+    const updateFPSMovement = () => {
+      if (!fpControls || !fpControls.isLocked) {
+        requestAnimationFrame(updateFPSMovement);
+        return;
+      }
 
-      direction.subVectors(newPosition, currentPos).normalize();
-      raycaster.set(currentPos, direction);
+      const currentSpeed = keys.shift ? moveSpeed * sprintMultiplier : moveSpeed;
+      const deltaTime = 0.016; // Approximate 60 FPS
+      const moveDistance = currentSpeed * deltaTime;
 
-      const intersects = raycaster.intersectObjects(world.scene.three.children, true);
-      return intersects.length > 0 && intersects[0].distance < 0.5; // 0.5m collision buffer
-    };
-
-    // Continuous movement update function with enhanced controls
-    const updateMovement = () => {
-      const currentSpeed = keys.shift ? moveSpeed * 3 : moveSpeed; // 3x speed with shift
-      
       if (keys.arrowup || keys.arrowdown || keys.arrowleft || keys.arrowright || 
           keys.w || keys.a || keys.s || keys.d || keys.q || keys.e) {
         
-        // Clear highlighter selection when camera moves via keyboard
+        // Clear highlighter selection when camera moves
         highlighter.clear("select");
         
-        const currentPosition = world.camera.controls.getPosition(new THREE.Vector3());
-        const newPosition = currentPosition.clone();
-        const azimuth = world.camera.controls.azimuthAngle;
+        // Get camera's current orientation
+        world.camera.three.getWorldDirection(direction);
+        sideways.crossVectors(direction, upVector).normalize();
 
-        // Forward/backward movement (Arrow keys and W/S) - like mousewheel using distance
+        // Forward/backward movement (W/S or Arrow Up/Down)
         if (keys.arrowup || keys.w) {
-          // Move forward like mousewheel - reduce distance to get closer to target
-          const controls = world.camera.controls as any;
-          if (controls.distance !== undefined) {
-            const currentDistance = controls.distance;
-            // Convert linear speed to distance ratio to match left/right movement speed
-            // Use more aggressive movement to allow getting much closer
-            const speedRatio = currentSpeed / 5; // More aggressive scaling for closer movement
-            const moveRatio = 1 - speedRatio; // Reduce distance (move closer)
-            controls.distance = Math.max(0.0001, currentDistance * moveRatio);
-            world.camera.controls.update(0);
-            console.log('Keyboard Forward: distance changed from', currentDistance, 'to', controls.distance, 'ratio:', moveRatio);
-          }
+          world.camera.three.position.addScaledVector(direction, moveDistance);
         }
         if (keys.arrowdown || keys.s) {
-          // Move backward like mousewheel - increase distance to get farther from target
-          const controls = world.camera.controls as any;
-          if (controls.distance !== undefined) {
-            const currentDistance = controls.distance;
-            // Convert linear speed to distance ratio to match left/right movement speed
-            // Use currentSpeed to match the same speed as lateral movement
-            const speedRatio = currentSpeed / 10; // Scale down for distance-based movement
-            const moveRatio = 1 + speedRatio; // Increase distance (move farther)
-            controls.distance = currentDistance * moveRatio;
-            world.camera.controls.update(0);
-            console.log('Keyboard Backward: distance changed from', currentDistance, 'to', controls.distance, 'ratio:', moveRatio);
-          }
+          world.camera.three.position.addScaledVector(direction, -moveDistance);
         }
 
-        // Left/right strafing (Arrow keys and A/D)
+        // Left/right strafing (A/D or Arrow Left/Right)
         if (keys.arrowleft || keys.a) {
-          newPosition.x -= Math.cos(azimuth) * currentSpeed;
-          newPosition.z += Math.sin(azimuth) * currentSpeed;
+          world.camera.three.position.addScaledVector(sideways, -moveDistance);
         }
         if (keys.arrowright || keys.d) {
-          newPosition.x += Math.cos(azimuth) * currentSpeed;
-          newPosition.z -= Math.sin(azimuth) * currentSpeed;
+          world.camera.three.position.addScaledVector(sideways, moveDistance);
         }
 
         // Vertical movement (Q/E keys)
         if (keys.q) {
-          newPosition.y += currentSpeed;
+          world.camera.three.position.y += moveDistance;
         }
         if (keys.e) {
-          newPosition.y -= currentSpeed;
+          world.camera.three.position.y -= moveDistance;
         }
 
-        // Apply movement with optional collision check (only for left/right/up/down movements)
-        // Forward/backward now handled via distance changes above
-        const hasPositionChanges = keys.arrowleft || keys.a || keys.arrowright || keys.d || keys.q || keys.e;
-        if (hasPositionChanges && !checkCollision(newPosition)) {
-          // No position restrictions - allow free movement
-          world.camera.controls.setPosition(newPosition.x, newPosition.y, newPosition.z);
-          
-          // Allow normal zoom behavior
-          if (world.camera.controls.camera) {
-            // Don't force zoom reset - allow user to control zoom
-          }
-        }
-
-        // Update position display with comprehensive camera information (only in debug mode)
+        // Update position display (debug mode)
         if (positionDisplay) {
-          const pos = world.camera.controls.getPosition(new THREE.Vector3());
-          const azimuthdisplay = world.camera.controls.azimuthAngle;
-          const polardisplay = world.camera.controls.polarAngle;
-          const zoom = world.camera.controls.camera ? world.camera.controls.camera.zoom : 1;
+          const pos = world.camera.three.position;
+          const rot = world.camera.three.rotation;
+          const isLocked = fpControls.isLocked;
           
           positionDisplay.innerHTML = `
-            <div style="font-weight: bold; color: #00ff00; margin-bottom: 5px;">Camera Controls</div>
+            <div style="font-weight: bold; color: #00ff00; margin-bottom: 5px;">Camera Controls 2</div>
+            <div style="font-weight: bold; color: ${isLocked ? '#00ff00' : '#ff8800'}; font-size: 14px; margin-bottom: 5px;">
+              ${isLocked ? '🔒 FPS MODE ACTIVE' : '🔓 FPS MODE INACTIVE'}
+            </div>
             Position: X: ${pos.x.toFixed(2)}, Y: ${pos.y.toFixed(2)}, Z: ${pos.z.toFixed(2)}<br>
-            Azimuth: ${(azimuthdisplay * 180 / Math.PI).toFixed(1)}°<br>
-            Polar: ${(polardisplay * 180 / Math.PI).toFixed(1)}°<br>
-            Zoom: ${zoom.toFixed(2)}<br>
-            Speed: ${keys.shift ? 'FAST' : 'Normal'}<br>
+            Azimuth: ${(rot.y * 180 / Math.PI).toFixed(1)}°<br>
+            Polar: ${(90 - rot.x * 180 / Math.PI).toFixed(1)}°<br>
+            Zoom: ${world.camera.controls?.camera?.zoom?.toFixed(2) || '1.00'}<br>
+            Speed: ${keys.shift ? 'Fast' : 'Normal'}<br>
             <div style="font-size: 10px; color: #ccc; margin-top: 5px;">
               WASD/Arrows: Move | Q/E: Up/Down | Shift: Fast<br>
-              Mouse: Look | Wheel: Zoom | 
+              Mouse: Look | Wheel: Zoom |
+            </div>
           `;
         }
       }
-      requestAnimationFrame(updateMovement);
-    };
-    updateMovement();
-
-    // Continuous position display update for all camera changes (including mouse drag)
-    const updatePositionDisplay = () => {
-      if (positionDisplay) {
-        const pos = world.camera.controls.getPosition(new THREE.Vector3());
-        const azimuthdisplay = world.camera.controls.azimuthAngle;
-        const polardisplay = world.camera.controls.polarAngle;
-        const zoom = world.camera.controls.camera ? world.camera.controls.camera.zoom : 1;
-        
-        positionDisplay.innerHTML = `
-          <div style="font-weight: bold; color: #00ff00; margin-bottom: 5px;">Camera Controls</div>
-          Position: X: ${pos.x.toFixed(2)}, Y: ${pos.y.toFixed(2)}, Z: ${pos.z.toFixed(2)}<br>
-          Azimuth: ${(azimuthdisplay * 180 / Math.PI).toFixed(1)}°<br>
-          Polar: ${(polardisplay * 180 / Math.PI).toFixed(1)}°<br>
-          Zoom: ${zoom.toFixed(2)}<br>
-          Speed: ${keys.shift ? 'FAST' : 'Normal'}<br>
-          <div style="font-size: 10px; color: #ccc; margin-top: 5px;">
-            WASD/Arrows: Move | Q/E: Up/Down | Shift: Fast<br>
-            Mouse: Look | Wheel: Zoom |
-          </div>
-        `;
-      }
       
-      requestAnimationFrame(updatePositionDisplay);
+      requestAnimationFrame(updateFPSMovement);
     };
-    if (isDebugMode) {
-      updatePositionDisplay();
-    }
-
-    // Camera controls are now unrestricted - removed eye level enforcement
+    updateFPSMovement();
 
     window.addEventListener('keydown', (e) => {
       const key = e.key.toLowerCase();
@@ -326,22 +281,16 @@ export class WorldViewer extends HTMLElement {
       }
     });
 
-    // Enable normal mouse wheel zooming - remove movement restrictions
-    // Note: Default wheel behavior is now handled by the camera controls
-    
-    // Add mousewheel logging to understand the behavior
+    // Enable normal mouse wheel zooming for camera
     viewport.addEventListener('wheel', (event: WheelEvent) => {
-      console.log('=== MOUSEWHEEL EVENT ===');
-      console.log('Delta:', event.deltaY);
-      console.log('Position before:', world.camera.controls.getPosition(new THREE.Vector3()));
-      const controls = world.camera.controls as any;
-      console.log('Distance before:', controls.distance);
+      if (!fpControls || !fpControls.isLocked) return;
       
-      setTimeout(() => {
-        console.log('Position after:', world.camera.controls.getPosition(new THREE.Vector3()));
-        console.log('Distance after:', controls.distance);
-        console.log('========================');
-      }, 10);
+      console.log('=== MOUSEWHEEL EVENT (FPS Mode) ===');
+      console.log('Delta:', event.deltaY);
+      
+      // In FPS mode, wheel can adjust movement speed or other features if needed
+      
+      console.log('FPS wheel event processed');
     });
 
     const worldGrid = components.get(Grids).create(world);
@@ -417,35 +366,35 @@ export class WorldViewer extends HTMLElement {
     };
     const culler = components.get(Cullers).create(world);
     culler.threshold = 5;
-    world.camera.controls.restThreshold = 0.25;
-    world.camera.controls.addEventListener("rest", () => {
-      culler.needsUpdate = true;
-      tilesLoader.cancel = true;
-      tilesLoader.culler.needsUpdate = true;
+    
+    // Note: Original orbit controls are disabled, using FPS controls instead
+    // world.camera.controls.restThreshold = 0.25;
+    // world.camera.controls.addEventListener("rest", () => {
+    //   culler.needsUpdate = true;
+    //   tilesLoader.cancel = true;
+    //   tilesLoader.culler.needsUpdate = true;
+    //   // Remove eye level enforcement - allow free camera positioning
+    // });
+    
+    // For FPS mode, we'll handle culling updates differently
+    // The culler will update based on FPS camera movement instead
 
-      // Remove eye level enforcement - allow free camera positioning
-    });
-
-    // Add camera movement detection to clear selection when camera moves
-    const lastCameraPosition = world.camera.controls.getPosition(new THREE.Vector3());
-    let lastCameraAzimuth = world.camera.controls.azimuthAngle;
-    let lastCameraPolar = world.camera.controls.polarAngle;
+    // Add FPS camera movement detection to clear selection when camera moves
+    const lastCameraPosition = world.camera.three.position.clone();
     
     // Check for camera movement changes and clear selection
     const checkCameraMovement = () => {
-      const currentPosition = world.camera.controls.getPosition(new THREE.Vector3());
-      const currentAzimuth = world.camera.controls.azimuthAngle;
-      const currentPolar = world.camera.controls.polarAngle;
+      if (!fpControls) {
+        requestAnimationFrame(checkCameraMovement);
+        return;
+      }
       
+      const currentPosition = world.camera.three.position.clone();
       const positionChanged = !lastCameraPosition.equals(currentPosition);
-      const rotationChanged = Math.abs(lastCameraAzimuth - currentAzimuth) > 0.01 || 
-                             Math.abs(lastCameraPolar - currentPolar) > 0.01;
       
-      if (positionChanged || rotationChanged) {
+      if (positionChanged) {
         // highlighter.clear("select");
         lastCameraPosition.copy(currentPosition);
-        lastCameraAzimuth = currentAzimuth;
-        lastCameraPolar = currentPolar;
       }
       
       requestAnimationFrame(checkCameraMovement);
@@ -469,54 +418,17 @@ export class WorldViewer extends HTMLElement {
 
       if (!model.isStreamed) {
         setTimeout(async () => {
-          console.log('Camera position before fit:', world.camera.controls.getPosition(new THREE.Vector3()));
+          console.log('Model loaded - FPS camera already initialized');
           
-          // Skip automatic camera fitting to maintain default position
-          // world.camera.fit(world.meshes, 0.8);
-          
-          // Set both position and specific angles as requested
-          console.log('Setting camera to exact user specifications...');
-          
-          // Set zoom
-          if (world.camera.controls.camera) {
-            world.camera.controls.camera.zoom = 1.00;
-            world.camera.controls.camera.updateProjectionMatrix();
-          }
-          
-          // Screenshot values: Position: X: -1.29, Y: 1.60, Z: 1.14, Azimuth: 346.7°, Polar: 78.4°
-          const defaultX = -1.29;
-          const defaultY = 1.60;
-          const defaultZ = 1.14;
-          const defaultAzimuth = 346.7 * Math.PI / 180;  // 346.7°
-          const defaultPolar = 78.4 * Math.PI / 180;     // 78.4°
-          
-          // Calculate target point that makes these values consistent
-          const dirX = Math.sin(defaultPolar) * Math.sin(defaultAzimuth);
-          const dirY = Math.cos(defaultPolar);  
-          const dirZ = Math.sin(defaultPolar) * Math.cos(defaultAzimuth);
-          const lookDistance = 10;
-          const targetPoint = {
-            x: defaultX + dirX * lookDistance,
-            y: defaultY + dirY * lookDistance,
-            z: defaultZ + dirZ * lookDistance
-          };
-          
-          // Try to set target if possible
-          if ((world.camera.controls as any).target && (world.camera.controls as any).target.set) {
-            (world.camera.controls as any).target.set(targetPoint.x, targetPoint.y, targetPoint.z);
-          }
-          
-          // Set position and angles
-          world.camera.controls.setPosition(defaultX, defaultY, defaultZ);
-          world.camera.controls.azimuthAngle = defaultAzimuth;
-          world.camera.controls.polarAngle = defaultPolar;
+          // FPS camera is already set up - no need for automatic fitting
+          // The camera will be controlled by the user via FPS controls
           
           if (world.renderer) {
             world.renderer.update();
           }
           
-          console.log('Camera set to - Position:', world.camera.controls.getPosition(new THREE.Vector3()));
-          console.log('Camera set to - Azimuth:', world.camera.controls.azimuthAngle * 180 / Math.PI, '°, Polar:', world.camera.controls.polarAngle * 180 / Math.PI, '°');
+          console.log('FPS Camera Position:', world.camera.three.position);
+          console.log('FPS Camera Rotation:', world.camera.three.rotation);
         }, 200);
       }
     });

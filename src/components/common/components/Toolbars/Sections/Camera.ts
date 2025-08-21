@@ -2,7 +2,14 @@ import * as OBC from "@thatopen/components";
 import * as OBF from "@thatopen/components-front";
 import * as BUI from "@thatopen/ui";
 import * as THREE from "three";
+import { PointerLockControls } from "three/examples/jsm/Addons.js";
 import i18n from "../../../utils/i18n";
+
+// Global reference to FPS controls - will be set from WorldViewer
+export let fpControls: PointerLockControls | null = null;
+export const setFPControls = (controls: PointerLockControls | null) => {
+  fpControls = controls;
+};
 
 export default (world: OBC.World, highlighter?: OBF.Highlighter) => {
   const { camera } = world;
@@ -23,201 +30,146 @@ export default (world: OBC.World, highlighter?: OBF.Highlighter) => {
       : "majesticons:unlock-open";
   };
 
-  // Camera position controls
+  // FPS Camera movement controls
   const moveStep = 1.0;
-  const rotationStep = 15; // degrees
-  const zoomStep = 0.1;
+  const rotationStep = 0.1; // radians for FPS rotation
 
   const moveCamera = (direction: 'forward' | 'backward' | 'left' | 'right' | 'up' | 'down') => {
-    if (!camera.controls) return;
+    if (!fpControls) {
+      console.log('FPS controls not initialized');
+      return;
+    }
 
-    const currentPos = camera.controls.getPosition(new THREE.Vector3());
-    const newPos = currentPos.clone();
+    const camera3js = world.camera.three;
+    const currentPos = camera3js.position.clone();
 
     // Clear highlighter selection when camera moves via UI controls
     if (highlighter) {
       highlighter.clear("select");
     }
 
+    console.log(`=== FPS CAMERA MOVEMENT: ${direction.toUpperCase()} ===`);
+    console.log('Current position:', currentPos);
+
     /*
-     * SPHERICAL COORDINATE MOVEMENT CALCULATIONS:
+     * FPS MOVEMENT SYSTEM:
      * 
-     * The camera uses spherical coordinates where:
-     * - azimuth: horizontal rotation around Y-axis (0° = -Z direction)
-     * - polar: vertical angle from Y-axis (0° = up, 90° = horizontal, 180° = down)
+     * Uses direct Three.js camera position manipulation with world-space vectors.
+     * Movement is based on camera's current orientation (forward/right vectors).
      * 
-     * For movement calculations:
-     * - Forward/Backward: Move along camera's viewing direction (uses both azimuth & polar)
-     * - Left/Right: Strafe perpendicular to viewing direction (horizontal plane only)
-     * - Up/Down: Move purely along Y-axis (vertical)
+     * DIRECTION VECTORS:
+     * - Forward: Camera's negative Z direction in world space
+     * - Right: Camera's positive X direction in world space  
+     * - Up: World Y-axis (always vertical)
      * 
-     * AZIMUTH-BASED DIRECTION VECTORS:
-     * - sin(azimuth) gives X component of horizontal direction
-     * - cos(azimuth) gives Z component of horizontal direction
-     * - sin(polar) scales horizontal movement for viewing angle
-     * - cos(polar) gives Y component for forward/backward movement
+     * MOVEMENT CALCULATIONS:
+     * - Get camera's world direction matrix
+     * - Extract right/forward vectors from camera orientation
+     * - Apply movement step in desired direction
+     * - Update camera position directly
      */
 
+    // Get camera's current orientation vectors
+    const cameraMatrix = new THREE.Matrix4();
+    camera3js.updateMatrixWorld();
+    cameraMatrix.extractRotation(camera3js.matrixWorld);
+    
+    const forward = new THREE.Vector3();
+    const right = new THREE.Vector3();
+    const up = new THREE.Vector3(0, 1, 0);
+    
+    // Extract direction vectors from camera matrix
+    cameraMatrix.extractBasis(right, up, forward);
+    forward.negate(); // Camera looks down negative Z
+    
+    const newPos = currentPos.clone();
+
     switch (direction) {
-      case 'forward': {
-        // Copy mousewheel forward functionality exactly
-        console.log('=== FORWARD BUTTON (copying mousewheel) ===');
-        const positionBefore = camera.controls.getPosition(new THREE.Vector3());
-        const controls = camera.controls as any;
-        console.log('Position before:', positionBefore);
-        console.log('Distance before:', controls.distance);
-        
-        // Simulate mousewheel forward (negative delta) by changing distance like mousewheel does
-        if (controls.distance !== undefined) {
-          const currentDistance = controls.distance;
-          // Reduce distance to move camera closer (like mousewheel forward)
-          // Use more aggressive reduction to allow getting much closer
-          const newDistance = Math.max(0.0001, currentDistance * 0.95); // Much more aggressive, extremely low minimum
-          console.log('CHANGING DISTANCE FROM', currentDistance, 'TO', newDistance);
-          controls.distance = newDistance;
-          
-          // Force camera controls to update position based on new distance
-          camera.controls.update(0);
-          
-          setTimeout(() => {
-            console.log('Position after:', camera.controls.getPosition(new THREE.Vector3()));
-            console.log('Distance after:', controls.distance);
-            console.log('===============================');
-          }, 10);
-        } else {
-          console.log('ERROR: controls.distance is undefined!');
-        }
+      case 'forward':
+        newPos.addScaledVector(forward, moveStep);
         break;
-      }
-        
-      case 'backward': {
-        // Copy mousewheel backward functionality exactly
-        console.log('=== BACKWARD BUTTON (copying mousewheel) ===');
-        const positionBefore = camera.controls.getPosition(new THREE.Vector3());
-        const controls = camera.controls as any;
-        console.log('Position before:', positionBefore);
-        console.log('Distance before:', controls.distance);
-        
-        // Simulate mousewheel backward (positive delta) by changing distance like mousewheel does
-        if (controls.distance !== undefined) {
-          const currentDistance = controls.distance;
-          // Increase distance to move camera farther (like mousewheel backward)
-          // Use very small increase to match mousewheel behavior
-          const newDistance = currentDistance * 1.001; // Very small change to match mousewheel
-          console.log('CHANGING DISTANCE FROM', currentDistance, 'TO', newDistance);
-          controls.distance = newDistance;
-          
-          // Force camera controls to update position based on new distance
-          camera.controls.update(0);
-          
-          setTimeout(() => {
-            console.log('Position after:', camera.controls.getPosition(new THREE.Vector3()));
-            console.log('Distance after:', controls.distance);
-            console.log('===============================');
-          }, 10);
-        } else {
-          console.log('ERROR: controls.distance is undefined!');
-        }
+      case 'backward':
+        newPos.addScaledVector(forward, -moveStep);
         break;
-      }
-        
       case 'left':
-        // Strafe left (perpendicular to viewing direction in horizontal plane)
-        // Perpendicular vector: rotate azimuth by -90° (subtract π/2)
-        newPos.x -= Math.cos(camera.controls.azimuthAngle) * moveStep;
-        newPos.z += Math.sin(camera.controls.azimuthAngle) * moveStep;
+        newPos.addScaledVector(right, -moveStep);
         break;
       case 'right':
-        // Strafe right (perpendicular to viewing direction in horizontal plane)  
-        // Perpendicular vector: rotate azimuth by +90° (add π/2)
-        newPos.x += Math.cos(camera.controls.azimuthAngle) * moveStep;
-        newPos.z -= Math.sin(camera.controls.azimuthAngle) * moveStep;
+        newPos.addScaledVector(right, moveStep);
         break;
       case 'up':
-        // Move up along Y-axis only
         newPos.y += moveStep;
         break;
       case 'down':
-        // Move down along Y-axis only  
         newPos.y -= moveStep;
         break;
     }
 
-    // Only update position for left/right/up/down movements
-    // Forward/backward now use distance instead
-    if (direction !== 'forward' && direction !== 'backward') {
-      camera.controls.setPosition(newPos.x, newPos.y, newPos.z);
-    }
+    // Update camera position
+    camera3js.position.copy(newPos);
+    
+    console.log('New position:', newPos);
+    console.log('===================================');
   };
 
   const rotateCamera = (direction: 'left' | 'right' | 'up' | 'down') => {
-    if (!camera.controls) return;
+    if (!fpControls) {
+      console.log('FPS controls not initialized');
+      return;
+    }
 
-    const currentAzimuth = camera.controls.azimuthAngle;
-    const currentPolar = camera.controls.polarAngle;
-    const radStep = (rotationStep * Math.PI) / 180;
+    const camera3js = world.camera.three;
+    
+    // Clear highlighter selection when camera rotates via UI controls
+    if (highlighter) {
+      highlighter.clear("select");
+    }
+
+    console.log(`=== FPS CAMERA ROTATION: ${direction.toUpperCase()} ===`);
 
     /*
-     * CAMERA ROTATION DOCUMENTATION:
+     * FPS ROTATION SYSTEM:
      * 
-     * AZIMUTH ANGLE (horizontal rotation around Y-axis):
-     * - Controls left/right looking direction
-     * - 0° = looking towards negative Z-axis (-Z direction)
-     * - 90° = looking towards positive X-axis (+X direction)  
-     * - 180° = looking towards positive Z-axis (+Z direction)
-     * - 270° = looking towards negative X-axis (-X direction)
+     * Uses Euler angles for direct camera rotation.
+     * Rotation is applied relative to current camera orientation.
      * 
-     * POLAR ANGLE (vertical angle from Y-axis):
-     * - Controls up/down looking direction
-     * - 0° = looking straight up (+Y direction)
-     * - 90° = looking horizontally (XZ plane)
-     * - 180° = looking straight down (-Y direction)
+     * ROTATION AXES:
+     * - Left/Right: Rotate around Y-axis (yaw)
+     * - Up/Down: Rotate around X-axis (pitch)
      * 
-     * ROTATION DIRECTIONS:
-     * - Left/Right: Modify azimuth angle (horizontal panning)
-     * - Up/Down: Modify polar angle with safety bounds (vertical tilting)
-     * 
-     * SAFETY BOUNDS:
-     * - Polar angle clamped between 0.1 and (π - 0.1) to prevent gimbal lock
-     * - This prevents camera from flipping when looking straight up/down
+     * ANGLE CALCULATIONS:
+     * - Get current Euler angles from camera
+     * - Modify yaw (Y) or pitch (X) components
+     * - Clamp pitch to prevent gimbal lock
+     * - Apply rotation back to camera
      */
+
+    const euler = new THREE.Euler().setFromQuaternion(camera3js.quaternion, 'YXZ');
 
     switch (direction) {
       case 'left':
-        // Rotate azimuth counter-clockwise (subtract angle)
-        camera.controls.azimuthAngle = currentAzimuth - radStep;
-        // Clear highlighter selection when camera rotates via UI controls
-        if (highlighter) {
-          highlighter.clear("select");
-        }
+        euler.y -= rotationStep; // Rotate left (counter-clockwise around Y)
         break;
       case 'right':
-        // Rotate azimuth clockwise (add angle)
-        camera.controls.azimuthAngle = currentAzimuth + radStep;
-        // Clear highlighter selection when camera rotates via UI controls
-        if (highlighter) {
-          highlighter.clear("select");
-        }
+        euler.y += rotationStep; // Rotate right (clockwise around Y)
         break;
       case 'up':
-        // Rotate polar upward (decrease angle toward 0°)
-        // Clamp to 0.1 radians to prevent looking exactly straight up
-        camera.controls.polarAngle = Math.max(0.1, currentPolar - radStep);
-        // Clear highlighter selection when camera rotates via UI controls
-        if (highlighter) {
-          highlighter.clear("select");
-        }
+        euler.x = Math.max(-Math.PI/2 + 0.1, euler.x - rotationStep); // Look up (clamp to prevent flip)
         break;
       case 'down':
-        // Rotate polar downward (increase angle toward 180°)
-        // Clamp to (π - 0.1) radians to prevent looking exactly straight down
-        camera.controls.polarAngle = Math.min(Math.PI - 0.1, currentPolar + radStep);
-        // Clear highlighter selection when camera rotates via UI controls
-        if (highlighter) {
-          highlighter.clear("select");
-        }
+        euler.x = Math.min(Math.PI/2 - 0.1, euler.x + rotationStep); // Look down (clamp to prevent flip)
         break;
     }
+
+    // Apply rotation to camera
+    camera3js.setRotationFromEuler(euler);
+    
+    console.log('New rotation (degrees):', {
+      x: euler.x * 180 / Math.PI,
+      y: euler.y * 180 / Math.PI,
+      z: euler.z * 180 / Math.PI
+    });
+    console.log('===================================');
   };
 
   const zoomCamera = (direction: 'in' | 'out') => {
@@ -229,111 +181,91 @@ export default (world: OBC.World, highlighter?: OBF.Highlighter) => {
     }
 
     const currentZoom = camera.controls.camera.zoom;
+    const zoomStep = 0.1;
     const newZoom = direction === 'in' ?
       currentZoom + zoomStep :
       Math.max(0.1, currentZoom - zoomStep);
 
     camera.controls.camera.zoom = newZoom;
     camera.controls.camera.updateProjectionMatrix();
+    
+    console.log(`=== FPS CAMERA ZOOM: ${direction.toUpperCase()} ===`);
+    console.log('Zoom changed from', currentZoom, 'to', newZoom);
   };
 
   const resetCamera = () => {
-    if (!camera.controls) return;
+    if (!fpControls) {
+      console.log('FPS controls not initialized');
+      return;
+    }
 
-    // Target coordinates from screenshot: Position: X: -1.29, Y: 0.34, Z: 1.14, Azimuth: 346.7°, Polar: 78.4°
-    const targetPosition = new THREE.Vector3(-1.29, 0.34, 1.14);
-    const targetAzimuth = 346.7 * Math.PI / 180;
-    const targetPolar = 78.4 * Math.PI / 180;
+    console.log('=== RESETTING FPS CAMERA TO DEFAULT ===');
     
-    console.log('=== RESETTING TO SCREENSHOT VALUES ===');
-    console.log('Target position:', targetPosition);
-    console.log('Target azimuth:', 346.7, '° (', targetAzimuth, 'rad)');
-    console.log('Target polar:', 78.4, '° (', targetPolar, 'rad)');
+    const camera3js = world.camera.three;
     
-    // Calculate what target point would give us the desired position and angles
-    const currentDistance = targetPosition.length(); // Distance from origin
+    // Reset to initial FPS position and orientation
+    const defaultPosition = new THREE.Vector3(-1.29, 1.60, 1.14);
+    const defaultLookAt = new THREE.Vector3(0, 1, 0);
     
-    // Calculate the target point that would place the camera at our desired position
-    // when looking with our desired angles
-    const target = new THREE.Vector3(
-      targetPosition.x - currentDistance * Math.sin(targetPolar) * Math.sin(targetAzimuth),
-      targetPosition.y - currentDistance * Math.cos(targetPolar),
-      targetPosition.z - currentDistance * Math.sin(targetPolar) * Math.cos(targetAzimuth)
-    );
+    camera3js.position.copy(defaultPosition);
+    camera3js.lookAt(defaultLookAt);
     
-    console.log('Calculated target point:', target);
-    console.log('Calculated distance:', currentDistance);
-    
-    // Set the target using object property access to avoid TypeScript errors
-    const controls = camera.controls as any;
-    if (controls.target && controls.target.set) {
-      controls.target.set(target.x, target.y, target.z);
-    }
-    
-    // Set distance if available
-    if ('distance' in camera.controls) {
-      controls.distance = currentDistance;
-    }
-    
-    // Set angles
-    camera.controls.azimuthAngle = targetAzimuth;
-    camera.controls.polarAngle = targetPolar;
-    
-    // Set zoom to 1.00 as shown in screenshot
-    if (camera.controls.camera) {
-      camera.controls.camera.zoom = 1.00;
+    // Reset zoom if available
+    if (camera.controls?.camera) {
+      camera.controls.camera.zoom = 1.0;
       camera.controls.camera.updateProjectionMatrix();
     }
     
-    // Update the controls to apply all changes
-    if ('update' in camera.controls && typeof controls.update === 'function') {
-      controls.update(0);
-    }
-    
-    // Check results after a delay
-    setTimeout(() => {
-      console.log('=== SCREENSHOT RESET RESULTS ===');
-      console.log('Position:', camera.controls?.getPosition(new THREE.Vector3()));
-      console.log('Azimuth:', (camera.controls?.azimuthAngle ?? 0) * 180 / Math.PI, '°');
-      console.log('Polar:', (camera.controls?.polarAngle ?? 0) * 180 / Math.PI, '°');
-      console.log('Zoom:', camera.controls?.camera?.zoom);
-      console.log('Target:', controls.target);
-      console.log('Distance:', controls.distance);
-    }, 100);
+    console.log('Reset position:', defaultPosition);
+    console.log('Reset lookAt:', defaultLookAt);
+    console.log('=====================================');
   };
 
   const toggleProjection = () => {
     if (camera instanceof OBC.OrthoPerspectiveCamera) {
       const current = camera.projection.current;
       camera.projection.set(current === "Perspective" ? "Orthographic" : "Perspective");
+      console.log(`=== PROJECTION CHANGED TO: ${current === "Perspective" ? "Orthographic" : "Perspective"} ===`);
     }
   };
 
-  // Position preset functions
+  // FPS preset functions
   const setTopView = () => {
-    if (!camera.controls) return;
+    if (!fpControls) return;
 
-    const currentPos = camera.controls.getPosition(new THREE.Vector3());
-    camera.controls.setPosition(currentPos.x, currentPos.y + 10, currentPos.z);
-    camera.controls.polarAngle = 0.1; // Almost top-down
-    if (camera.controls.camera) {
-      camera.controls.camera.zoom = 0.5;
-      camera.controls.camera.updateProjectionMatrix();
-    }
+    const camera3js = world.camera.three;
+    const currentPos = camera3js.position.clone();
+    
+    // Move up and look down
+    camera3js.position.set(currentPos.x, currentPos.y + 10, currentPos.z);
+    camera3js.lookAt(currentPos.x, currentPos.y, currentPos.z);
+    
+    console.log('=== FPS TOP VIEW SET ===');
+    console.log('Position:', camera3js.position);
   };
 
   const setFrontView = () => {
-    if (!camera.controls) return;
+    if (!fpControls) return;
 
-    camera.controls.azimuthAngle = 0;
-    camera.controls.polarAngle = Math.PI / 2;
+    const camera3js = world.camera.three;
+    const currentPos = camera3js.position.clone();
+    
+    // Look towards negative Z (front)
+    camera3js.lookAt(currentPos.x, currentPos.y, currentPos.z - 10);
+    
+    console.log('=== FPS FRONT VIEW SET ===');
   };
 
   const setSideView = () => {
-    if (!camera.controls) return;
+    if (!fpControls) return;
 
-    camera.controls.azimuthAngle = Math.PI / 2;
-    camera.controls.polarAngle = Math.PI / 2;
+    const camera3js = world.camera.three;
+    const currentPos = camera3js.position.clone();
+    
+    // Look towards positive X (right side)
+    camera3js.lookAt(currentPos.x + 10, currentPos.y, currentPos.z);
+    
+    console.log('=== FPS SIDE VIEW SET ===');
   };
 
   return BUI.Component.create<BUI.PanelSection>(() => {
@@ -372,6 +304,15 @@ export default (world: OBC.World, highlighter?: OBF.Highlighter) => {
             <bim-button icon="material-symbols:rotate-left" @click=${() => rotateCamera('left')} style="width: 30px; height: 30px;"></bim-button>
             <bim-button icon="material-symbols:rotate-right" @click=${() => rotateCamera('down')} style="width: 30px; height: 30px;"></bim-button>
             <bim-button icon="material-symbols:rotate-right" @click=${() => rotateCamera('right')} style="width: 30px; height: 30px;"></bim-button>
+          </div>
+        </div>
+
+        <!-- Zoom Controls -->
+        <div style="display: flex; flex-direction: column; gap: 5px; margin: 10px 0; padding: 10px; border: 1px solid #333; border-radius: 4px;">
+          <div style="font-size: 12px; font-weight: bold; color: #ccc;">Zoom Controls</div>
+          <div style="display: flex; gap: 5px;">
+            <bim-button icon="material-symbols:zoom-in" @click=${() => zoomCamera('in')} style="width: 50%; height: 30px;"></bim-button>
+            <bim-button icon="material-symbols:zoom-out" @click=${() => zoomCamera('out')} style="width: 50%; height: 30px;"></bim-button>
           </div>
         </div>
 
