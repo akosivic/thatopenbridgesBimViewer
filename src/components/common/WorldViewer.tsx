@@ -56,8 +56,11 @@ export class WorldViewer extends HTMLElement {
     const loadingOverlay = showLoadingOverlay('initializing');
 
     // Check if debug mode is enabled via URL parameter
-    const isDebugMode = window.location.search.includes('?debug') ||
-      window.location.search.includes('&debug');
+    const isDebugMode = window.location.search.includes('debug');
+    console.log('Debug mode detected:', isDebugMode, 'URL:', window.location.search);
+
+    // FORCE create position display for testing (will always show now)
+    const forceDebugDisplay = true;
 
     Manager.init();
 
@@ -154,23 +157,34 @@ export class WorldViewer extends HTMLElement {
 
     // Create camera position display only in debug mode
     let positionDisplay: HTMLElement | null = null;
-    if (isDebugMode) {
+    if (isDebugMode || forceDebugDisplay) {
       positionDisplay = document.createElement('div');
+      positionDisplay.id = 'fps-position-display';
       positionDisplay.style.cssText = `
         position: fixed;
-        top: 10px;
-        left: 10px;
-        background: rgba(0,0,0,0.8);
-        color: white;
-        padding: 10px;
-        font-family: monospace;
+        bottom: 20px;
+        right: 20px;
+        background: rgba(0,0,0,0.9);
+        color: #00ff00;
+        padding: 15px;
+        font-family: 'Courier New', monospace;
         font-size: 14px;
-        border-radius: 4px;
-        z-index: 1000;
-        border: 1px solid #333;
+        border-radius: 8px;
+        z-index: 9999;
+        border: 2px solid #00ff00;
+        box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+        min-width: 300px;
+        pointer-events: none;
+        max-height: 400px;
+        overflow-y: auto;
       `;
+      positionDisplay.innerHTML = `<div style="font-weight: bold; color: #00ff00;">🎮 FPS DEBUG MODE</div><div>Initializing...</div>`;
       document.body.appendChild(positionDisplay);
-      console.log('Position display created and added to top-left');
+      console.log('Position display created and added to BOTTOM RIGHT');
+      console.log('Position display element:', positionDisplay);
+      console.log('Position display in DOM:', document.getElementById('fps-position-display'));
+    } else {
+      console.log('Debug mode is OFF - no position display created');
     }
 
     // FPS-style movement controls
@@ -211,29 +225,46 @@ export class WorldViewer extends HTMLElement {
       const moveDistance = currentSpeed * deltaTime;
 
       // Always update position display (debug mode) regardless of movement
-      if (positionDisplay) {
+      if (positionDisplay && (isDebugMode || forceDebugDisplay)) {
         const pos = world.camera.three.position;
         const rot = world.camera.three.rotation;
         const isLocked = fpControls.isLocked;
         
-        positionDisplay.innerHTML = `
-          <div style="font-weight: bold; color: #00ff00; margin-bottom: 5px;">Camera Controls</div>
-          <div style="font-weight: bold; color: ${isLocked ? '#00ff00' : '#ff8800'}; font-size: 14px; margin-bottom: 5px;">
-            ${isLocked ? '🔒 FPS MODE ACTIVE' : '🔓 FPS MODE INACTIVE'}
-          </div>
-          Position: X: ${pos.x.toFixed(2)}, Y: ${pos.y.toFixed(2)}, Z: ${pos.z.toFixed(2)}<br>
-          Azimuth: ${(rot.y * 180 / Math.PI).toFixed(1)}°<br>
-          Polar: ${(90 - rot.x * 180 / Math.PI).toFixed(1)}°<br>
-          Zoom: ${world.camera.controls?.camera?.zoom?.toFixed(2) || '1.00'}<br>
-          Speed: ${keys.shift ? 'Fast' : 'Normal'}<br>
-          <div style="font-size: 10px; color: #ccc; margin-top: 5px;">
-            WASD/Arrows: Move | Q/E: Up/Down | Shift: Fast<br>
-            Mouse: Look | Wheel: Zoom | Click: Lock/Unlock
-          </div>
-        `;
-      }
-
-      if (keys.arrowup || keys.arrowdown || keys.arrowleft || keys.arrowright || 
+        try {
+          positionDisplay.innerHTML = `
+            <div style="font-weight: bold; color: #00ff00; margin-bottom: 8px; font-size: 16px;">🎮 FPS DEBUG MODE</div>
+            <div style="font-weight: bold; color: ${isLocked ? '#00ff00' : '#ff8800'}; font-size: 14px; margin-bottom: 8px;">
+              ${isLocked ? '🔒 MOUSE LOCKED - FPS ACTIVE' : '🔓 CLICK TO LOCK MOUSE'}
+            </div>
+            <div style="margin-bottom: 4px;"><strong>Position:</strong></div>
+            <div style="margin-left: 10px; margin-bottom: 8px;">
+              X: ${pos.x.toFixed(3)}<br>
+              Y: ${pos.y.toFixed(3)}<br>
+              Z: ${pos.z.toFixed(3)}
+            </div>
+            <div style="margin-bottom: 4px;"><strong>Rotation:</strong></div>
+            <div style="margin-left: 10px; margin-bottom: 8px;">
+              Azimuth: ${(rot.y * 180 / Math.PI).toFixed(1)}°<br>
+              Polar: ${(90 - rot.x * 180 / Math.PI).toFixed(1)}°
+            </div>
+            <div style="margin-bottom: 8px;"><strong>Speed:</strong> ${keys.shift ? 'FAST' : 'NORMAL'}</div>
+            <div style="font-size: 11px; color: #ccc; border-top: 1px solid #333; padding-top: 8px;">
+              <strong>Controls:</strong><br>
+              WASD/Arrows: Move | Q/E: Up/Down | Shift: Sprint<br>
+              Mouse: Look Around | Click: Lock/Unlock Mouse
+            </div>
+          `;
+          
+          // Make sure it's visible
+          positionDisplay.style.display = 'block';
+          positionDisplay.style.visibility = 'visible';
+          
+        } catch (error) {
+          console.error('Error updating position display:', error);
+        }
+        } else if (isDebugMode || forceDebugDisplay) {
+          console.warn('Position display not available, positionDisplay:', positionDisplay);
+        }      if (keys.arrowup || keys.arrowdown || keys.arrowleft || keys.arrowright || 
           keys.w || keys.a || keys.s || keys.d || keys.q || keys.e) {
         
         // Clear highlighter selection when camera moves
@@ -270,7 +301,24 @@ export class WorldViewer extends HTMLElement {
       
       requestAnimationFrame(updateFPSMovement);
     };
+    // Start the FPS movement update loop
     updateFPSMovement();
+    
+    // Ensure position display is visible after a short delay (debug mode)
+    if ((isDebugMode || forceDebugDisplay) && positionDisplay) {
+      setTimeout(() => {
+        const displayElement = document.getElementById('fps-position-display');
+        if (displayElement) {
+          displayElement.style.display = 'block';
+          displayElement.style.visibility = 'visible';
+          console.log('Position display forced visible in BOTTOM RIGHT after delay');
+        } else {
+          console.error('Position display element not found in DOM after delay');
+        }
+      }, 1000);
+    } else if (isDebugMode || forceDebugDisplay) {
+      console.log('Debug mode is on but positionDisplay is null');
+    }
 
     window.addEventListener('keydown', (e) => {
       const key = e.key.toLowerCase();
