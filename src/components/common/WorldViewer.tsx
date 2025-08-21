@@ -51,7 +51,7 @@ export class WorldViewer extends HTMLElement {
     try {
       // Initialize WASM modules first
       console.log('Pre-loading WebAssembly modules...');
-      
+
       // Pre-initialize web-ifc WASM module
       try {
         await import('web-ifc');
@@ -60,7 +60,7 @@ export class WorldViewer extends HTMLElement {
         console.warn('Failed to pre-load web-ifc WASM module:', wasmError);
         // Continue with initialization even if pre-loading fails
       }
-      
+
       await this.initializeWorldViewer();
     } catch (error) {
       console.error('Failed to initialize WorldViewer:', error);
@@ -72,11 +72,8 @@ export class WorldViewer extends HTMLElement {
     const loadingOverlay = showLoadingOverlay('initializing');
 
     // Check if debug mode is enabled via URL parameter
-    const isDebugMode = window.location.search.includes('debug');
+    const isDebugMode = window.location.search.toLowerCase().includes('debug');
     console.log('Debug mode detected:', isDebugMode, 'URL:', window.location.search);
-
-    // FORCE create position display for testing (will always show now)
-    const forceDebugDisplay = true;
 
     Manager.init();
 
@@ -112,60 +109,69 @@ export class WorldViewer extends HTMLElement {
     const defaultX = -7.846;
     const defaultY = 1.60; // Eye level height - LOCKED, never changes
     const defaultZ = 1.567;
-    
+
     // Create pointer lock controls for first-person navigation
     let fpControls: PointerLockControls | null = null;
-    
+
     // Set camera position directly in world coordinates (Y is locked to 1.6)
     world.camera.three.position.set(defaultX, defaultY, defaultZ);
-    
-    // Set camera to look slightly downward (more natural for walking)
-    const lookDirection = new THREE.Vector3(0, -0.1, -1).normalize();
-    world.camera.three.lookAt(
-      world.camera.three.position.x + lookDirection.x,
-      world.camera.three.position.y + lookDirection.y,
-      world.camera.three.position.z + lookDirection.z
-    );
+
+    // Set initial camera orientation: H = -3.7°, V = 91.6°
+    // H = yaw (rotation.y), V = pitch (rotation.x)
+    world.camera.three.rotation.y = -3.7 * Math.PI / 180;
+    // V = 91.6° means rot.x = (90 - 91.6) * PI/180 = -1.6°
+    world.camera.three.rotation.x = -1.6 * Math.PI / 180;
+    world.camera.three.rotation.z = 0;
+    world.camera.three.updateMatrixWorld();
 
     // Initialize pointer lock controls
     fpControls = new PointerLockControls(world.camera.three, viewport);
-    
+
     // Store FPS controls reference for Camera.ts
     const { setFPControls } = await import('./components/Toolbars/Sections/Camera');
     setFPControls(fpControls);
-    
+
     // DISABLE the original orbit controls to prevent conflicts
     if (world.camera.controls) {
       world.camera.controls.enabled = false;
       console.log('Original orbit controls disabled');
     }
-    
+
     // Override the original camera controls with first-person controls
-        // Store reference to controls on camera for access elsewhere
+    // Store reference to controls on camera for access elsewhere
     interface CameraWithFPS extends OrthoPerspectiveCamera {
       fpControls?: PointerLockControls;
     }
     (world.camera as CameraWithFPS).fpControls = fpControls;
-    
-    // Add press-and-hold functionality for FPS mode
+
+    // Add press-and-hold functionality for FPS mode, but allow screenshot button to work
     let isMousePressed = false;
-    
+
+    // Prevent FPS activation when clicking toolbar buttons or their children
+    function isToolbarButton(target: EventTarget | null): boolean {
+      if (!target || !(target instanceof HTMLElement)) return false;
+      // Check for toolbar/tab/button classes
+      return !!target.closest('.bim-tabs, .bim-tab, .bim-toolbar, .bim-toolbar-btn, .bim-toolbar-button, .screenshot-btn');
+    }
+
     viewport.addEventListener('mousedown', (e) => {
-      if (fpControls && e.button === 0) { // Left mouse button
+      if (isToolbarButton(e.target)) return;
+      if (fpControls && e.button === 0) {
         isMousePressed = true;
         fpControls.lock();
         console.log('Mouse pressed - FPS mode ACTIVATED');
       }
     });
-    
+
     viewport.addEventListener('mouseup', (e) => {
-      if (fpControls && e.button === 0) { // Left mouse button
+      if (isToolbarButton(e.target)) return;
+      if (fpControls && e.button === 0) {
         isMousePressed = false;
         fpControls.unlock();
         console.log('Mouse released - FPS mode DEACTIVATED');
       }
     });
-    
+
     // Also handle mouse leave to deactivate FPS if mouse leaves the viewport
     viewport.addEventListener('mouseleave', () => {
       if (fpControls && isMousePressed) {
@@ -174,16 +180,16 @@ export class WorldViewer extends HTMLElement {
         console.log('Mouse left viewport - FPS mode DEACTIVATED');
       }
     });
-    
+
     // Handle pointer lock events
     fpControls.addEventListener('lock', () => {
       console.log('First-person controls locked - mouse look active');
     });
-    
+
     fpControls.addEventListener('unlock', () => {
       console.log('First-person controls unlocked - mouse look inactive');
     });
-    
+
     // Set default camera properties
     if (world.camera.controls && world.camera.controls.camera) {
       world.camera.controls.camera.zoom = 1.00;
@@ -194,34 +200,31 @@ export class WorldViewer extends HTMLElement {
 
     // Create camera position display only in debug mode
     let positionDisplay: HTMLElement | null = null;
-    if (isDebugMode || forceDebugDisplay) {
+    if (isDebugMode) {
       positionDisplay = document.createElement('div');
       positionDisplay.id = 'fps-position-display';
       positionDisplay.style.cssText = `
         position: fixed;
         bottom: 20px;
         right: 20px;
-        background: rgba(0,0,0,0.9);
+        background: rgba(0,0,0,0.8);
         color: #00ff00;
-        padding: 15px;
+        padding: 8px 12px;
         font-family: 'Courier New', monospace;
-        font-size: 14px;
-        border-radius: 8px;
+        font-size: 11px;
+        border-radius: 4px;
         z-index: 9999;
-        border: 2px solid #00ff00;
-        box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
-        min-width: 300px;
+        border: 1px solid #00ff00;
+        box-shadow: 0 0 5px rgba(0, 255, 0, 0.3);
+        min-width: 200px;
         pointer-events: none;
-        max-height: 400px;
+        max-height: 250px;
         overflow-y: auto;
+        line-height: 1.3;
       `;
-      positionDisplay.innerHTML = `<div style="font-weight: bold; color: #00ff00;">🎮 FPS DEBUG MODE</div><div>Initializing...</div>`;
+      positionDisplay.innerHTML = `<div style="font-weight: bold; color: #00ff00;">🎮 DEBUG</div><div>Initializing...</div>`;
       document.body.appendChild(positionDisplay);
       console.log('Position display created and added to BOTTOM RIGHT');
-      console.log('Position display element:', positionDisplay);
-      console.log('Position display in DOM:', document.getElementById('fps-position-display'));
-    } else {
-      console.log('Debug mode is OFF - no position display created');
     }
 
     // FPS-style movement controls
@@ -261,52 +264,51 @@ export class WorldViewer extends HTMLElement {
       const deltaTime = 0.016; // Approximate 60 FPS
       const moveDistance = currentSpeed * deltaTime;
 
-      // Always update position display (debug mode) regardless of movement
-      if (positionDisplay && (isDebugMode || forceDebugDisplay)) {
+      // Always update position display in debug mode
+      if (isDebugMode && positionDisplay) {
         const pos = world.camera.three.position;
         const rot = world.camera.three.rotation;
         const isLocked = fpControls.isLocked;
-        
+
         try {
           positionDisplay.innerHTML = `
-            <div style="font-weight: bold; color: #00ff00; margin-bottom: 8px; font-size: 16px;">🎮 FPS DEBUG MODE</div>
-            <div style="font-weight: bold; color: ${isLocked ? '#00ff00' : '#ff8800'}; font-size: 14px; margin-bottom: 8px;">
-              ${isLocked ? '🔒 MOUSE HELD - FPS ACTIVE' : '🔓 HOLD LEFT MOUSE TO ACTIVATE'}
+            <div style="font-weight: bold; color: #00ff00; margin-bottom: 4px; font-size: 12px;">🎮 DEBUG</div>
+            <div style="font-weight: bold; color: ${isLocked ? '#00ff00' : '#ff8800'}; font-size: 11px; margin-bottom: 4px;">
+              ${isLocked ? '🔒 FPS ON' : '🔓 HOLD MOUSE'}
             </div>
-            <div style="margin-bottom: 4px;"><strong>Position:</strong></div>
-            <div style="margin-left: 10px; margin-bottom: 8px;">
-              X: ${pos.x.toFixed(3)}<br>
-              Y: ${pos.y.toFixed(3)} <span style="color: #ff0000;">(LOCKED)</span><br>
-              Z: ${pos.z.toFixed(3)}
+            <div style="margin-bottom: 2px;"><strong>Pos:</strong></div>
+            <div style="margin-left: 8px; margin-bottom: 4px; font-size: 10px;">
+              X: ${pos.x.toFixed(2)}<br>
+              Y: ${pos.y.toFixed(2)} <span style="color: #ff0000;">(LOCKED)</span><br>
+              Z: ${pos.z.toFixed(2)}
             </div>
-            <div style="margin-bottom: 4px;"><strong>Rotation:</strong></div>
-            <div style="margin-left: 10px; margin-bottom: 8px;">
-              Azimuth: ${(rot.y * 180 / Math.PI).toFixed(1)}°<br>
-              Polar: ${(90 - rot.x * 180 / Math.PI).toFixed(1)}°
+            <div style="margin-bottom: 2px;"><strong>Rot:</strong></div>
+            <div style="margin-left: 8px; margin-bottom: 4px; font-size: 10px;">
+              H: ${(rot.y * 180 / Math.PI).toFixed(1)}°<br>
+              V: ${(90 - rot.x * 180 / Math.PI).toFixed(1)}°
             </div>
-            <div style="margin-bottom: 8px;"><strong>Speed:</strong> ${keys.shift ? 'FAST' : 'NORMAL'}</div>
-            <div style="font-size: 11px; color: #ccc; border-top: 1px solid #333; padding-top: 8px;">
-              <strong>Controls:</strong><br>
-              WASD/Arrows: Move | <span style="color: #ff0000;">Y-Height: LOCKED to 1.6m</span> | Shift: Sprint<br>
-              <span style="color: #00ff00;">HOLD Left Mouse: Activate FPS Look</span> | Release: Deactivate
+            <div style="margin-bottom: 4px; font-size: 10px;"><strong>Speed:</strong> ${keys.shift ? 'FAST' : 'NORM'}</div>
+            <div style="font-size: 9px; color: #ccc; border-top: 1px solid #333; padding-top: 4px;">
+              WASD: Move | Shift: Sprint<br>
+              <span style="color: #00ff00;">Hold Mouse: Look</span>
             </div>
           `;
-          
+
           // Make sure it's visible
           positionDisplay.style.display = 'block';
           positionDisplay.style.visibility = 'visible';
-          
+
         } catch (error) {
           console.error('Error updating position display:', error);
         }
-        } else if (isDebugMode || forceDebugDisplay) {
-          console.warn('Position display not available, positionDisplay:', positionDisplay);
-        }      if (keys.arrowup || keys.arrowdown || keys.arrowleft || keys.arrowright || 
-          keys.w || keys.a || keys.s || keys.d || keys.q || keys.e) {
-        
+      }
+
+      if (keys.arrowup || keys.arrowdown || keys.arrowleft || keys.arrowright ||
+        keys.w || keys.a || keys.s || keys.d || keys.q || keys.e) {
+
         // Clear highlighter selection when camera moves
         highlighter.clear("select");
-        
+
         // Get camera's current orientation
         world.camera.three.getWorldDirection(direction);
         sideways.crossVectors(direction, upVector).normalize();
@@ -334,21 +336,21 @@ export class WorldViewer extends HTMLElement {
         // if (keys.e) {
         //   world.camera.three.position.y -= moveDistance;
         // }
-        
+
         // FORCE Y position to always be at eye level (1.6 meters)
         world.camera.three.position.y = 1.6;
       }
-      
+
       // SAFETY: Always enforce Y position to be at eye level, regardless of any other operations
       world.camera.three.position.y = 1.6;
-      
+
       requestAnimationFrame(updateFPSMovement);
     };
     // Start the FPS movement update loop
     updateFPSMovement();
-    
+
     // Ensure position display is visible after a short delay (debug mode)
-    if ((isDebugMode || forceDebugDisplay) && positionDisplay) {
+    if (isDebugMode && positionDisplay) {
       setTimeout(() => {
         const displayElement = document.getElementById('fps-position-display');
         if (displayElement) {
@@ -359,7 +361,7 @@ export class WorldViewer extends HTMLElement {
           console.error('Position display element not found in DOM after delay');
         }
       }, 1000);
-    } else if (isDebugMode || forceDebugDisplay) {
+    } else if (isDebugMode) {
       console.log('Debug mode is on but positionDisplay is null');
     }
 
@@ -382,12 +384,12 @@ export class WorldViewer extends HTMLElement {
     // Enable normal mouse wheel zooming for camera
     viewport.addEventListener('wheel', (event: WheelEvent) => {
       if (!fpControls || !fpControls.isLocked) return;
-      
+
       console.log('=== MOUSEWHEEL EVENT (FPS Mode) ===');
       console.log('Delta:', event.deltaY);
-      
+
       // In FPS mode, wheel can adjust movement speed or other features if needed
-      
+
       console.log('FPS wheel event processed');
     });
 
@@ -418,21 +420,21 @@ export class WorldViewer extends HTMLElement {
     const indexer = components.get(IfcRelationsIndexer);
     const classifier = components.get(Classifier);
     classifier.list.CustomSelections = {};
-    
+
     // Initialize highlighter early so it's available for FPS movement
     const highlighter = components.get(Highlighter);
 
     const ifcLoader = components.get(IfcLoader);
     updateLoadingText('settingUpIfcLoader');
     await ifcLoader.setup();
-    
+
     // Optimize IFC loader settings for better loading performance
     ifcLoader.settings.wasm = {
       path: "https://unpkg.com/web-ifc@0.0.57/",
       absolute: true
     };
     ifcLoader.settings.webIfc.COORDINATE_TO_ORIGIN = true;
-    
+
     console.log('IFC Loader optimized for performance');
 
     const tilesLoader = components.get(IfcStreamer);
@@ -476,7 +478,7 @@ export class WorldViewer extends HTMLElement {
     };
     const culler = components.get(Cullers).create(world);
     culler.threshold = 5;
-    
+
     // Note: Original orbit controls are disabled, using FPS controls instead
     // world.camera.controls.restThreshold = 0.25;
     // world.camera.controls.addEventListener("rest", () => {
@@ -485,35 +487,35 @@ export class WorldViewer extends HTMLElement {
     //   tilesLoader.culler.needsUpdate = true;
     //   // Remove eye level enforcement - allow free camera positioning
     // });
-    
+
     // For FPS mode, we'll handle culling updates differently
     // The culler will update based on FPS camera movement instead
 
     // Add FPS camera movement detection to clear selection when camera moves
     const lastCameraPosition = world.camera.three.position.clone();
-    
+
     // Check for camera movement changes and clear selection
     const checkCameraMovement = () => {
       if (!fpControls) {
         requestAnimationFrame(checkCameraMovement);
         return;
       }
-      
+
       const currentPosition = world.camera.three.position.clone();
       const positionChanged = !lastCameraPosition.equals(currentPosition);
-      
+
       if (positionChanged) {
         // highlighter.clear("select");
         lastCameraPosition.copy(currentPosition);
       }
-      
+
       requestAnimationFrame(checkCameraMovement);
     };
     checkCameraMovement();
 
     fragments.onFragmentsLoaded.add(async (model) => {
       console.log('Fragment loading started for model:', model);
-      
+
       if (model.hasProperties) {
         console.log('Processing model properties...');
         await indexer.process(model);
@@ -527,13 +529,13 @@ export class WorldViewer extends HTMLElement {
         for (const fragment of model.items) {
           world.meshes.add(fragment.mesh);
           culler.add(fragment.mesh);
-          
+
           // Ensure fragment mesh is visible and has proper material
           if (fragment.mesh) {
             fragment.mesh.visible = true;
             fragment.mesh.castShadow = true;
             fragment.mesh.receiveShadow = true;
-            
+
             // Force material update
             if (fragment.mesh.material) {
               if (Array.isArray(fragment.mesh.material)) {
@@ -546,7 +548,7 @@ export class WorldViewer extends HTMLElement {
                 (fragment.mesh.material as THREE.Material).needsUpdate = true;
               }
             }
-            
+
             fragmentCount++;
           }
         }
@@ -556,7 +558,7 @@ export class WorldViewer extends HTMLElement {
       // Add model to scene
       world.scene.three.add(model);
       console.log('Model added to Three.js scene');
-      
+
       // Force renderer update
       if (world.renderer) {
         world.renderer.update();
@@ -566,43 +568,43 @@ export class WorldViewer extends HTMLElement {
       if (!model.isStreamed) {
         setTimeout(async () => {
           console.log('Model loaded - positioning FPS camera to view model');
-          
+
           // Get the model's bounding box to position camera appropriately
           const bbox = new THREE.Box3();
           world.meshes.forEach(mesh => {
             bbox.expandByObject(mesh);
           });
-          
+
           if (!bbox.isEmpty()) {
             const center = bbox.getCenter(new THREE.Vector3());
             const size = bbox.getSize(new THREE.Vector3());
-            
+
             console.log('Model center:', center);
             console.log('Model size:', size);
-            
+
             // Position FPS camera to look at the model center
             // Keep Y locked to 1.6m (eye level), only orient the look direction
             world.camera.three.position.y = 1.6; // FORCE eye level before lookAt
             world.camera.three.lookAt(center);
-            
+
             console.log('FPS camera oriented toward model center');
           }
-          
+
           // Force another renderer update
           if (world.renderer) {
             world.renderer.update();
           }
-          
+
           console.log('FPS Camera Position:', world.camera.three.position);
           console.log('FPS Camera Rotation:', world.camera.three.rotation);
-          
+
           // Log scene statistics
           console.log('=== SCENE STATISTICS ===');
           console.log('Total scene children:', world.scene.three.children.length);
           console.log('Total meshes in world.meshes:', world.meshes.size);
           console.log('Visible meshes:', Array.from(world.meshes).filter(mesh => mesh.visible).length);
           console.log('========================');
-          
+
         }, 500); // Increased delay to ensure everything is loaded
       }
     });
@@ -643,7 +645,7 @@ export class WorldViewer extends HTMLElement {
         <bim-tabs floating style="justify-self: center; border-radius: 0.5rem;padding:30px">
           <bim-tab label="${i18n.t('options')}">
             <bim-toolbar>
-              ${camera(world, highlighter)} 
+              ${load(components)}
             </bim-toolbar>
           </bim-tab>
         </bim-tabs>
@@ -752,51 +754,20 @@ export class WorldViewer extends HTMLElement {
         // Get the first fragment and its bounding box
         const firstFragment = Array.from(fragments.list.values())[0];
         if (firstFragment && firstFragment.mesh) {
-          console.log('First fragment mesh:', firstFragment.mesh);
-          
-          // Make sure the fragment mesh is added to the scene
-          if (!world.scene.three.children.includes(firstFragment.mesh)) {
-            world.scene.three.add(firstFragment.mesh);
-            console.log('Fragment mesh added to scene');
-          } else {
-            console.log('Fragment mesh already in scene');
-          }
-          
-          // Make sure the mesh is visible
-          firstFragment.mesh.visible = true;
-          console.log('Fragment mesh visibility:', firstFragment.mesh.visible);
-          
-          // Calculate bounding box
-          const box = new THREE.Box3().setFromObject(firstFragment.mesh);
-          const center = box.getCenter(new THREE.Vector3());
-          const size = box.getSize(new THREE.Vector3());
-          
-          console.log('Model bounding box center:', center);
-          console.log('Model bounding box size:', size);
-          
+          // ...existing code...
           // Position camera to look at the model center from a distance
-          const maxDim = Math.max(size.x, size.y, size.z);
-          const distance = maxDim * 1.5;
-          
-          const cameraPosition = new THREE.Vector3(
-            center.x + distance,
-            1.6, // FORCE Y to eye level - never change this
-            center.z + distance
-          );
-          
+          // ...existing code...
           world.camera.controls.setLookAt(
-            cameraPosition.x, 1.6, cameraPosition.z, // Y always 1.6
+            cameraPosition.x, 1.6, cameraPosition.z,
             center.x, center.y, center.z,
             true
           );
-          
-          console.log('Camera positioned at:', cameraPosition, 'looking at:', center);
-          
-          // Debug scene contents
-          console.log('Scene children count:', world.scene.three.children.length);
-          console.log('Scene children:', world.scene.three.children);
-          console.log('Fragment mesh material:', firstFragment.mesh.material);
-          console.log('Fragment mesh geometry:', firstFragment.mesh.geometry);
+          // Enforce initial orientation after bounding box positioning
+          world.camera.three.rotation.y = -3.7 * Math.PI / 180;
+          world.camera.three.rotation.x = -1.6 * Math.PI / 180;
+          world.camera.three.rotation.z = 0;
+          world.camera.three.updateMatrixWorld();
+          // ...existing code...
         }
       } catch (error) {
         console.error('Error positioning camera:', error);
