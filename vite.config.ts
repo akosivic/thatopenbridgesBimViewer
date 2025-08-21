@@ -12,5 +12,21 @@ export default defineConfig({
         secure: false,
       },
     },
+    fs: {
+      allow: ['..']
+    }
   },
+  optimizeDeps: {
+    exclude: ['web-ifc']
+  },
+  build: {
+    rollupOptions: {
+      external: [],
+      output: {
+        manualChunks: {
+          'web-ifc': ['web-ifc']
+        }
+      }
+    }
+  }
 });

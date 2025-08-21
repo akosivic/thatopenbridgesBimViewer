@@ -4,6 +4,7 @@ import * as OBF from "@thatopen/components-front";
 import * as BUI from "@thatopen/ui";
 import * as CUI from "@thatopen/ui-obc";
 import * as FRAGS from "@thatopen/fragments";
+import * as THREE from "three";
 import Zip from "jszip";
 import { updateLoadingText } from "../../../utils/LoadingOverlay";
 import i18n from "../../../utils/i18n";
@@ -181,26 +182,136 @@ export default (components: OBC.Components) => {
 
 // Function to load the test IFC file from the API
 export async function loadIfc(components: OBC.Components) {
-  updateLoadingText('Loading IFC Model...');
+  updateLoadingText('Initializing IFC Loader...');
   try {
     const apiUrl = '/api/streamIfc';
 
-    // Load the IFC file directly using the IFC loader
+    // Get the IFC loader instance
     const ifcLoader = components.get(OBC.IfcLoader);
+    
+    // Wait a bit for WASM initialization
+    updateLoadingText('Preparing WebAssembly modules...');
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Configure the IFC loader with proper settings
+    try {
+      await ifcLoader.setup();
+      console.log('IFC loader setup completed');
+    } catch (setupError) {
+      console.warn('IFC loader setup failed, continuing anyway:', setupError);
+    }
+    
     updateLoadingText('Fetching IFC file...');
     const file = await fetchFile(apiUrl);
     const arrayBuffer = await file.arrayBuffer();
+    const uint8Array = new Uint8Array(arrayBuffer);
 
-    // Use the existing IFC loader to process the file
     updateLoadingText('Processing IFC model...');
-    const retval = await ifcLoader.load(new Uint8Array(arrayBuffer));
+    console.log(`Loading IFC file of size: ${uint8Array.length} bytes`);
+    
+    // Use a more robust loading approach with multiple attempts
+    let retval;
+    let lastError;
+    
+    // Attempt 1: Standard loading
+    try {
+      console.log('Attempting standard IFC loading...');
+      retval = await ifcLoader.load(uint8Array, true);
+      console.log('Standard loading successful');
+    } catch (wasmError) {
+      console.warn('Standard IFC loading failed:', wasmError);
+      lastError = wasmError;
+      
+      // Attempt 2: Without optional parameter
+      try {
+        console.log('Attempting alternative IFC loading method...');
+        updateLoadingText('Trying alternative loading method...');
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Give WASM more time
+        retval = await ifcLoader.load(uint8Array);
+        console.log('Alternative loading successful');
+      } catch (altError) {
+        console.warn('Alternative IFC loading also failed:', altError);
+        lastError = altError;
+        
+        // Attempt 3: Reinitialize loader
+        try {
+          console.log('Reinitializing IFC loader...');
+          updateLoadingText('Reinitializing loader...');
+          const newIfcLoader = components.get(OBC.IfcLoader);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          retval = await newIfcLoader.load(uint8Array);
+          console.log('Reinitialized loading successful');
+        } catch (reinitError) {
+          console.error('All loading attempts failed:', reinitError);
+          throw lastError; // Throw the original error
+        }
+      }
+    }
+    
+    // Ensure all fragments are properly initialized
+    if (retval && retval.items) {
+      console.log(`Successfully loaded ${retval.items.length} fragments from IFC file`);
+      
+      // Force visibility and proper rendering for all fragments
+      retval.items.forEach((fragment, index) => {
+        if (fragment.mesh) {
+          fragment.mesh.visible = true;
+          fragment.mesh.frustumCulled = true;
+          fragment.mesh.matrixAutoUpdate = true;
+          fragment.mesh.updateMatrix();
+          
+          // Force material updates
+          if (fragment.mesh.material) {
+            if (Array.isArray(fragment.mesh.material)) {
+              fragment.mesh.material.forEach((mat: THREE.Material) => {
+                if (mat && 'needsUpdate' in mat) {
+                  // TypeScript workaround for material update
+                  const materialWithUpdate = mat as THREE.Material & { needsUpdate?: boolean };
+                  materialWithUpdate.needsUpdate = true;
+                }
+              });
+            } else {
+              const material = fragment.mesh.material as THREE.Material;
+              if (material && 'needsUpdate' in material) {
+                // TypeScript workaround for material update
+                const materialWithUpdate = material as THREE.Material & { needsUpdate?: boolean };
+                materialWithUpdate.needsUpdate = true;
+              }
+            }
+          }
+          
+          console.log(`Fragment ${index}: vertices=${fragment.mesh.geometry.attributes.position?.count || 0}, visible=${fragment.mesh.visible}`);
+        }
+      });
+      
+      updateLoadingText('Finalizing model...');
+      
+      // Give time for all fragments to be processed
+      await new Promise(resolve => setTimeout(resolve, 300));
+    } else {
+      console.warn('No fragments were loaded from IFC file');
+    }
 
-    return retval
-  } catch (error: string | any) {
+    console.log('IFC model loading completed successfully');
+    return retval;
+    
+  } catch (error: unknown) {
     // Handle any errors that occur during the loading process
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error('Error loading IFC file:', error);
-    alert(`Failed to load IFC file: ${error.message}`);
+    
+    // More detailed error reporting
+    if (errorMessage.includes('wasmTable') || errorMessage.includes('wasm') || errorMessage.includes('WebAssembly')) {
+      console.error('WebAssembly compatibility issue detected. This might be due to:');
+      console.error('1. Browser compatibility with WebAssembly');
+      console.error('2. web-ifc library version compatibility');
+      console.error('3. WASM module initialization failure');
+      console.error('4. Timing issues with WASM module loading');
+      alert('WebAssembly loading failed. Please refresh the page and try again. If the issue persists, try using a different browser (Chrome or Firefox recommended).');
+    } else {
+      alert(`Failed to load IFC file: ${errorMessage}`);
+    }
+    return null;
   }
-
 }
 

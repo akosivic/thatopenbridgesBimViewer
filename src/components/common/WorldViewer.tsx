@@ -48,7 +48,23 @@ export class WorldViewer extends HTMLElement {
     return new Map<string, Set<number>>();
   }
   async connectedCallback() {
-    await this.initializeWorldViewer();
+    try {
+      // Initialize WASM modules first
+      console.log('Pre-loading WebAssembly modules...');
+      
+      // Pre-initialize web-ifc WASM module
+      try {
+        await import('web-ifc');
+        console.log('web-ifc WASM module loaded successfully');
+      } catch (wasmError) {
+        console.warn('Failed to pre-load web-ifc WASM module:', wasmError);
+        // Continue with initialization even if pre-loading fails
+      }
+      
+      await this.initializeWorldViewer();
+    } catch (error) {
+      console.error('Failed to initialize WorldViewer:', error);
+    }
   }
 
   private async initializeWorldViewer() {
@@ -93,9 +109,9 @@ export class WorldViewer extends HTMLElement {
 
     // First-Person Camera Setup (FPS-style controls)
     // Set initial camera position at eye level (1.6m height) - LOCKED
-    const defaultX = -1.29;
+    const defaultX = -7.846;
     const defaultY = 1.60; // Eye level height - LOCKED, never changes
-    const defaultZ = 1.14;
+    const defaultZ = 1.567;
     
     // Create pointer lock controls for first-person navigation
     let fpControls: PointerLockControls | null = null;
@@ -409,6 +425,15 @@ export class WorldViewer extends HTMLElement {
     const ifcLoader = components.get(IfcLoader);
     updateLoadingText('settingUpIfcLoader');
     await ifcLoader.setup();
+    
+    // Optimize IFC loader settings for better loading performance
+    ifcLoader.settings.wasm = {
+      path: "https://unpkg.com/web-ifc@0.0.57/",
+      absolute: true
+    };
+    ifcLoader.settings.webIfc.COORDINATE_TO_ORIGIN = true;
+    
+    console.log('IFC Loader optimized for performance');
 
     const tilesLoader = components.get(IfcStreamer);
     tilesLoader.world = world;
@@ -487,19 +512,56 @@ export class WorldViewer extends HTMLElement {
     checkCameraMovement();
 
     fragments.onFragmentsLoaded.add(async (model) => {
+      console.log('Fragment loading started for model:', model);
+      
       if (model.hasProperties) {
+        console.log('Processing model properties...');
         await indexer.process(model);
         classifier.byEntity(model);
+        console.log('Model properties processed');
       }
 
       if (!model.isStreamed) {
+        console.log('Adding model fragments to scene...');
+        let fragmentCount = 0;
         for (const fragment of model.items) {
           world.meshes.add(fragment.mesh);
           culler.add(fragment.mesh);
+          
+          // Ensure fragment mesh is visible and has proper material
+          if (fragment.mesh) {
+            fragment.mesh.visible = true;
+            fragment.mesh.castShadow = true;
+            fragment.mesh.receiveShadow = true;
+            
+            // Force material update
+            if (fragment.mesh.material) {
+              if (Array.isArray(fragment.mesh.material)) {
+                fragment.mesh.material.forEach(mat => {
+                  if (mat && 'needsUpdate' in mat) {
+                    (mat as THREE.Material).needsUpdate = true;
+                  }
+                });
+              } else if ('needsUpdate' in fragment.mesh.material) {
+                (fragment.mesh.material as THREE.Material).needsUpdate = true;
+              }
+            }
+            
+            fragmentCount++;
+          }
         }
+        console.log(`Added ${fragmentCount} fragments to scene`);
       }
 
+      // Add model to scene
       world.scene.three.add(model);
+      console.log('Model added to Three.js scene');
+      
+      // Force renderer update
+      if (world.renderer) {
+        world.renderer.update();
+        console.log('Renderer updated');
+      }
 
       if (!model.isStreamed) {
         setTimeout(async () => {
@@ -526,13 +588,22 @@ export class WorldViewer extends HTMLElement {
             console.log('FPS camera oriented toward model center');
           }
           
+          // Force another renderer update
           if (world.renderer) {
             world.renderer.update();
           }
           
           console.log('FPS Camera Position:', world.camera.three.position);
           console.log('FPS Camera Rotation:', world.camera.three.rotation);
-        }, 200);
+          
+          // Log scene statistics
+          console.log('=== SCENE STATISTICS ===');
+          console.log('Total scene children:', world.scene.three.children.length);
+          console.log('Total meshes in world.meshes:', world.meshes.size);
+          console.log('Visible meshes:', Array.from(world.meshes).filter(mesh => mesh.visible).length);
+          console.log('========================');
+          
+        }, 500); // Increased delay to ensure everything is loaded
       }
     });
 
@@ -667,7 +738,9 @@ export class WorldViewer extends HTMLElement {
     updateLoadingText('Loading IFC model...');
     const model = await loadIfc(components);
     console.log('Model loaded:', model);
-    setModel(model);
+    if (model) {
+      setModel(model);
+    }
 
     // Debug: Check if fragments were added
     console.log('Fragments count:', fragments.list.size);
