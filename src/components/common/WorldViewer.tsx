@@ -92,15 +92,15 @@ export class WorldViewer extends HTMLElement {
     world.camera = new OrthoPerspectiveCamera(components);
 
     // First-Person Camera Setup (FPS-style controls)
-    // Set initial camera position at eye level (1.6m height)
+    // Set initial camera position at eye level (1.6m height) - LOCKED
     const defaultX = -1.29;
-    const defaultY = 1.60; // Eye level height
+    const defaultY = 1.60; // Eye level height - LOCKED, never changes
     const defaultZ = 1.14;
     
     // Create pointer lock controls for first-person navigation
     let fpControls: PointerLockControls | null = null;
     
-    // Set camera position directly in world coordinates
+    // Set camera position directly in world coordinates (Y is locked to 1.6)
     world.camera.three.position.set(defaultX, defaultY, defaultZ);
     
     // Set camera to look slightly downward (more natural for walking)
@@ -239,7 +239,7 @@ export class WorldViewer extends HTMLElement {
             <div style="margin-bottom: 4px;"><strong>Position:</strong></div>
             <div style="margin-left: 10px; margin-bottom: 8px;">
               X: ${pos.x.toFixed(3)}<br>
-              Y: ${pos.y.toFixed(3)}<br>
+              Y: ${pos.y.toFixed(3)} <span style="color: #ff0000;">(LOCKED)</span><br>
               Z: ${pos.z.toFixed(3)}
             </div>
             <div style="margin-bottom: 4px;"><strong>Rotation:</strong></div>
@@ -250,7 +250,7 @@ export class WorldViewer extends HTMLElement {
             <div style="margin-bottom: 8px;"><strong>Speed:</strong> ${keys.shift ? 'FAST' : 'NORMAL'}</div>
             <div style="font-size: 11px; color: #ccc; border-top: 1px solid #333; padding-top: 8px;">
               <strong>Controls:</strong><br>
-              WASD/Arrows: Move | Q/E: Up/Down | Shift: Sprint<br>
+              WASD/Arrows: Move | <span style="color: #ff0000;">Y-Height: LOCKED to 1.6m</span> | Shift: Sprint<br>
               Mouse: Look Around | Click: Lock/Unlock Mouse
             </div>
           `;
@@ -290,14 +290,20 @@ export class WorldViewer extends HTMLElement {
           world.camera.three.position.addScaledVector(sideways, moveDistance);
         }
 
-        // Vertical movement (Q/E keys)
-        if (keys.q) {
-          world.camera.three.position.y += moveDistance;
-        }
-        if (keys.e) {
-          world.camera.three.position.y -= moveDistance;
-        }
+        // Vertical movement (Q/E keys) - DISABLED, Y locked to eye level
+        // if (keys.q) {
+        //   world.camera.three.position.y += moveDistance;
+        // }
+        // if (keys.e) {
+        //   world.camera.three.position.y -= moveDistance;
+        // }
+        
+        // FORCE Y position to always be at eye level (1.6 meters)
+        world.camera.three.position.y = 1.6;
       }
+      
+      // SAFETY: Always enforce Y position to be at eye level, regardless of any other operations
+      world.camera.three.position.y = 1.6;
       
       requestAnimationFrame(updateFPSMovement);
     };
@@ -492,7 +498,8 @@ export class WorldViewer extends HTMLElement {
             console.log('Model size:', size);
             
             // Position FPS camera to look at the model center
-            // Keep the current camera position but orient it toward the model
+            // Keep Y locked to 1.6m (eye level), only orient the look direction
+            world.camera.three.position.y = 1.6; // FORCE eye level before lookAt
             world.camera.three.lookAt(center);
             
             console.log('FPS camera oriented toward model center');
@@ -679,12 +686,12 @@ export class WorldViewer extends HTMLElement {
           
           const cameraPosition = new THREE.Vector3(
             center.x + distance,
-            center.y + distance, 
+            1.6, // FORCE Y to eye level - never change this
             center.z + distance
           );
           
           world.camera.controls.setLookAt(
-            cameraPosition.x, cameraPosition.y, cameraPosition.z,
+            cameraPosition.x, 1.6, cameraPosition.z, // Y always 1.6
             center.x, center.y, center.z,
             true
           );
