@@ -131,20 +131,41 @@ export class WorldViewer extends HTMLElement {
     }
     (world.camera as CameraWithFPS).fpControls = fpControls;
     
-    // Add click-to-lock functionality
-    viewport.addEventListener('click', () => {
-      if (fpControls && !fpControls.isLocked) {
+    // Add press-and-hold functionality for FPS mode
+    let isMousePressed = false;
+    
+    viewport.addEventListener('mousedown', (e) => {
+      if (fpControls && e.button === 0) { // Left mouse button
+        isMousePressed = true;
         fpControls.lock();
+        console.log('Mouse pressed - FPS mode ACTIVATED');
+      }
+    });
+    
+    viewport.addEventListener('mouseup', (e) => {
+      if (fpControls && e.button === 0) { // Left mouse button
+        isMousePressed = false;
+        fpControls.unlock();
+        console.log('Mouse released - FPS mode DEACTIVATED');
+      }
+    });
+    
+    // Also handle mouse leave to deactivate FPS if mouse leaves the viewport
+    viewport.addEventListener('mouseleave', () => {
+      if (fpControls && isMousePressed) {
+        isMousePressed = false;
+        fpControls.unlock();
+        console.log('Mouse left viewport - FPS mode DEACTIVATED');
       }
     });
     
     // Handle pointer lock events
     fpControls.addEventListener('lock', () => {
-      console.log('First-person controls locked - use mouse to look around');
+      console.log('First-person controls locked - mouse look active');
     });
     
     fpControls.addEventListener('unlock', () => {
-      console.log('First-person controls unlocked - click to re-enter first-person mode');
+      console.log('First-person controls unlocked - mouse look inactive');
     });
     
     // Set default camera properties
@@ -234,7 +255,7 @@ export class WorldViewer extends HTMLElement {
           positionDisplay.innerHTML = `
             <div style="font-weight: bold; color: #00ff00; margin-bottom: 8px; font-size: 16px;">🎮 FPS DEBUG MODE</div>
             <div style="font-weight: bold; color: ${isLocked ? '#00ff00' : '#ff8800'}; font-size: 14px; margin-bottom: 8px;">
-              ${isLocked ? '🔒 MOUSE LOCKED - FPS ACTIVE' : '🔓 CLICK TO LOCK MOUSE'}
+              ${isLocked ? '🔒 MOUSE HELD - FPS ACTIVE' : '🔓 HOLD LEFT MOUSE TO ACTIVATE'}
             </div>
             <div style="margin-bottom: 4px;"><strong>Position:</strong></div>
             <div style="margin-left: 10px; margin-bottom: 8px;">
@@ -251,7 +272,7 @@ export class WorldViewer extends HTMLElement {
             <div style="font-size: 11px; color: #ccc; border-top: 1px solid #333; padding-top: 8px;">
               <strong>Controls:</strong><br>
               WASD/Arrows: Move | <span style="color: #ff0000;">Y-Height: LOCKED to 1.6m</span> | Shift: Sprint<br>
-              Mouse: Look Around | Click: Lock/Unlock Mouse
+              <span style="color: #00ff00;">HOLD Left Mouse: Activate FPS Look</span> | Release: Deactivate
             </div>
           `;
           
