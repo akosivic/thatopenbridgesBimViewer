@@ -1,6 +1,7 @@
 import * as BUI from "@thatopen/ui";
 import * as OBC from "@thatopen/components";
 import * as CUI from "@thatopen/ui-obc";
+import * as THREE from "three";
 import groupings from "./Sections/Groupings";
 import { Highlighter } from "@thatopen/components-front";
 import { FragmentsGroup } from "@thatopen/fragments";
@@ -17,6 +18,11 @@ interface DataPointKeysResponse {
 }
 
 let model: FragmentsGroup | undefined;
+let globalCamera: THREE.Camera | undefined;
+
+export const setGlobalCamera = (camera: THREE.Camera | undefined) => {
+  globalCamera = camera;
+};
 
 export default async (components: OBC.Components, isDebug: boolean, highlighter: Highlighter) => {
 
@@ -94,9 +100,11 @@ export default async (components: OBC.Components, isDebug: boolean, highlighter:
             console.log(`Zooming to key: ${targetKey}`);
 
             // Recursive function to find items in the tree with matching name
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const findItemsByName = (items: any[], name: string): any[] => {
               if (!items || !Array.isArray(items)) return [];
 
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               let results: any[] = [];
 
               for (const item of items) {
@@ -120,7 +128,82 @@ export default async (components: OBC.Components, isDebug: boolean, highlighter:
               console.log(`Found ${foundItems.length} items for key ${targetKey}:`, foundItems);
               if (model) {
                 const fragmentIdMap = model.getFragmentMap([foundItems[0].data.expressID]);
-                highlighter.highlightByID("select", fragmentIdMap, false, true, undefined, undefined, true);
+                
+                // Highlight the fragment
+                highlighter.highlightByID("select", fragmentIdMap, false, false, undefined, undefined, false);
+                
+                // Custom FPS zoom: Move camera to look at the selected element
+                try {
+                  // Get the bounding box of the selected fragment
+                  const fragmentMeshes = [];
+                  // Iterate over the fragment map entries
+                  for (const fragmentId of Object.keys(fragmentIdMap)) {
+                    const fragment = model.items.find(f => f.id === fragmentId);
+                    if (fragment && fragment.mesh) {
+                      fragmentMeshes.push(fragment.mesh);
+                    }
+                  }
+                  
+                  if (fragmentMeshes.length > 0) {
+                    // Calculate bounding box of selected elements
+                    const bbox = new THREE.Box3();
+                    fragmentMeshes.forEach(mesh => bbox.expandByObject(mesh));
+                    
+                    if (!bbox.isEmpty()) {
+                      const center = bbox.getCenter(new THREE.Vector3());
+                      const size = bbox.getSize(new THREE.Vector3());
+                      
+                      // Get current camera from the components or highlighter
+                      const worlds = components.get(OBC.Worlds);
+                      const worldsList = Array.from(worlds.list.values());
+                      const mainWorld = worldsList[0]; // Get the first world (should be "Main")
+                      let camera = mainWorld?.camera?.three;
+                      
+                      // Alternative: try to get camera from highlighter config
+                      if (!camera && highlighter.config && highlighter.config.world) {
+                        camera = highlighter.config.world.camera?.three;
+                      }
+                      
+                      // Fallback: use global camera reference
+                      if (!camera && globalCamera) {
+                        camera = globalCamera;
+                      }
+                      
+                      console.log('Worlds list:', worlds.list.size);
+                      console.log('Main world found:', !!mainWorld);
+                      console.log('Camera found:', !!camera);
+                      console.log('Highlighter config world:', !!highlighter.config?.world);
+                      console.log('Global camera fallback:', !!globalCamera);
+                      
+                      if (camera) {
+                        // Calculate optimal distance based on object size
+                        const maxDim = Math.max(size.x, size.y, size.z);
+                        const distance = Math.max(maxDim * 2, 5); // Minimum 5 units away
+                        
+                        // Calculate direction from center to camera position
+                        const direction = camera.position.clone().sub(center).normalize();
+                        
+                        // Position camera at optimal distance from the center
+                        const newPosition = center.clone().add(direction.multiplyScalar(distance));
+                        
+                        // Keep Y locked to eye level (1.6m)
+                        newPosition.y = 1.6;
+                        
+                        // Smoothly move camera to new position
+                        camera.position.copy(newPosition);
+                        
+                        // Look at the center of the selected object
+                        camera.lookAt(center);
+                        
+                        console.log(`FPS Camera moved to view selected element at:`, center);
+                      } else {
+                        console.warn('Camera not found - zoom functionality unavailable');
+                      }
+                    }
+                  }
+                } catch (zoomError) {
+                  console.error('Error during FPS zoom:', zoomError);
+                }
               }
             } else {
               console.log(`No items found for key ${targetKey} in relations tree`);

@@ -31,6 +31,7 @@ import measurement from "./components/Toolbars/Sections/Measurement";
 import selection from "./components/Toolbars/Sections/Selection";
 import { AppManager } from "./components/bim-components";
 import { loadIfc } from "./components/Toolbars/Sections/Import";
+import { setGlobalCamera } from "./components/Panels/ProjectInformation";
 
 interface State {
   update: [];
@@ -123,6 +124,9 @@ export class WorldViewer extends HTMLElement {
     world.camera.three.rotation.x = -1.6 * Math.PI / 180;
     world.camera.three.rotation.z = 0;
     world.camera.three.updateMatrixWorld();
+
+    // Set global camera reference for ProjectInformation zoom functionality
+    setGlobalCamera(world.camera.three);
 
     // Initialize pointer lock controls
     fpControls = new PointerLockControls(world.camera.three, viewport);
@@ -305,9 +309,6 @@ export class WorldViewer extends HTMLElement {
 
       if (keys.arrowup || keys.arrowdown || keys.arrowleft || keys.arrowright ||
         keys.w || keys.a || keys.s || keys.d || keys.q || keys.e) {
-
-        // Clear highlighter selection when camera moves
-        highlighter.clear("select");
 
         // Get camera's current orientation
         world.camera.three.getWorldDirection(direction);
@@ -505,7 +506,6 @@ export class WorldViewer extends HTMLElement {
       const positionChanged = !lastCameraPosition.equals(currentPosition);
 
       if (positionChanged) {
-        // highlighter.clear("select");
         lastCameraPosition.copy(currentPosition);
       }
 

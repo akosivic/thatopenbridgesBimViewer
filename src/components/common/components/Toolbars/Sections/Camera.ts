@@ -43,11 +43,6 @@ export default (world: OBC.World, highlighter?: OBF.Highlighter) => {
     const camera3js = world.camera.three;
     const currentPos = camera3js.position.clone();
 
-    // Clear highlighter selection when camera moves via UI controls
-    if (highlighter) {
-      highlighter.clear("select");
-    }
-
     console.log(`=== FPS CAMERA MOVEMENT: ${direction.toUpperCase()} ===`);
     console.log('Current position:', currentPos);
 
@@ -120,10 +115,6 @@ export default (world: OBC.World, highlighter?: OBF.Highlighter) => {
 
     const camera3js = world.camera.three;
     
-    // Clear highlighter selection when camera rotates via UI controls
-    if (highlighter) {
-      highlighter.clear("select");
-    }
 
     console.log(`=== FPS CAMERA ROTATION: ${direction.toUpperCase()} ===`);
 
@@ -174,11 +165,6 @@ export default (world: OBC.World, highlighter?: OBF.Highlighter) => {
 
   const zoomCamera = (direction: 'in' | 'out') => {
     if (!camera.controls?.camera) return;
-
-    // Clear highlighter selection when camera zooms via UI controls
-    if (highlighter) {
-      highlighter.clear("select");
-    }
 
     const currentZoom = camera.controls.camera.zoom;
     const zoomStep = 0.1;
