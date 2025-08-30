@@ -631,7 +631,7 @@ export class WorldViewer extends HTMLElement {
           </bim-tab>
           <bim-tab label="Selection">
             <bim-toolbar>
-              ${camera(world, highlighter)} ${selection(components, world)}
+              ${camera(world)} ${selection(components, world)}
             </bim-toolbar>
           </bim-tab>
           <bim-tab label="Measurement">

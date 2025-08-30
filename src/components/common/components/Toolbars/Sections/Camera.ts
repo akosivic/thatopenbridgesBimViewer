@@ -1,5 +1,4 @@
 import * as OBC from "@thatopen/components";
-import * as OBF from "@thatopen/components-front";
 import * as BUI from "@thatopen/ui";
 import * as THREE from "three";
 import { PointerLockControls } from "three/examples/jsm/Addons.js";
