@@ -757,11 +757,11 @@ export class WorldViewer extends HTMLElement {
           // ...existing code...
           // Position camera to look at the model center from a distance
           // ...existing code...
-          world.camera.controls.setLookAt(
-            cameraPosition.x, 1.6, cameraPosition.z,
-            center.x, center.y, center.z,
-            true
-          );
+          // world.camera.controls.setLookAt(
+          //   cameraPosition.x, 1.6, cameraPosition.z,
+          //   center.x, center.y, center.z,
+          //   true
+          // );
           // Enforce initial orientation after bounding box positioning
           world.camera.three.rotation.y = -3.7 * Math.PI / 180;
           world.camera.three.rotation.x = -1.6 * Math.PI / 180;
