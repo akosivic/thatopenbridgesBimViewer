@@ -11,7 +11,7 @@ export const setFPControls = (controls: PointerLockControls | null) => {
   fpControls = controls;
 };
 
-export default (world: OBC.World, highlighter?: OBF.Highlighter) => {
+export default (world: OBC.World) => {
   const { camera } = world;
 
   const onFitModel = () => {
