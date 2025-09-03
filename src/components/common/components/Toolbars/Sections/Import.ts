@@ -184,7 +184,7 @@ export default (components: OBC.Components) => {
 export async function loadIfc(components: OBC.Components) {
   updateLoadingText('Initializing IFC Loader...');
   try {
-    const apiUrl = '/api/streamIfc';
+    const apiUrl = '/ws/node/api/streamIfc';
 
     // Get the IFC loader instance
     const ifcLoader = components.get(OBC.IfcLoader);

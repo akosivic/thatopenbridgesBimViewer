@@ -65,11 +65,11 @@ Port 5173 (dev)          Port 3000           (dataPointMap)
 
 The server provides the following API endpoints:
 
-- `GET /api/getDataPoint?key={key}` - Get data point by key
-- `GET /api/getAllDataPointKeys` - Get all available keys
-- `GET /api/getAllDatapoints` - Get all data points
-- `GET /api/GetDpsMapKeys` - Get all data points (legacy endpoint)
-- `GET /api/streamIfc?blobName={filename}` - Stream IFC files (default: bim.ifc)
+- `GET /ws/node/api/getDataPoint?key={key}` - Get data point by key
+- `GET /ws/node/api/getAllDataPointKeys` - Get all available keys
+- `GET /ws/node/api/getAllDatapoints` - Get all data points
+- `GET /ws/node/api/GetDpsMapKeys` - Get all data points (legacy endpoint)
+- `GET /ws/node/api/streamIfc?blobName={filename}` - Stream IFC files (default: bim.ifc)
 
 ## IFC File Support
 

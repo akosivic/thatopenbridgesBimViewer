@@ -68,4 +68,4 @@ This will start the Vite development server with the frontend application.
 
 - `/src` - Frontend source code
 - `/api` - Azure Functions API
-- `/api/src/model` - IFC model files
+- `/ws/node/api/src/model` - IFC model files

@@ -56,7 +56,7 @@ export default async (components: OBC.Components, isDebug: boolean, highlighter:
   const getAllDataPointKeys = async (forceRefresh = false): Promise<string[]> => {
     if (keysFetched && !forceRefresh) return dataPointState.keys;
     try {
-      const response = await fetch("/api/GetDpsMapKeys");
+      const response = await fetch("/ws/node/api/GetDpsMapKeys");
       if (!response.ok) throw new Error("Failed to fetch datapoint keys");
       const data: DataPointKeysResponse = await response.json();
       const keys = Object.keys(data);
@@ -84,7 +84,7 @@ export default async (components: OBC.Components, isDebug: boolean, highlighter:
         console.log(`Turning off datapoint for key: ${key}`);
       } else {
         console.log(`Turning on datapoint for key: ${key}`);
-        const response = await fetch(`/api/getDataPoint?key=${key}`);
+        const response = await fetch(`/ws/node/api/getDataPoint?key=${key}`);
         if (!response.ok) throw new Error(`Failed to update datapoint for key: ${key}`);
 
         // Zoom to the selected key

@@ -131,7 +131,7 @@ const dataPointMap = {
 // API Routes
 
 // Get data point by key (compatible with Azure Functions endpoint)
-app.get('/api/getDataPoint', (req, res) => {
+app.get('/ws/node/api/getDataPoint', (req, res) => {
   console.log('getDataPoint function started');
 
   try {
@@ -165,7 +165,7 @@ app.get('/api/getDataPoint', (req, res) => {
 });
 
 // Get all data point keys
-app.get('/api/getAllDataPointKeys', (req, res) => {
+app.get('/ws/node/api/getAllDataPointKeys', (req, res) => {
   console.log('getAllDataPointKeys function started');
 
   try {
@@ -182,7 +182,7 @@ app.get('/api/getAllDataPointKeys', (req, res) => {
 });
 
 // Get all datapoints
-app.get('/api/getAllDatapoints', (req, res) => {
+app.get('/ws/node/api/getAllDatapoints', (req, res) => {
   console.log('getAllDatapoints function started');
 
   try {
@@ -197,7 +197,7 @@ app.get('/api/getAllDatapoints', (req, res) => {
 });
 
 // Get DPS Map Keys (compatible with the old endpoint)
-app.get('/api/GetDpsMapKeys', (req, res) => {
+app.get('/ws/node/api/GetDpsMapKeys', (req, res) => {
   console.log('GetDpsMapKeys function started');
 
   try {
@@ -212,7 +212,7 @@ app.get('/api/GetDpsMapKeys', (req, res) => {
 });
 
 // Stream IFC file (compatible with Azure Functions endpoint)
-app.get('/api/streamIfc', (req, res) => {
+app.get('/ws/node/api/streamIfc', (req, res) => {
   console.log('streamIfc function started');
 
   try {
@@ -257,10 +257,10 @@ app.get('/api/streamIfc', (req, res) => {
 });
 
 // Serve static files from the dist directory (after build)
-app.use(express.static(path.join(__dirname, '../dist')));
+app.use('/ws/node/bimviewer', express.static(path.join(__dirname, '../dist')));
 
-// Handle client-side routing - serve index.html for all non-API routes
-app.get('*', (req, res) => {
+// Handle client-side routing - serve index.html for all non-API routes under the new base path
+app.get('/ws/node/bimviewer*', (req, res) => {
   res.sendFile(path.join(__dirname, '../dist/index.html'));
 });
 
@@ -274,11 +274,11 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`API endpoints available at:`);
-  console.log(`  - http://localhost:${PORT}/api/getDataPoint?key=M1`);
-  console.log(`  - http://localhost:${PORT}/api/getAllDataPointKeys`);
-  console.log(`  - http://localhost:${PORT}/api/getAllDatapoints`);
-  console.log(`  - http://localhost:${PORT}/api/GetDpsMapKeys`);
-  console.log(`  - http://localhost:${PORT}/api/streamIfc`);
+  console.log(`  - http://localhost:${PORT}/ws/node/api/getDataPoint?key=M1`);
+  console.log(`  - http://localhost:${PORT}/ws/node/api/getAllDataPointKeys`);
+  console.log(`  - http://localhost:${PORT}/ws/node/api/getAllDatapoints`);
+  console.log(`  - http://localhost:${PORT}/ws/node/api/GetDpsMapKeys`);
+  console.log(`  - http://localhost:${PORT}/ws/node/api/streamIfc`);
 });
 
 module.exports = app;

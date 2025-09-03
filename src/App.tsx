@@ -25,7 +25,7 @@ function App(): JSX.Element {
   const { t } = useTranslation();
 
   if (isAuthenticated) {
-    return <Navigate to="/worldviewer" />;
+    return <Navigate to="/ws/node/bimviewer/worldviewer" />;
   }
 
   return (

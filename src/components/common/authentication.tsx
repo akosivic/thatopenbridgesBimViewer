@@ -23,7 +23,7 @@ export const logout = async () => {
   // For on-premises deployment, just clear localStorage and refresh
   // No Azure logout needed
   localStorage.clear();
-  window.location.href = '/';
+  window.location.href = '/ws/node/bimviewer/';
 };
 
 export const useAuth = () => {

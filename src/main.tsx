@@ -19,7 +19,7 @@ createRoot(document.getElementById('root')!).render(
     <ThemeProvider theme={theme}> {/* Apply the custom theme */}
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<WorldViewer />} />
+          <Route path="/ws/node/bimviewer/" element={<WorldViewer />} />
         </Routes>
       </BrowserRouter>
     </ThemeProvider>
