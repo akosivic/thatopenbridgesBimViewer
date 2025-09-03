@@ -1,11 +1,9 @@
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
-import { Box, Button, MenuItem, Select } from '@mui/material';
+import { Box, MenuItem, Select } from '@mui/material';
 import SvgIcon from '@mui/material/SvgIcon';
 import Divider from '@mui/material/Divider';
-import { logout } from './common/authentication';
-import AuthGuard from './common/AuthGuard';
 import { useTranslation } from 'react-i18next';
 import { useEffect } from 'react';
 
@@ -27,11 +25,6 @@ const HeaderComponent = () => {
       </SvgIcon >
     );
   }
-
-  const handleLogOff = () => {
-    logout();
-  };
-
   return (
     <AppBar position="sticky" sx={{
       position: 'fixed',
@@ -66,11 +59,6 @@ const HeaderComponent = () => {
             <MenuItem value="ja">日本語</MenuItem>
             <MenuItem value="en">English</MenuItem>
           </Select>
-          <AuthGuard>
-            <Button color="inherit" onClick={handleLogOff}>
-              {t('logout')}
-            </Button>
-          </AuthGuard>
         </Box>
       </Toolbar>
     </AppBar>

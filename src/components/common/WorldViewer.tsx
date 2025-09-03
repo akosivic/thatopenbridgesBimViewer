@@ -330,14 +330,6 @@ export class WorldViewer extends HTMLElement {
           world.camera.three.position.addScaledVector(sideways, moveDistance);
         }
 
-        // Vertical movement (Q/E keys) - DISABLED, Y locked to eye level
-        // if (keys.q) {
-        //   world.camera.three.position.y += moveDistance;
-        // }
-        // if (keys.e) {
-        //   world.camera.three.position.y -= moveDistance;
-        // }
-
         // FORCE Y position to always be at eye level (1.6 meters)
         world.camera.three.position.y = 1.6;
       }
