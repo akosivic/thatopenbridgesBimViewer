@@ -23,3 +23,9 @@ dist-ssr
 *.sln
 *.sw?
 initvars.ps1
+
+# Release files
+releases/
+release-v*/
+bim-viewer-v*.zip
+temp-release/
