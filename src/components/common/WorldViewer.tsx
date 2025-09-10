@@ -29,9 +29,11 @@ import help from "./components/Panels/Help";
 import camera from "./components/Toolbars/Sections/Camera";
 import measurement from "./components/Toolbars/Sections/Measurement";
 import selection from "./components/Toolbars/Sections/Selection";
+import warningControls, { setWarningPanelInstance } from "./components/Toolbars/Sections/WarningControls";
 import { AppManager } from "./components/bim-components";
 import { loadIfc } from "./components/Toolbars/Sections/Import";
 import { setGlobalCamera } from "./components/Panels/ProjectInformation";
+import { FloatingWarningPanel } from "./components/FloatingWarningPanel";
 
 interface State {
   update: [];
@@ -619,6 +621,9 @@ export class WorldViewer extends HTMLElement {
           <bim-tab label="Measurement">
             <bim-toolbar> ${measurement(world, components)} </bim-toolbar>
           </bim-tab>
+          <bim-tab label="Warnings">
+            <bim-toolbar> ${warningControls()} </bim-toolbar>
+          </bim-tab>
         </bim-tabs>
       `;
       }
@@ -870,6 +875,17 @@ export class WorldViewer extends HTMLElement {
       }
     } else {
       console.warn('No model or fragments loaded');
+    }
+
+    // Initialize floating warning panels
+    // Use the main grid container or document body as the container
+    const warningPanelContainer = document.querySelector('world-viewer') || document.body;
+    if (warningPanelContainer && world.camera.three) {
+      const warningPanel = new FloatingWarningPanel(warningPanelContainer as HTMLElement, world.camera.three);
+      setWarningPanelInstance(warningPanel);
+      console.log('Floating warning panels initialized with container:', warningPanelContainer);
+    } else {
+      console.error('Failed to initialize warning panels - container or camera not found');
     }
 
     // Hide the loading overlay now that everything is initialized
