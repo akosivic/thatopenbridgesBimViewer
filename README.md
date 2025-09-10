@@ -69,3 +69,9 @@ This will start the Vite development server with the frontend application.
 - `/src` - Frontend source code
 - `/api` - Azure Functions API
 - `/ws/node/api/src/model` - IFC model files
+
+# Creating a zip file
+- copy server folder
+- add dist folder inside server folder
+- update the path on server.js to ./dist since we moved it inside
+- zip file
