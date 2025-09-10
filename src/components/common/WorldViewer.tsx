@@ -35,10 +35,12 @@ import { setGlobalCamera } from "./components/Panels/ProjectInformation";
 
 interface State {
   update: [];
+  leftPanelMinimized: boolean;
 }
 
 const dataState: State = {
   update: [],
+  leftPanelMinimized: false,
 };
 export class WorldViewer extends HTMLElement {
   constructor() {
@@ -472,18 +474,6 @@ export class WorldViewer extends HTMLElement {
     const culler = components.get(Cullers).create(world);
     culler.threshold = 5;
 
-    // Note: Original orbit controls are disabled, using FPS controls instead
-    // world.camera.controls.restThreshold = 0.25;
-    // world.camera.controls.addEventListener("rest", () => {
-    //   culler.needsUpdate = true;
-    //   tilesLoader.cancel = true;
-    //   tilesLoader.culler.needsUpdate = true;
-    //   // Remove eye level enforcement - allow free camera positioning
-    // });
-
-    // For FPS mode, we'll handle culling updates differently
-    // The culler will update based on FPS camera movement instead
-
     // Add FPS camera movement detection to clear selection when camera moves
     const lastCameraPosition = world.camera.three.position.clone();
 
@@ -634,13 +624,6 @@ export class WorldViewer extends HTMLElement {
       }
       else {
         return html`
-        <bim-tabs floating style="justify-self: center; border-radius: 0.5rem;padding:30px">
-          <bim-tab label="${i18n.t('options')}">
-            <bim-toolbar>
-              ${load(components)}
-            </bim-toolbar>
-          </bim-tab>
-        </bim-tabs>
       `;
       }
     }, dataState);
@@ -656,31 +639,158 @@ export class WorldViewer extends HTMLElement {
 
     const [leftPanel, updateLeftPanel] = Component.create<HTMLElement, State>((state) => {
       console.log('Updating left panel with state:', state);
+      
+      const createExpandButton = () => {
+        console.log('Creating expand button...');
+        
+        // Remove any existing expand button first
+        const existingButton = document.querySelector('.bim-expand-button');
+        if (existingButton) {
+          console.log('Removing existing expand button');
+          existingButton.remove();
+        }
+        
+        // Create the expand button and append to body
+        const expandButton = document.createElement('div');
+        expandButton.className = 'bim-expand-button';
+        expandButton.style.position = 'fixed';
+        expandButton.style.top = '80px';
+        expandButton.style.left = '10px';
+        expandButton.style.zIndex = '10000';
+        expandButton.style.background = 'rgba(0,0,0,0.8)';
+        expandButton.style.padding = '8px';
+        expandButton.style.borderRadius = '8px';
+        expandButton.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
+        expandButton.style.cursor = 'pointer';
+        expandButton.style.color = 'white';
+        expandButton.style.fontSize = '16px';
+        expandButton.style.width = '44px';
+        expandButton.style.height = '44px';
+        expandButton.style.display = 'flex';
+        expandButton.style.alignItems = 'center';
+        expandButton.style.justifyContent = 'center';
+        expandButton.style.textAlign = 'center';
+        expandButton.style.lineHeight = '2';
+        expandButton.style.fontFamily = 'monospace';
+        expandButton.innerHTML = '☰';
+        expandButton.title = 'Expand Panel';
+        
+        expandButton.addEventListener('click', () => {
+          toggleLeftPanel();
+        });
+        
+        document.body.appendChild(expandButton);
+      };
+      
+      const removeExpandButton = () => {
+        const existingButton = document.querySelector('.bim-expand-button');
+        if (existingButton) {
+          existingButton.remove();
+        }
+      };
+
+      const toggleLeftPanel = () => {
+        dataState.leftPanelMinimized = !dataState.leftPanelMinimized;
+        
+        // Handle expand button creation/removal immediately
+        if (dataState.leftPanelMinimized) {
+          // Panel is being minimized - create expand button
+          setTimeout(createExpandButton, 100);
+        } else {
+          // Panel is being expanded - remove expand button
+          removeExpandButton();
+        }
+        
+        updateLeftPanel();
+        
+        // Update the layout using CSS classes
+        const gridApp = (window as any).bimGridApp as Grid;
+        if (gridApp) {
+          console.log('Grid app found, updating layout with CSS classes...');
+          
+          if (dataState.leftPanelMinimized) {
+            console.log('Minimizing left panel');
+            gridApp.classList.add('left-panel-minimized');
+          } else {
+            console.log('Expanding left panel');
+            gridApp.classList.remove('left-panel-minimized');
+          }
+          
+          // Force viewport and camera resize after layout change
+          setTimeout(() => {
+            console.log('Triggering resize after layout change...');
+            
+            // Use the existing resizeWorld function
+            resizeWorld();
+            
+            // Also dispatch a resize event to the viewport to trigger any other listeners
+            const resizeEvent = new Event('resize');
+            viewport.dispatchEvent(resizeEvent);
+            
+            // Trigger window resize event as well to catch any global handlers
+            window.dispatchEvent(new Event('resize'));
+            
+            console.log('Resize triggered after layout change');
+            
+          }, 150); // Small delay to let CSS transition complete
+          
+          console.log('Grid layout updated, minimized:', dataState.leftPanelMinimized);
+          console.log('Grid classes:', gridApp.className);
+        } else {
+          console.error('Grid app reference not found');
+        }
+      };
+      
+      if (state.leftPanelMinimized) {
+        console.log('Panel is minimized, returning empty div');
+        // Return empty content for the left panel area - expand button is handled by toggleLeftPanel
+        return html`<div style="display: none;"></div>`;
+      }
+      
+      // Full panel with minimize button
+      const minimizeButton = html`
+        <div style="display: flex; justify-content: flex-end; padding: 6px; background: rgba(0,0,0,0.05); border-bottom: 1px solid rgba(0,0,0,0.1);">
+          <bim-button 
+            @click=${toggleLeftPanel}
+            icon="material-symbols:chevron-left"
+            tooltip-title="Minimize Panel"
+            style="width: 24px; height: 24px;">
+          </bim-button>
+        </div>
+      `;
+      
       if (isDebugMode) {
         return html`
-        <bim-tabs switchers-full>
-          <bim-tab name="project" label="${i18n.t('project')}" icon="ph:building-fill">
-            ${projectInformationPanel}
-          </bim-tab>
-          <bim-tab name="settings" label="${i18n.t('settings')}" icon="solar:settings-bold">
-            ${settings(components, isDebugMode)}
-          </bim-tab>
-          <bim-tab name="help" label="${i18n.t('help')}" icon="material-symbols:help">
-            ${help}
-          </bim-tab>
-        </bim-tabs>
-      `;
+          <div style="height: 100%; display: flex; flex-direction: column;">
+            ${minimizeButton}
+            <bim-tabs switchers-full style="flex: 1;">
+              <bim-tab name="project" label="${i18n.t('project')}" icon="ph:building-fill">
+                ${projectInformationPanel}
+              </bim-tab>
+              <bim-tab name="settings" label="${i18n.t('settings')}" icon="solar:settings-bold">
+                ${settings(components, isDebugMode)}
+              </bim-tab>
+              <bim-tab name="help" label="${i18n.t('help')}" icon="material-symbols:help">
+                ${help}
+              </bim-tab>
+            </bim-tabs>
+          </div>
+        `;
       }
       else {
-        return html` <bim-tabs switchers-full>
-          <bim-tab name="project" label="${i18n.t('project')}" icon="ph:building-fill">
-            ${projectInformationPanel}
-          </bim-tab>
-          <bim-tab name="settings" label="${i18n.t('settings')}" icon="solar:settings-bold">
-            ${settings(components, isDebugMode)}
-          </bim-tab>
-        </bim-tabs>
-        `
+        return html`
+          <div style="height: 100%; display: flex; flex-direction: column;">
+            ${minimizeButton}
+            <bim-tabs switchers-full style="flex: 1;">
+              <bim-tab name="project" label="${i18n.t('project')}" icon="ph:building-fill">
+                ${projectInformationPanel}
+              </bim-tab>
+              <bim-tab name="settings" label="${i18n.t('settings')}" icon="solar:settings-bold">
+                ${settings(components, isDebugMode)}
+              </bim-tab>
+            </bim-tabs>
+          </div>
+        `;
       }
     }, dataState);
 
@@ -691,6 +801,9 @@ export class WorldViewer extends HTMLElement {
     app.appendChild(grid);
 
     const gridApp = grid as Grid;
+    
+    // Store grid reference globally for the toggle function
+    (window as any).bimGridApp = gridApp;
 
     gridApp.layouts = {
       main: {
@@ -746,20 +859,11 @@ export class WorldViewer extends HTMLElement {
         // Get the first fragment and its bounding box
         const firstFragment = Array.from(fragments.list.values())[0];
         if (firstFragment && firstFragment.mesh) {
-          // ...existing code...
-          // Position camera to look at the model center from a distance
-          // ...existing code...
-          // world.camera.controls.setLookAt(
-          //   cameraPosition.x, 1.6, cameraPosition.z,
-          //   center.x, center.y, center.z,
-          //   true
-          // );
           // Enforce initial orientation after bounding box positioning
           world.camera.three.rotation.y = -3.7 * Math.PI / 180;
           world.camera.three.rotation.x = -1.6 * Math.PI / 180;
           world.camera.three.rotation.z = 0;
           world.camera.three.updateMatrixWorld();
-          // ...existing code...
         }
       } catch (error) {
         console.error('Error positioning camera:', error);

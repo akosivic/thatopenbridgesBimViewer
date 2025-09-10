@@ -47,3 +47,91 @@ bim-grid[floating]>bim-toolbar {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+
+/* Left panel minimize/expand styles */
+.left-panel-minimize-btn {
+  background: rgba(0, 0, 0, 0.1);
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.left-panel-minimize-btn:hover {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.left-panel-expand-btn {
+  position: fixed;
+  top: 80px;
+  left: 10px;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.8);
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.left-panel-expand-btn:hover {
+  background: rgba(0, 0, 0, 0.9);
+  transform: scale(1.05);
+}
+
+/* Grid layout transition */
+bim-grid {
+  transition: grid-template-columns 0.3s ease;
+}
+
+/* Left panel minimized state */
+bim-grid.left-panel-minimized {
+  grid-template-areas: "viewport" !important;
+  grid-template-columns: 1fr !important;
+}
+
+/* Hide left panel with multiple selectors but NOT the expand button */
+bim-grid.left-panel-minimized [data-name="leftPanel"],
+bim-grid.left-panel-minimized bim-tabs,
+bim-grid.left-panel-minimized bim-tab,
+bim-grid.left-panel-minimized > *:first-child {
+  display: none !important;
+}
+
+/* Make sure viewport takes full width when minimized */
+bim-grid.left-panel-minimized bim-viewport {
+  grid-column: 1 !important;
+  width: 100% !important;
+}
+
+/* Full layout state */
+bim-grid:not(.left-panel-minimized) {
+  grid-template-areas: "leftPanel viewport" !important;
+  grid-template-columns: 26rem 1fr !important;
+}
+
+/* Show all elements when not minimized */
+bim-grid:not(.left-panel-minimized) [data-name="leftPanel"],
+bim-grid:not(.left-panel-minimized) bim-tabs,
+bim-grid:not(.left-panel-minimized) bim-tab {
+  display: block !important;
+}
+
+/* Ensure expand button is always visible */
+.bim-expand-button {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+.bim-expand-button:hover {
+  background: rgba(0,0,0,0.9) !important;
+  transform: scale(1.05);
+  transition: all 0.2s ease;
+}
+
+/* Viewport should fill available space smoothly */
+bim-viewport {
+  transition: width 0.3s ease;
+  width: 100%;
+  height: 100%;
+}
