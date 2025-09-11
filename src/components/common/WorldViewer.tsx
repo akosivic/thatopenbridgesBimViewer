@@ -378,16 +378,39 @@ export class WorldViewer extends HTMLElement {
       }
     });
 
-    // Enable normal mouse wheel zooming for camera
+    // Enable scroll wheel movement: scroll up = forward, scroll down = backward
     viewport.addEventListener('wheel', (event: WheelEvent) => {
-      if (!fpControls || !fpControls.isLocked) return;
+      if (!fpControls) return;
 
-      console.log('=== MOUSEWHEEL EVENT (FPS Mode) ===');
+      event.preventDefault(); // Prevent default scroll behavior
+
+      console.log('=== MOUSEWHEEL MOVEMENT ===');
       console.log('Delta:', event.deltaY);
 
-      // In FPS mode, wheel can adjust movement speed or other features if needed
+      // Calculate movement distance based on scroll
+      const scrollMovementSpeed = 2.0; // Adjust this value to control scroll sensitivity
+      const moveDistance = scrollMovementSpeed;
 
-      console.log('FPS wheel event processed');
+      // Get camera's forward direction
+      const direction = new THREE.Vector3();
+      world.camera.three.getWorldDirection(direction);
+
+      // Scroll up (negative deltaY) = move forward (like up arrow)
+      // Scroll down (positive deltaY) = move backward (like down arrow)
+      if (event.deltaY < 0) {
+        // Scroll up = move forward
+        world.camera.three.position.addScaledVector(direction, moveDistance);
+        console.log('Scroll up: Moving FORWARD');
+      } else if (event.deltaY > 0) {
+        // Scroll down = move backward
+        world.camera.three.position.addScaledVector(direction, -moveDistance);
+        console.log('Scroll down: Moving BACKWARD');
+      }
+
+      // FORCE Y position to always be at eye level (1.6 meters)
+      world.camera.three.position.y = 1.6;
+
+      console.log('New position:', world.camera.three.position);
     });
 
     const worldGrid = components.get(Grids).create(world);
@@ -629,6 +652,11 @@ export class WorldViewer extends HTMLElement {
       }
       else {
         return html`
+        <bim-tabs floating style="justify-self: center; border-radius: 0.5rem;padding:30px">
+          <bim-tab label="Warnings">
+            <bim-toolbar> ${warningControls()} </bim-toolbar>
+          </bim-tab>
+        </bim-tabs>
       `;
       }
     }, dataState);
@@ -809,6 +837,45 @@ export class WorldViewer extends HTMLElement {
     
     // Store grid reference globally for the toggle function
     (window as any).bimGridApp = gridApp;
+
+    // // Add tab switching event listener to fix aspect controls visibility
+    // setTimeout(() => {
+    //   const leftPanelElement = document.querySelector('[data-name="leftPanel"]');
+    //   if (leftPanelElement) {
+    //     const tabButtons = leftPanelElement.querySelectorAll('bim-tab');
+    //     tabButtons.forEach((tab: any) => {
+    //       tab.addEventListener('click', () => {
+    //         setTimeout(() => {
+    //           // Hide all aspect controls first
+    //           const allAspectSections = leftPanelElement.querySelectorAll('bim-panel-section[label*="Aspect"], bim-panel-section[label*="aspect"]');
+    //           allAspectSections.forEach((section: any) => {
+    //             section.style.display = 'none';
+    //           });
+              
+    //           // Only show aspect controls if settings tab is active
+    //           const activeTab = leftPanelElement.querySelector('bim-tab[active]');
+    //           if (activeTab && activeTab.getAttribute('name') === 'settings') {
+    //             const settingsAspectSections = activeTab.querySelectorAll('bim-panel-section[label*="Aspect"], bim-panel-section[label*="aspect"]');
+    //             settingsAspectSections.forEach((section: any) => {
+    //               section.style.display = '';
+    //             });
+    //           }
+    //         }, 10);
+    //       });
+    //     });
+        
+    //     // Initial setup - hide aspect controls if not on settings tab
+    //     setTimeout(() => {
+    //       const activeTab = leftPanelElement.querySelector('bim-tab[active]');
+    //       if (!activeTab || activeTab.getAttribute('name') !== 'settings') {
+    //         const allAspectSections = leftPanelElement.querySelectorAll('bim-panel-section[label*="Aspect"], bim-panel-section[label*="aspect"]');
+    //         allAspectSections.forEach((section: any) => {
+    //           section.style.display = 'none';
+    //         });
+    //       }
+    //     }, 100);
+    //   }
+    // }, 500);
 
     gridApp.layouts = {
       main: {
