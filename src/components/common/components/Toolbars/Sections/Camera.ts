@@ -10,6 +10,15 @@ export const setFPControls = (controls: PointerLockControls | null) => {
   fpControls = controls;
 };
 
+// Movement speed control
+let speedMultiplier = 1.0;
+export const setMovementSpeedMultiplier = (multiplier: number) => {
+  speedMultiplier = multiplier;
+  console.log(`Movement speed multiplier set to: ${multiplier}`);
+};
+
+export const getMovementSpeedMultiplier = () => speedMultiplier;
+
 export default (world: OBC.World) => {
   const { camera } = world;
 
@@ -30,7 +39,7 @@ export default (world: OBC.World) => {
   };
 
   // FPS Camera movement controls
-  const moveStep = 1.0;
+  const baseMoveStep = 1.0;
   const rotationStep = 0.1; // radians for FPS rotation
 
   const moveCamera = (direction: 'forward' | 'backward' | 'left' | 'right' | 'up' | 'down') => {
@@ -78,24 +87,26 @@ export default (world: OBC.World) => {
 
     const newPos = currentPos.clone();
 
+    const currentMoveStep = baseMoveStep * speedMultiplier;
+    
     switch (direction) {
       case 'forward':
-        newPos.addScaledVector(forward, moveStep);
+        newPos.addScaledVector(forward, currentMoveStep);
         break;
       case 'backward':
-        newPos.addScaledVector(forward, -moveStep);
+        newPos.addScaledVector(forward, -currentMoveStep);
         break;
       case 'left':
-        newPos.addScaledVector(right, -moveStep);
+        newPos.addScaledVector(right, -currentMoveStep);
         break;
       case 'right':
-        newPos.addScaledVector(right, moveStep);
+        newPos.addScaledVector(right, currentMoveStep);
         break;
       case 'up':
-        newPos.y += moveStep;
+        newPos.y += currentMoveStep;
         break;
       case 'down':
-        newPos.y -= moveStep;
+        newPos.y -= currentMoveStep;
         break;
     }
 
