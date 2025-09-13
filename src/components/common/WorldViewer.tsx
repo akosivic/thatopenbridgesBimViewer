@@ -26,13 +26,13 @@ import elementData from "./components/Panels/Selection";
 import settings from "./components/Panels/Settings";
 import load from "./components/Toolbars/Sections/Import";
 import help from "./components/Panels/Help";
-import camera from "./components/Toolbars/Sections/Camera";
 import measurement from "./components/Toolbars/Sections/Measurement";
 import selection from "./components/Toolbars/Sections/Selection";
+import cameraSettings from "./components/Toolbars/Sections/CameraSettings";
 import { AppManager } from "./components/bim-components";
 import { loadIfc } from "./components/Toolbars/Sections/Import";
 import { setGlobalCamera } from "./components/Panels/ProjectInformation";
-import speedControls, { setBaseSpeed } from "./components/Toolbars/Sections/SpeedControls";
+import { setBaseSpeed } from "./components/Toolbars/Sections/SpeedControls";
 
 
 interface State {
@@ -134,7 +134,7 @@ export class WorldViewer extends HTMLElement {
     fpControls = new PointerLockControls(world.camera.three, viewport);
 
     // Store FPS controls reference for Camera.ts
-    const { setFPControls } = await import('./components/Toolbars/Sections/Camera');
+    const { setFPControls } = await import('./components/Toolbars/Sections/CameraSettings');
     setFPControls(fpControls);
 
     // DISABLE the original orbit controls to prevent conflicts
@@ -694,16 +694,13 @@ export class WorldViewer extends HTMLElement {
           <bim-tab label="Import">
             <bim-toolbar style="pointer-events: auto;">${load(components)}</bim-toolbar>
           </bim-tab>
-          <bim-tab label="Selection">
+          <bim-tab label="Camera Settings">
             <bim-toolbar style="pointer-events: auto;">
-              ${camera(world)} ${selection(components, world)}
+              ${cameraSettings(world)} ${selection(components, world)}
             </bim-toolbar>
           </bim-tab>
           <bim-tab label="Measurement">
             <bim-toolbar style="pointer-events: auto;"> ${measurement(world, components)} </bim-toolbar>
-          </bim-tab>
-          <bim-tab label="Movement Settings">
-            <bim-toolbar> ${speedControls()} </bim-toolbar>
           </bim-tab>
         </bim-tabs>
       `;
@@ -711,8 +708,10 @@ export class WorldViewer extends HTMLElement {
       else {
         return html`
         <bim-tabs floating style="justify-self: center; border-radius: 0.5rem;padding:30px; z-index: 100000; pointer-events: auto;">
-          <bim-tab label="Movement Settings">
-            <bim-toolbar> ${speedControls()} </bim-toolbar>
+          <bim-tab label="Camera Settings">
+            <bim-toolbar style="pointer-events: auto;">
+              ${cameraSettings(world)}
+            </bim-toolbar>
           </bim-tab>
         </bim-tabs>
       `;
@@ -820,14 +819,6 @@ export class WorldViewer extends HTMLElement {
         // Get the first fragment and its bounding box
         const firstFragment = Array.from(fragments.list.values())[0];
         if (firstFragment && firstFragment.mesh) {
-          // ...existing code...
-          // Position camera to look at the model center from a distance
-          // ...existing code...
-          // world.camera.controls.setLookAt(
-          //   cameraPosition.x, 1.6, cameraPosition.z,
-          //   center.x, center.y, center.z,
-          //   true
-          // );
           // Enforce initial orientation after bounding box positioning
           world.camera.three.rotation.y = -3.7 * Math.PI / 180;
           world.camera.three.rotation.x = -1.6 * Math.PI / 180;

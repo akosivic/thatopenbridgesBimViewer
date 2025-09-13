@@ -67,15 +67,15 @@ export default (world: OBC.World) => {
     const cameraMatrix = new THREE.Matrix4();
     camera3js.updateMatrixWorld();
     cameraMatrix.extractRotation(camera3js.matrixWorld);
-    
+
     const forward = new THREE.Vector3();
     const right = new THREE.Vector3();
     const up = new THREE.Vector3(0, 1, 0);
-    
+
     // Extract direction vectors from camera matrix
     cameraMatrix.extractBasis(right, up, forward);
     forward.negate(); // Camera looks down negative Z
-    
+
     const newPos = currentPos.clone();
 
     switch (direction) {
@@ -101,7 +101,7 @@ export default (world: OBC.World) => {
 
     // Update camera position
     camera3js.position.copy(newPos);
-    
+
     console.log('New position:', newPos);
     console.log('===================================');
   };
@@ -113,7 +113,7 @@ export default (world: OBC.World) => {
     }
 
     const camera3js = world.camera.three;
-    
+
 
     console.log(`=== FPS CAMERA ROTATION: ${direction.toUpperCase()} ===`);
 
@@ -144,16 +144,16 @@ export default (world: OBC.World) => {
         euler.y += rotationStep; // Rotate right (clockwise around Y)
         break;
       case 'up':
-        euler.x = Math.max(-Math.PI/2 + 0.1, euler.x - rotationStep); // Look up (clamp to prevent flip)
+        euler.x = Math.max(-Math.PI / 2 + 0.1, euler.x - rotationStep); // Look up (clamp to prevent flip)
         break;
       case 'down':
-        euler.x = Math.min(Math.PI/2 - 0.1, euler.x + rotationStep); // Look down (clamp to prevent flip)
+        euler.x = Math.min(Math.PI / 2 - 0.1, euler.x + rotationStep); // Look down (clamp to prevent flip)
         break;
     }
 
     // Apply rotation to camera
     camera3js.setRotationFromEuler(euler);
-    
+
     console.log('New rotation (degrees):', {
       x: euler.x * 180 / Math.PI,
       y: euler.y * 180 / Math.PI,
@@ -173,7 +173,7 @@ export default (world: OBC.World) => {
 
     camera.controls.camera.zoom = newZoom;
     camera.controls.camera.updateProjectionMatrix();
-    
+
     console.log(`=== FPS CAMERA ZOOM: ${direction.toUpperCase()} ===`);
     console.log('Zoom changed from', currentZoom, 'to', newZoom);
   };
@@ -185,22 +185,22 @@ export default (world: OBC.World) => {
     }
 
     console.log('=== RESETTING FPS CAMERA TO DEFAULT ===');
-    
+
     const camera3js = world.camera.three;
-    
+
     // Reset to initial FPS position and orientation
     const defaultPosition = new THREE.Vector3(-1.29, 1.60, 1.14);
     const defaultLookAt = new THREE.Vector3(0, 1, 0);
-    
+
     camera3js.position.copy(defaultPosition);
     camera3js.lookAt(defaultLookAt);
-    
+
     // Reset zoom if available
     if (camera.controls?.camera) {
       camera.controls.camera.zoom = 1.0;
       camera.controls.camera.updateProjectionMatrix();
     }
-    
+
     console.log('Reset position:', defaultPosition);
     console.log('Reset lookAt:', defaultLookAt);
     console.log('=====================================');
@@ -220,11 +220,11 @@ export default (world: OBC.World) => {
 
     const camera3js = world.camera.three;
     const currentPos = camera3js.position.clone();
-    
+
     // Move up and look down
     camera3js.position.set(currentPos.x, currentPos.y + 10, currentPos.z);
     camera3js.lookAt(currentPos.x, currentPos.y, currentPos.z);
-    
+
     console.log('=== FPS TOP VIEW SET ===');
     console.log('Position:', camera3js.position);
   };
@@ -234,10 +234,10 @@ export default (world: OBC.World) => {
 
     const camera3js = world.camera.three;
     const currentPos = camera3js.position.clone();
-    
+
     // Look towards negative Z (front)
     camera3js.lookAt(currentPos.x, currentPos.y, currentPos.z - 10);
-    
+
     console.log('=== FPS FRONT VIEW SET ===');
   };
 
@@ -246,10 +246,10 @@ export default (world: OBC.World) => {
 
     const camera3js = world.camera.three;
     const currentPos = camera3js.position.clone();
-    
+
     // Look towards positive X (right side)
     camera3js.lookAt(currentPos.x + 10, currentPos.y, currentPos.z);
-    
+
     console.log('=== FPS SIDE VIEW SET ===');
   };
 
@@ -265,16 +265,11 @@ export default (world: OBC.World) => {
           <div style="font-size: 12px; font-weight: bold; color: #ccc;">Position Controls</div>
           <div style="display: grid; grid-template-columns: 1fr auto 1fr; grid-template-rows: auto auto auto; gap: 2px; align-items: center;">
             <div></div>
-            <bim-button icon="material-symbols:keyboard-arrow-up" @click=${() => moveCamera('forward')} style="width: 30px; height: 30px;"></bim-button>
-            <bim-button icon="material-symbols:keyboard-arrow-up" @click=${() => moveCamera('up')} style="width: 30px; height: 30px;"></bim-button>
-            
+            <bim-button icon="material-symbols:keyboard-arrow-up" @click=${() => moveCamera('forward')} style="width: 30px; height: 30px;"></bim-button>            
             <bim-button icon="material-symbols:keyboard-arrow-left" @click=${() => moveCamera('left')} style="width: 30px; height: 30px;"></bim-button>
+            <div></div>
             <bim-button icon="material-symbols:keyboard-arrow-down" @click=${() => moveCamera('backward')} style="width: 30px; height: 30px;"></bim-button>
-            <bim-button icon="material-symbols:keyboard-arrow-right" @click=${() => moveCamera('right')} style="width: 30px; height: 30px;"></bim-button>
-            
-            <div></div>
-            <div></div>
-            <bim-button icon="material-symbols:keyboard-arrow-down" @click=${() => moveCamera('down')} style="width: 30px; height: 30px;"></bim-button>
+            <bim-button icon="material-symbols:keyboard-arrow-right" @click=${() => moveCamera('right')} style="width: 30px; height: 30px;"></bim-button>            
           </div>
         </div>
 
@@ -285,7 +280,6 @@ export default (world: OBC.World) => {
             <div></div>
             <bim-button icon="material-symbols:rotate-left" @click=${() => rotateCamera('up')} style="width: 30px; height: 30px;"></bim-button>
             <div></div>
-            
             <bim-button icon="material-symbols:rotate-left" @click=${() => rotateCamera('left')} style="width: 30px; height: 30px;"></bim-button>
             <bim-button icon="material-symbols:rotate-right" @click=${() => rotateCamera('down')} style="width: 30px; height: 30px;"></bim-button>
             <bim-button icon="material-symbols:rotate-right" @click=${() => rotateCamera('right')} style="width: 30px; height: 30px;"></bim-button>
