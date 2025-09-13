@@ -32,6 +32,8 @@ import selection from "./components/Toolbars/Sections/Selection";
 import { AppManager } from "./components/bim-components";
 import { loadIfc } from "./components/Toolbars/Sections/Import";
 import { setGlobalCamera } from "./components/Panels/ProjectInformation";
+import speedControls, { setBaseSpeed } from "./components/Toolbars/Sections/SpeedControls";
+
 
 interface State {
   update: [];
@@ -154,8 +156,8 @@ export class WorldViewer extends HTMLElement {
     // Prevent FPS activation when clicking toolbar buttons or their children
     function isToolbarButton(target: EventTarget | null): boolean {
       if (!target || !(target instanceof HTMLElement)) return false;
-      // Check for toolbar/tab/button classes
-      return !!target.closest('.bim-tabs, .bim-tab, .bim-toolbar, .bim-toolbar-btn, .bim-toolbar-button, .screenshot-btn');
+      // Check for toolbar/tab/button classes - allow buttons inside toolbars to work
+      return !!target.closest('bim-tabs, bim-tab, bim-toolbar, bim-button, bim-toolbar-section, .screenshot-btn');
     }
 
     viewport.addEventListener('mousedown', (e) => {
@@ -232,8 +234,56 @@ export class WorldViewer extends HTMLElement {
     }
 
     // FPS-style movement controls
-    const moveSpeed = 5.0; // Units per second for FPS movement
+    let moveSpeed = 5.0; // Units per second for FPS movement (now variable)
     const sprintMultiplier = 2.0; // Sprint speed multiplier
+
+    // Set up speed control integration
+    setBaseSpeed(moveSpeed);
+
+    // Listen for speed change events from SpeedControls
+    window.addEventListener('moveSpeedChange', (event: any) => {
+      const { effectiveSpeed } = event.detail;
+      moveSpeed = effectiveSpeed;
+      console.log(`WorldViewer moveSpeed updated to: ${moveSpeed}`);
+    });
+
+    // Listen for manual movement events from SpeedControls direction buttons
+    window.addEventListener('manualMovement', (event: any) => {
+      const { direction, speed } = event.detail;
+      console.log(`Manual movement triggered: ${direction} at speed ${speed}`);
+
+      if (!fpControls) return;
+
+      const moveDistance = speed * 0.1; // Adjust multiplier for single movement steps
+      const currentDirection = new THREE.Vector3();
+      const sideways = new THREE.Vector3();
+      const upVector = new THREE.Vector3(0, 1, 0);
+
+      // Get camera's current orientation
+      world.camera.three.getWorldDirection(currentDirection);
+      sideways.crossVectors(currentDirection, upVector).normalize();
+
+      // Apply movement based on direction
+      switch (direction) {
+        case 'up':
+          world.camera.three.position.addScaledVector(currentDirection, moveDistance);
+          break;
+        case 'down':
+          world.camera.three.position.addScaledVector(currentDirection, -moveDistance);
+          break;
+        case 'left':
+          world.camera.three.position.addScaledVector(sideways, -moveDistance);
+          break;
+        case 'right':
+          world.camera.three.position.addScaledVector(sideways, moveDistance);
+          break;
+      }
+
+      // FORCE Y position to always be at eye level (1.6 meters)
+      world.camera.three.position.y = 1.6;
+
+      console.log(`Moved ${direction}, new position:`, world.camera.three.position);
+    });
     const keys: Record<string, boolean> = {
       // Arrow keys
       arrowup: false,
@@ -374,16 +424,39 @@ export class WorldViewer extends HTMLElement {
       }
     });
 
-    // Enable normal mouse wheel zooming for camera
+    // Enable scroll wheel movement: scroll up = forward, scroll down = backward
     viewport.addEventListener('wheel', (event: WheelEvent) => {
-      if (!fpControls || !fpControls.isLocked) return;
+      if (!fpControls) return;
 
-      console.log('=== MOUSEWHEEL EVENT (FPS Mode) ===');
+      event.preventDefault(); // Prevent default scroll behavior
+
+      console.log('=== MOUSEWHEEL MOVEMENT ===');
       console.log('Delta:', event.deltaY);
 
-      // In FPS mode, wheel can adjust movement speed or other features if needed
+      // Calculate movement distance based on scroll
+      const scrollMovementSpeed = 2.0; // Adjust this value to control scroll sensitivity
+      const moveDistance = scrollMovementSpeed;
 
-      console.log('FPS wheel event processed');
+      // Get camera's forward direction
+      const direction = new THREE.Vector3();
+      world.camera.three.getWorldDirection(direction);
+
+      // Scroll up (negative deltaY) = move forward (like up arrow)
+      // Scroll down (positive deltaY) = move backward (like down arrow)
+      if (event.deltaY < 0) {
+        // Scroll up = move forward
+        world.camera.three.position.addScaledVector(direction, moveDistance);
+        console.log('Scroll up: Moving FORWARD');
+      } else if (event.deltaY > 0) {
+        // Scroll down = move backward
+        world.camera.three.position.addScaledVector(direction, -moveDistance);
+        console.log('Scroll down: Moving BACKWARD');
+      }
+
+      // FORCE Y position to always be at eye level (1.6 meters)
+      world.camera.three.position.y = 1.6;
+
+      console.log('New position:', world.camera.three.position);
     });
 
     const worldGrid = components.get(Grids).create(world);
@@ -617,28 +690,29 @@ export class WorldViewer extends HTMLElement {
       console.log('Updating toolbar with state:', state);
       if (isDebugMode) {
         return html`
-        <bim-tabs floating style="justify-self: center; border-radius: 0.5rem;padding:30px">
+        <bim-tabs floating style="justify-self: center; border-radius: 0.5rem;padding:30px; z-index: 100000; pointer-events: auto;">
           <bim-tab label="Import">
-            <bim-toolbar>${load(components)}</bim-toolbar>
+            <bim-toolbar style="pointer-events: auto;">${load(components)}</bim-toolbar>
           </bim-tab>
           <bim-tab label="Selection">
-            <bim-toolbar>
+            <bim-toolbar style="pointer-events: auto;">
               ${camera(world)} ${selection(components, world)}
             </bim-toolbar>
           </bim-tab>
           <bim-tab label="Measurement">
-            <bim-toolbar> ${measurement(world, components)} </bim-toolbar>
+            <bim-toolbar style="pointer-events: auto;"> ${measurement(world, components)} </bim-toolbar>
+          </bim-tab>
+          <bim-tab label="Movement Settings">
+            <bim-toolbar> ${speedControls()} </bim-toolbar>
           </bim-tab>
         </bim-tabs>
       `;
       }
       else {
         return html`
-        <bim-tabs floating style="justify-self: center; border-radius: 0.5rem;padding:30px">
-          <bim-tab label="${i18n.t('options')}">
-            <bim-toolbar>
-              ${load(components)}
-            </bim-toolbar>
+        <bim-tabs floating style="justify-self: center; border-radius: 0.5rem;padding:30px; z-index: 100000; pointer-events: auto;">
+          <bim-tab label="Movement Settings">
+            <bim-toolbar> ${speedControls()} </bim-toolbar>
           </bim-tab>
         </bim-tabs>
       `;
