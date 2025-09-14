@@ -717,7 +717,7 @@ export class WorldViewer extends HTMLElement {
       }
     });
 
-    const projectInformationPanel = await projectInformation(components);
+    const projectInformationPanel = await projectInformation(components, isDebugMode, highlighter);
     const elementDataPanel = elementData(components, isDebugMode);
 
     const [toolbar, updateToolbar] = Component.create<HTMLElement, State>((state) => {
@@ -780,8 +780,7 @@ export class WorldViewer extends HTMLElement {
         { name: 'settings', label: i18n.t('settings'), icon: 'solar:settings-bold' },
         { name: 'help', label: i18n.t('help'), icon: 'material-symbols:help' }
       ] : [
-        { name: 'project', label: i18n.t('project'), icon: 'ph:building-fill' },
-        { name: 'settings', label: i18n.t('settings'), icon: 'solar:settings-bold' }
+        { name: 'project', label: i18n.t('project'), icon: 'ph:building-fill' }
       ];
 
       // Get current tab content
