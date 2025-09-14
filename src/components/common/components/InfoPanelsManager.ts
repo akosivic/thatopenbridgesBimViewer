@@ -16,6 +16,11 @@ export class InfoPanelsManager {
   // UI Elements
   private editButton?: HTMLElement;
   private onConfigChange?: (config: InfoPanelsConfig) => void;
+  
+  // Performance optimization for position updates
+  private lastCameraPosition: THREE.Vector3 = new THREE.Vector3();
+  private lastCameraRotation: THREE.Euler = new THREE.Euler();
+  private lastUpdateTime: number = 0;
 
   constructor(
     scene: THREE.Scene,
@@ -128,9 +133,49 @@ export class InfoPanelsManager {
   }
 
   private animate() {
-    // Update HTML positions for all panels
-    for (const panel of this.panels.values()) {
-      panel.updateHTMLPosition(this.camera, this.renderer);
+    const currentTime = performance.now();
+    
+    // More aggressive throttling - skip more frames for smoother experience
+    const throttleTime = this.isEditMode ? 16 : 50; // 20fps when not editing, 60fps when editing
+    if (currentTime - this.lastUpdateTime < throttleTime) {
+      requestAnimationFrame(() => this.animate());
+      return;
+    }
+    
+    // Check if camera has actually moved with threshold to avoid micro-updates
+    const currentPosition = this.camera.position.clone();
+    const currentRotation = this.camera.rotation.clone();
+    
+    // Use distance threshold to prevent tiny movements from triggering updates
+    const minDistance = 0.01;
+    const minRotation = 0.01;
+    
+    const positionChanged = this.lastCameraPosition.distanceTo(currentPosition) > minDistance;
+    const rotationChanged = (
+      Math.abs(this.lastCameraRotation.x - currentRotation.x) > minRotation ||
+      Math.abs(this.lastCameraRotation.y - currentRotation.y) > minRotation ||
+      Math.abs(this.lastCameraRotation.z - currentRotation.z) > minRotation
+    );
+    
+    // Only update if significant change occurred
+    if (positionChanged || rotationChanged || this.isEditMode) {
+      // Use requestIdleCallback for smooth updates, fallback to setTimeout
+      const updatePanels = () => {
+        for (const panel of this.panels.values()) {
+          panel.updateHTMLPosition(this.camera, this.renderer);
+        }
+      };
+
+      if (window.requestIdleCallback) {
+        window.requestIdleCallback(updatePanels, { timeout: 16 });
+      } else {
+        setTimeout(updatePanels, 0);
+      }
+      
+      // Store current camera state
+      this.lastCameraPosition.copy(currentPosition);
+      this.lastCameraRotation.copy(currentRotation);
+      this.lastUpdateTime = currentTime;
     }
     
     requestAnimationFrame(() => this.animate());

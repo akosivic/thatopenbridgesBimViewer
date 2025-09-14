@@ -44,31 +44,37 @@ export class InfoPanel3D {
   }
 
   private createPanelVisuals() {
-    // Create a connector line from ground to panel
-    const lineGeometry = new THREE.BufferGeometry().setFromPoints([
-      new THREE.Vector3(0, 0, 0),
-      new THREE.Vector3(0, 2, 0)
-    ]);
-    const lineMaterial = new THREE.LineBasicMaterial({ 
-      color: 0x00aaff, 
-      transparent: true, 
-      opacity: 0.6 
-    });
-    const line = new THREE.Line(lineGeometry, lineMaterial);
-    line.name = "connector-line";
-    this.group.add(line);
+    // Create connector line and point indicators (hidden by default to match screenshot)
+    // These can be enabled via settings if needed
+    const showConnectors = false; // Set to true to show blue lines and ground points
+    
+    if (showConnectors) {
+      // Create a connector line from ground to panel
+      const lineGeometry = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(0, 0, 0),
+        new THREE.Vector3(0, 2, 0)
+      ]);
+      const lineMaterial = new THREE.LineBasicMaterial({ 
+        color: 0x00aaff, 
+        transparent: true, 
+        opacity: 0.6 
+      });
+      const line = new THREE.Line(lineGeometry, lineMaterial);
+      line.name = "connector-line";
+      this.group.add(line);
 
-    // Create a point indicator at ground level
-    const pointGeometry = new THREE.CircleGeometry(0.1, 16);
-    const pointMaterial = new THREE.MeshBasicMaterial({ 
-      color: 0x00aaff, 
-      transparent: true, 
-      opacity: 0.8 
-    });
-    const point = new THREE.Mesh(pointGeometry, pointMaterial);
-    point.rotation.x = -Math.PI / 2; // Lay flat on ground
-    point.name = "ground-point";
-    this.group.add(point);
+      // Create a point indicator at ground level
+      const pointGeometry = new THREE.CircleGeometry(0.1, 16);
+      const pointMaterial = new THREE.MeshBasicMaterial({ 
+        color: 0x00aaff, 
+        transparent: true, 
+        opacity: 0.8 
+      });
+      const point = new THREE.Mesh(pointGeometry, pointMaterial);
+      point.rotation.x = -Math.PI / 2; // Lay flat on ground
+      point.name = "ground-point";
+      this.group.add(point);
+    }
 
     // Create interaction sphere for dragging (invisible in non-edit mode)
     const sphereGeometry = new THREE.SphereGeometry(0.2, 16, 16);
@@ -91,9 +97,12 @@ export class InfoPanel3D {
     this.htmlElement.className = 'info-panel-3d-container';
     this.htmlElement.style.cssText = `
       position: absolute;
+      left: 0;
+      top: 0;
       transform: translate(-50%, -100%);
       z-index: 1000;
       pointer-events: auto;
+      will-change: transform;
     `;
     
     this.createIconAndPanel();
@@ -118,7 +127,8 @@ export class InfoPanel3D {
       cursor: pointer;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
       margin: 0 auto 8px auto;
-      transition: all 0.2s ease;
+      transition: opacity 0.2s ease, visibility 0.2s ease, background 0.2s ease;
+      will-change: opacity, visibility;
     `;
     iconElement.innerHTML = '!';
     iconElement.title = 'Click to show/hide panel information';
@@ -206,25 +216,43 @@ export class InfoPanel3D {
       this.data.position.z
     );
 
+    // Early visibility check to avoid unnecessary calculations
+    const distance = camera.position.distanceTo(panelWorldPosition);
+    if (distance > 100 || !this.data.visible) {
+      // Hide immediately if too far or not visible
+      this.htmlElement.style.visibility = 'hidden';
+      return;
+    }
+
     // Project 3D position to 2D screen coordinates
     const screenPosition = panelWorldPosition.clone().project(camera);
+    
+    // Check if behind camera
+    if (screenPosition.z >= 1) {
+      this.htmlElement.style.visibility = 'hidden';
+      return;
+    }
     
     // Convert normalized device coordinates to screen pixels
     const canvas = renderer.domElement;
     const x = (screenPosition.x * 0.5 + 0.5) * canvas.clientWidth;
     const y = (screenPosition.y * -0.5 + 0.5) * canvas.clientHeight;
     
-    // Update HTML element position
-    this.htmlElement.style.left = `${x}px`;
-    this.htmlElement.style.top = `${y}px`;
+    // Only update transform if position has changed significantly
+    const currentTransform = this.htmlElement.style.transform;
+    const newTransform = `translate3d(${x}px, ${y}px, 0) translate(-50%, -100%)`;
     
-    // Hide if behind camera or too far, but only hide the icon
-    const distance = camera.position.distanceTo(panelWorldPosition);
-    const isVisible = screenPosition.z < 1 && distance < 100 && this.data.visible;
+    if (currentTransform !== newTransform) {
+      this.htmlElement.style.transform = newTransform;
+    }
+    
+    // Show element
+    this.htmlElement.style.visibility = 'visible';
     
     const iconElement = (this.htmlElement as any).iconElement;
     if (iconElement) {
-      iconElement.style.display = isVisible ? 'flex' : 'none';
+      iconElement.style.visibility = 'visible';
+      iconElement.style.opacity = '1';
     }
   }
 
