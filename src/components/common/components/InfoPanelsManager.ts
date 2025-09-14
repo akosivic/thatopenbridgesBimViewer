@@ -421,7 +421,7 @@ export class InfoPanelsManager {
     }
 
     return BUI.html`
-      <bim-panel-section label="Information Panels" icon="material-symbols:info">
+      <bim-panel-section label="Info Panels Management" icon="material-symbols:info">
         <div style="display: flex; flex-direction: column; gap: 12px; padding: 12px;">
           <div style="display: flex; gap: 8px; align-items: center;">
             <bim-button 

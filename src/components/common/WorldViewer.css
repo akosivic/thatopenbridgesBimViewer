@@ -135,3 +135,59 @@ bim-viewport {
   width: 100%;
   height: 100%;
 }
+
+/* Hide aspect section when project tab is active */
+bim-tab[name="project"][active] ~ * bim-panel-section[icon="solar:palette-bold"],
+bim-tabs:has(bim-tab[name="project"][active]) bim-panel-section[icon="solar:palette-bold"] {
+  display: none !important;
+}
+
+/* Alternative approach - hide any theme selector outside of settings */
+bim-tab:not([name="settings"]) bim-selector[vertical] bim-option[icon="solar:moon-bold"],
+bim-tab:not([name="settings"]) bim-selector[vertical] bim-option[icon="solar:sun-bold"],
+bim-tab:not([name="settings"]) bim-selector[vertical] bim-option[icon="majesticons:laptop"] {
+  display: none !important;
+}
+
+
+
+/* Force aspect section to only show in settings context */
+bim-panel-section[icon="solar:palette-bold"] {
+  display: none !important;
+}
+
+bim-tab[name="settings"] bim-panel-section[icon="solar:palette-bold"] {
+  display: block !important;
+}
+
+/* Hide any global theme selectors that might be created by the framework */
+body > bim-selector[vertical],
+html > bim-selector[vertical],
+.world-viewer > bim-selector[vertical] {
+  display: none !important;
+}
+
+/* Hide any floating or absolute positioned theme controls */
+bim-selector[vertical][style*="position: absolute"],
+bim-selector[vertical][style*="position: fixed"] {
+  display: none !important;
+}
+
+/* Aggressive hiding of any theme selector outside tabs */
+:not(bim-tab[name="settings"]) > * bim-selector[vertical] {
+  display: none !important;
+}
+
+/* Hide any selector that contains theme options */
+bim-selector:has(bim-option[icon="solar:moon-bold"]),
+bim-selector:has(bim-option[icon="solar:sun-bold"]),
+bim-selector:has(bim-option[icon="majesticons:laptop"]) {
+  display: none !important;
+}
+
+/* Only show theme selector within settings tab */
+bim-tab[name="settings"] bim-selector:has(bim-option[icon="solar:moon-bold"]),
+bim-tab[name="settings"] bim-selector:has(bim-option[icon="solar:sun-bold"]),
+bim-tab[name="settings"] bim-selector:has(bim-option[icon="majesticons:laptop"]) {
+  display: block !important;
+}

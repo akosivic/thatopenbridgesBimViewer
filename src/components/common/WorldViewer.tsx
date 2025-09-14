@@ -725,7 +725,7 @@ export class WorldViewer extends HTMLElement {
       }
     });
 
-    const projectInformationPanel = await projectInformation(components, isDebugMode, highlighter);
+    const projectInformationPanel = await projectInformation(components);
     const elementDataPanel = elementData(components, isDebugMode);
 
     const [toolbar, updateToolbar] = Component.create<HTMLElement, State>((state) => {
@@ -762,44 +762,87 @@ export class WorldViewer extends HTMLElement {
 
     // Create a function to update the panel when language changes
     const updatePanelOnLanguageChange = () => {
-      updateLeftPanel();
-      updateToolbar();
+      updateLeftPanel(dataState);
+      updateToolbar(dataState);
     };
 
     // Add language change listener
     i18n.on('languageChanged', updatePanelOnLanguageChange);
 
+    // Simple tab state - bypass the framework's broken tabs
+    let currentActiveTab = 'project';
+
     const [leftPanel, updateLeftPanel] = Component.create<HTMLElement, State>((state) => {
-      console.log('Updating left panel with state:', state);
-      if (isDebugMode) {
-        return html`
-        <bim-tabs switchers-full>
-          <bim-tab name="project" label="${i18n.t('project')}" icon="ph:building-fill">
-            ${projectInformationPanel}
-          </bim-tab>
-          <bim-tab name="infopanels" label="Info Panels" icon="material-symbols:info">
-            ${this.infoPanelsManager?.createManagementPanel()}
-          </bim-tab>
-          <bim-tab name="settings" label="${i18n.t('settings')}" icon="solar:settings-bold">
-            ${settings(components, isDebugMode)}
-          </bim-tab>
-          <bim-tab name="help" label="${i18n.t('help')}" icon="material-symbols:help">
-            ${help}
-          </bim-tab>
-        </bim-tabs>
+      console.log('Updating left panel with state:', state, 'Active tab:', currentActiveTab);
+      
+      // Custom tab switcher function
+      const switchTab = (newTab: string) => {
+        currentActiveTab = newTab;
+        updateLeftPanel(state);
+      };
+      
+      // Create custom tab buttons and content area
+      const tabButtons = isDebugMode ? [
+        { name: 'project', label: i18n.t('project'), icon: 'ph:building-fill' },
+        { name: 'infopanels', label: 'Info Panels', icon: 'material-symbols:info' },
+        { name: 'settings', label: i18n.t('settings'), icon: 'solar:settings-bold' },
+        { name: 'help', label: i18n.t('help'), icon: 'material-symbols:help' }
+      ] : [
+        { name: 'project', label: i18n.t('project'), icon: 'ph:building-fill' },
+        { name: 'settings', label: i18n.t('settings'), icon: 'solar:settings-bold' }
+      ];
+
+      // Get current tab content
+      const getCurrentTabContent = () => {
+        switch (currentActiveTab) {
+          case 'project':
+            return projectInformationPanel;
+          case 'infopanels':
+            return this.infoPanelsManager?.createManagementPanel();
+          case 'settings':
+            return settings(components);
+          case 'help':
+            return help;
+          default:
+            return projectInformationPanel;
+        }
+      };
+
+      return html`
+        <div class="custom-tabs-container" style="display: flex; flex-direction: column; height: 100%;">
+          <!-- Custom Tab Headers -->
+          <div class="custom-tab-headers" style="display: flex; border-bottom: 1px solid #333; margin-bottom: 1rem; flex-shrink: 0;">
+            ${tabButtons.map(tab => html`
+              <button 
+                class="custom-tab-button ${currentActiveTab === tab.name ? 'active' : ''}" 
+                @click=${() => switchTab(tab.name)}
+                style="
+                  flex: 1; 
+                  padding: 12px 8px; 
+                  background: ${currentActiveTab === tab.name ? '#444' : '#222'}; 
+                  color: white; 
+                  border: none; 
+                  cursor: pointer;
+                  border-bottom: ${currentActiveTab === tab.name ? '2px solid #0078d4' : 'none'};
+                  font-size: 12px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  gap: 4px;
+                "
+              >
+                <bim-icon icon="${tab.icon}" style="font-size: 14px;"></bim-icon>
+                ${tab.label}
+              </button>
+            `)}
+          </div>
+          
+          <!-- Tab Content Area -->
+          <div class="custom-tab-content" style="flex: 1; overflow-y: auto;">
+            ${getCurrentTabContent()}
+          </div>
+        </div>
       `;
-      }
-      else {
-        return html` <bim-tabs switchers-full>
-          <bim-tab name="project" label="${i18n.t('project')}" icon="ph:building-fill">
-            ${projectInformationPanel}
-          </bim-tab>
-          <bim-tab name="settings" label="${i18n.t('settings')}" icon="solar:settings-bold">
-            ${settings(components, isDebugMode)}
-          </bim-tab>
-        </bim-tabs>
-        `
-      }
     }, dataState);
 
     const app = document.getElementsByTagName("world-viewer")[0];
