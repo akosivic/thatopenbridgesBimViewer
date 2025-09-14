@@ -380,12 +380,28 @@ export class WorldViewer extends HTMLElement {
           world.camera.three.position.addScaledVector(sideways, moveDistance);
         }
 
-        // FORCE Y position to always be at eye level (1.6 meters)
-        world.camera.three.position.y = 1.6;
+        // Vertical movement (Q/E keys for up/down)
+        if (keys.q) {
+          world.camera.three.position.y += moveDistance;
+        }
+        if (keys.e) {
+          world.camera.three.position.y -= moveDistance;
+        }
+
+        // Only force Y position for horizontal movement (WASD/Arrow keys, not Q/E)
+        if (!keys.q && !keys.e) {
+          world.camera.three.position.y = 1.6;
+        }
+        
+        // Clamp Y position to prevent going underground
+        world.camera.three.position.y = Math.max(0.1, world.camera.three.position.y);
       }
 
-      // SAFETY: Always enforce Y position to be at eye level, regardless of any other operations
-      world.camera.three.position.y = 1.6;
+      // SAFETY: Enforce Y position constraints but allow explicit vertical movement
+      if (!keys.q && !keys.e) {
+        world.camera.three.position.y = 1.6; // Force eye level only when not using Q/E
+      }
+      world.camera.three.position.y = Math.max(0.1, world.camera.three.position.y); // Always prevent underground
 
       requestAnimationFrame(updateFPSMovement);
     };

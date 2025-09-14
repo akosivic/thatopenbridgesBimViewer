@@ -24,8 +24,72 @@ export const getCurrentSpeed = () => baseSpeed * currentMultiplier;
 
 export default (world: OBC.World) => {
 
-    // FPS Camera movement controls
-    const moveStep = 1.0;
+    // Variables for continuous movement
+    let movementInterval: number | null = null;
+    let rotationInterval: number | null = null;
+    const movementIntervalMs = 50; // 20 FPS for smooth movement
+    
+    // Calculate movement step to match keyboard movement speed
+    // Keyboard: moveDistance = moveSpeed * 0.016 (per frame at 60fps)
+    // Button: should move same distance per button interval (50ms)
+    // So: button movement = (moveSpeed * 0.016) * (50ms / 16.67ms) = moveSpeed * 0.048
+    const getMovementStep = () => {
+        // Get the base speed (5.0) and multiply by current multiplier, then by interval ratio
+        const keyboardFrameDistance = baseSpeed * 0.016; // Per keyboard frame
+        const buttonIntervalRatio = movementIntervalMs / 16.67; // Our interval vs keyboard frame time
+        return keyboardFrameDistance * buttonIntervalRatio * currentMultiplier;
+    };
+
+    // Helper functions for continuous movement
+    const startContinuousMovement = (direction: 'forward' | 'backward' | 'left' | 'right' | 'up' | 'down') => {
+        stopContinuousMovement();
+        moveCamera(direction); // Move immediately
+        movementInterval = window.setInterval(() => {
+            moveCamera(direction);
+        }, movementIntervalMs);
+    };
+
+    const stopContinuousMovement = () => {
+        if (movementInterval) {
+            clearInterval(movementInterval);
+            movementInterval = null;
+        }
+    };
+
+    const startContinuousRotation = (direction: 'left' | 'right' | 'up' | 'down') => {
+        stopContinuousRotation();
+        rotateCamera(direction); // Rotate immediately
+        rotationInterval = window.setInterval(() => {
+            rotateCamera(direction);
+        }, movementIntervalMs);
+    };
+
+    const stopContinuousRotation = () => {
+        if (rotationInterval) {
+            clearInterval(rotationInterval);
+            rotationInterval = null;
+        }
+    };
+
+    // Global event listeners to stop continuous movement/rotation when mouse is released anywhere
+    const stopAllContinuous = () => {
+        stopContinuousMovement();
+        stopContinuousRotation();
+    };
+
+    // Add global mouse up listener to ensure movement stops even if mouse is released outside button
+    document.addEventListener('mouseup', stopAllContinuous);
+    document.addEventListener('dragend', stopAllContinuous);
+
+    // Cleanup function (though this component may not be unmounted)
+    const cleanup = () => {
+        document.removeEventListener('mouseup', stopAllContinuous);
+        document.removeEventListener('dragend', stopAllContinuous);
+        stopAllContinuous();
+    };
+
+    // Store cleanup function for potential future use
+    (window as any).cleanupCameraControls = cleanup;
 
     const moveCamera = (direction: 'forward' | 'backward' | 'left' | 'right' | 'up' | 'down') => {
         if (!fpControls) {
@@ -49,28 +113,36 @@ export default (world: OBC.World) => {
 
         let newPosition = currentPos.clone();
 
+        // Calculate movement amount to match keyboard movement speed
+        const movementAmount = getMovementStep();
+
         switch (direction) {
             case 'forward':
-                newPosition.add(forward.multiplyScalar(moveStep * getCurrentSpeed()));
+                newPosition.add(forward.multiplyScalar(movementAmount));
                 break;
             case 'backward':
-                newPosition.add(forward.multiplyScalar(-moveStep * getCurrentSpeed()));
+                newPosition.add(forward.multiplyScalar(-movementAmount));
                 break;
             case 'left':
-                newPosition.add(right.multiplyScalar(-moveStep * getCurrentSpeed()));
+                newPosition.add(right.multiplyScalar(-movementAmount));
                 break;
             case 'right':
-                newPosition.add(right.multiplyScalar(moveStep * getCurrentSpeed()));
+                newPosition.add(right.multiplyScalar(movementAmount));
                 break;
             case 'up':
-                newPosition.y += moveStep * getCurrentSpeed();
+                newPosition.y += movementAmount;
                 break;
             case 'down':
-                newPosition.y -= moveStep * getCurrentSpeed();
+                newPosition.y -= movementAmount;
                 break;
         }
 
-        newPosition.y = Math.max(0.1, newPosition.y);
+        // Only clamp Y position for explicit up/down movement, not for horizontal movement
+        // This allows the WorldViewer Y lock (1.6m) to work for horizontal movement
+        if (direction === 'up' || direction === 'down') {
+            newPosition.y = Math.max(0.1, newPosition.y);
+        }
+        
         camera3js.position.copy(newPosition);
         console.log('New position:', newPosition);
     };
@@ -161,13 +233,42 @@ export default (world: OBC.World) => {
           <!-- Position Controls (Left) -->
           <div style="display: flex; flex-direction: column; gap: 5px; padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 4px; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px); flex: 1;">
             <div style="font-size: 12px; font-weight: bold; color: #ccc; text-align: center;">Position Controls</div>
+            <!-- Horizontal Movement -->
             <div style="display: grid; grid-template-columns: 1fr auto 1fr; grid-template-rows: auto auto auto; gap: 2px; align-items: center;">
               <div></div>
-              <bim-button icon="material-symbols:keyboard-arrow-up" @click=${() => moveCamera('forward')} style="width: 30px; height: 30px;"></bim-button>
+              <bim-button 
+                icon="material-symbols:keyboard-arrow-up" 
+                @mousedown=${() => startContinuousMovement('forward')} 
+                @mouseup=${stopContinuousMovement}
+                @mouseleave=${stopContinuousMovement}
+                style="width: 30px; height: 30px;" 
+                title="Move Forward">
+              </bim-button>
               <div></div>
-              <bim-button icon="material-symbols:keyboard-arrow-left" @click=${() => moveCamera('left')} style="width: 30px; height: 30px;"></bim-button>
-              <bim-button icon="material-symbols:keyboard-arrow-down" @click=${() => moveCamera('backward')} style="width: 30px; height: 30px;"></bim-button>
-              <bim-button icon="material-symbols:keyboard-arrow-right" @click=${() => moveCamera('right')} style="width: 30px; height: 30px;"></bim-button>
+              <bim-button 
+                icon="material-symbols:keyboard-arrow-left" 
+                @mousedown=${() => startContinuousMovement('left')} 
+                @mouseup=${stopContinuousMovement}
+                @mouseleave=${stopContinuousMovement}
+                style="width: 30px; height: 30px;" 
+                title="Move Left">
+              </bim-button>
+              <bim-button 
+                icon="material-symbols:keyboard-arrow-down" 
+                @mousedown=${() => startContinuousMovement('backward')} 
+                @mouseup=${stopContinuousMovement}
+                @mouseleave=${stopContinuousMovement}
+                style="width: 30px; height: 30px;" 
+                title="Move Backward">
+              </bim-button>
+              <bim-button 
+                icon="material-symbols:keyboard-arrow-right" 
+                @mousedown=${() => startContinuousMovement('right')} 
+                @mouseup=${stopContinuousMovement}
+                @mouseleave=${stopContinuousMovement}
+                style="width: 30px; height: 30px;" 
+                title="Move Right">
+              </bim-button>
             </div>
           </div>
 
@@ -248,12 +349,40 @@ export default (world: OBC.World) => {
             <div style="font-size: 12px; font-weight: bold; color: #ccc; text-align: center;">Rotation Controls</div>
             <div style="display: grid; grid-template-columns: 1fr auto 1fr; grid-template-rows: auto auto; gap: 2px; align-items: center;">
               <div></div>
-              <bim-button icon="material-symbols:keyboard-arrow-up" @click=${() => rotateCamera('down')} style="width: 30px; height: 30px;" title="Look Up"></bim-button>
+              <bim-button 
+                icon="material-symbols:keyboard-arrow-up" 
+                @mousedown=${() => startContinuousRotation('down')} 
+                @mouseup=${stopContinuousRotation}
+                @mouseleave=${stopContinuousRotation}
+                style="width: 30px; height: 30px;" 
+                title="Look Up">
+              </bim-button>
               <div></div>
               
-              <bim-button icon="material-symbols:keyboard-arrow-left" @click=${() => rotateCamera('right')} style="width: 30px; height: 30px;" title="Turn Left"></bim-button>
-              <bim-button icon="material-symbols:keyboard-arrow-down" @click=${() => rotateCamera('up')} style="width: 30px; height: 30px;" title="Look Down"></bim-button>
-              <bim-button icon="material-symbols:keyboard-arrow-right" @click=${() => rotateCamera('left')} style="width: 30px; height: 30px;" title="Turn Right"></bim-button>
+              <bim-button 
+                icon="material-symbols:keyboard-arrow-left" 
+                @mousedown=${() => startContinuousRotation('right')} 
+                @mouseup=${stopContinuousRotation}
+                @mouseleave=${stopContinuousRotation}
+                style="width: 30px; height: 30px;" 
+                title="Turn Left">
+              </bim-button>
+              <bim-button 
+                icon="material-symbols:keyboard-arrow-down" 
+                @mousedown=${() => startContinuousRotation('up')} 
+                @mouseup=${stopContinuousRotation}
+                @mouseleave=${stopContinuousRotation}
+                style="width: 30px; height: 30px;" 
+                title="Look Down">
+              </bim-button>
+              <bim-button 
+                icon="material-symbols:keyboard-arrow-right" 
+                @mousedown=${() => startContinuousRotation('left')} 
+                @mouseup=${stopContinuousRotation}
+                @mouseleave=${stopContinuousRotation}
+                style="width: 30px; height: 30px;" 
+                title="Turn Right">
+              </bim-button>
             </div>
           </div>
           
