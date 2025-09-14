@@ -38,10 +38,12 @@ import { InfoPanelsManager } from "./components/InfoPanelsManager";
 
 interface State {
   update: [];
+  leftPanelMinimized: boolean;
 }
 
 const dataState: State = {
   update: [],
+  leftPanelMinimized: false,
 };
 export class WorldViewer extends HTMLElement {
   private infoPanelsManager?: InfoPanelsManager;
@@ -244,6 +246,7 @@ export class WorldViewer extends HTMLElement {
     }
 
     // FPS-style movement controls
+    let moveSpeed = 5.0; // Units per second for FPS movement (now variable)
     let moveSpeed = 5.0; // Units per second for FPS movement (now variable)
     const sprintMultiplier = 2.0; // Sprint speed multiplier
 
@@ -451,6 +454,7 @@ export class WorldViewer extends HTMLElement {
     });
 
     // Enable scroll wheel movement: scroll up = forward, scroll down = backward
+    // Enable scroll wheel movement: scroll up = forward, scroll down = backward
     viewport.addEventListener('wheel', (event: WheelEvent) => {
       if (!fpControls) return;
 
@@ -459,6 +463,30 @@ export class WorldViewer extends HTMLElement {
       console.log('=== MOUSEWHEEL MOVEMENT ===');
       console.log('Delta:', event.deltaY);
 
+      // Calculate movement distance based on scroll
+      const scrollMovementSpeed = 2.0; // Adjust this value to control scroll sensitivity
+      const moveDistance = scrollMovementSpeed;
+
+      // Get camera's forward direction
+      const direction = new THREE.Vector3();
+      world.camera.three.getWorldDirection(direction);
+
+      // Scroll up (negative deltaY) = move forward (like up arrow)
+      // Scroll down (positive deltaY) = move backward (like down arrow)
+      if (event.deltaY < 0) {
+        // Scroll up = move forward
+        world.camera.three.position.addScaledVector(direction, moveDistance);
+        console.log('Scroll up: Moving FORWARD');
+      } else if (event.deltaY > 0) {
+        // Scroll down = move backward
+        world.camera.three.position.addScaledVector(direction, -moveDistance);
+        console.log('Scroll down: Moving BACKWARD');
+      }
+
+      // FORCE Y position to always be at eye level (1.6 meters)
+      world.camera.three.position.y = 1.6;
+
+      console.log('New position:', world.camera.three.position);
       // Calculate movement distance based on scroll
       const scrollMovementSpeed = 2.0; // Adjust this value to control scroll sensitivity
       const moveDistance = scrollMovementSpeed;
@@ -586,18 +614,6 @@ export class WorldViewer extends HTMLElement {
     };
     const culler = components.get(Cullers).create(world);
     culler.threshold = 5;
-
-    // Note: Original orbit controls are disabled, using FPS controls instead
-    // world.camera.controls.restThreshold = 0.25;
-    // world.camera.controls.addEventListener("rest", () => {
-    //   culler.needsUpdate = true;
-    //   tilesLoader.cancel = true;
-    //   tilesLoader.culler.needsUpdate = true;
-    //   // Remove eye level enforcement - allow free camera positioning
-    // });
-
-    // For FPS mode, we'll handle culling updates differently
-    // The culler will update based on FPS camera movement instead
 
     // Add FPS camera movement detection to clear selection when camera moves
     const lastCameraPosition = world.camera.three.position.clone();
@@ -852,6 +868,48 @@ export class WorldViewer extends HTMLElement {
     app.appendChild(grid);
 
     const gridApp = grid as Grid;
+    
+    // Store grid reference globally for the toggle function
+    (window as any).bimGridApp = gridApp;
+
+    // // Add tab switching event listener to fix aspect controls visibility
+    // setTimeout(() => {
+    //   const leftPanelElement = document.querySelector('[data-name="leftPanel"]');
+    //   if (leftPanelElement) {
+    //     const tabButtons = leftPanelElement.querySelectorAll('bim-tab');
+    //     tabButtons.forEach((tab: any) => {
+    //       tab.addEventListener('click', () => {
+    //         setTimeout(() => {
+    //           // Hide all aspect controls first
+    //           const allAspectSections = leftPanelElement.querySelectorAll('bim-panel-section[label*="Aspect"], bim-panel-section[label*="aspect"]');
+    //           allAspectSections.forEach((section: any) => {
+    //             section.style.display = 'none';
+    //           });
+              
+    //           // Only show aspect controls if settings tab is active
+    //           const activeTab = leftPanelElement.querySelector('bim-tab[active]');
+    //           if (activeTab && activeTab.getAttribute('name') === 'settings') {
+    //             const settingsAspectSections = activeTab.querySelectorAll('bim-panel-section[label*="Aspect"], bim-panel-section[label*="aspect"]');
+    //             settingsAspectSections.forEach((section: any) => {
+    //               section.style.display = '';
+    //             });
+    //           }
+    //         }, 10);
+    //       });
+    //     });
+        
+    //     // Initial setup - hide aspect controls if not on settings tab
+    //     setTimeout(() => {
+    //       const activeTab = leftPanelElement.querySelector('bim-tab[active]');
+    //       if (!activeTab || activeTab.getAttribute('name') !== 'settings') {
+    //         const allAspectSections = leftPanelElement.querySelectorAll('bim-panel-section[label*="Aspect"], bim-panel-section[label*="aspect"]');
+    //         allAspectSections.forEach((section: any) => {
+    //           section.style.display = 'none';
+    //         });
+    //       }
+    //     }, 100);
+    //   }
+    // }, 500);
 
     gridApp.layouts = {
       main: {
@@ -912,7 +970,6 @@ export class WorldViewer extends HTMLElement {
           world.camera.three.rotation.x = -1.6 * Math.PI / 180;
           world.camera.three.rotation.z = 0;
           world.camera.three.updateMatrixWorld();
-          // ...existing code...
         }
       } catch (error) {
         console.error('Error positioning camera:', error);
@@ -920,6 +977,9 @@ export class WorldViewer extends HTMLElement {
     } else {
       console.warn('No model or fragments loaded');
     }
+
+    // Speed controls are now handled by the SpeedControls component
+    // Warning panels functionality has been replaced with speed controls
 
     // Hide the loading overlay now that everything is initialized
     hideLoadingOverlay(loadingOverlay);
