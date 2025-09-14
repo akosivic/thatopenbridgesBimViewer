@@ -732,7 +732,7 @@ export class WorldViewer extends HTMLElement {
       console.log('Updating toolbar with state:', state);
       if (isDebugMode) {
         return html`
-        <bim-tabs floating style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); border-radius: 0.5rem; padding: 30px; z-index: 100000; pointer-events: auto;">
+        <bim-tabs floating style="justify-self: center; border-radius: 0.5rem;padding:30px; z-index: 100000; pointer-events: auto;">
           <bim-tab label="${i18n.t('import')}">
             <bim-toolbar style="pointer-events: auto;">${load(components)}</bim-toolbar>
           </bim-tab>
@@ -749,7 +749,7 @@ export class WorldViewer extends HTMLElement {
       }
       else {
         return html`
-        <bim-tabs floating style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); border-radius: 0.5rem; padding: 30px; z-index: 100000; pointer-events: auto;">
+        <bim-tabs floating style="justify-self: center; border-radius: 0.5rem;padding:30px; z-index: 100000; pointer-events: auto;">
           <bim-tab label="${i18n.t('cameraSettings')}">
             <bim-toolbar style="pointer-events: auto;">
               ${cameraSettings(world)}

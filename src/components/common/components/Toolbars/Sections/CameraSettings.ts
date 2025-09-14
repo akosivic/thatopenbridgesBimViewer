@@ -190,7 +190,7 @@ export default (world: OBC.World) => {
 
     // Speed control functions
     const setSpeed = (multiplier: number) => {
-        console.log(`Setting movement speed multiplier to: x${multiplier}`);
+        console.log(`🎯 Setting movement speed multiplier to: x${multiplier}`);
         currentMultiplier = multiplier;
         const effectiveSpeed = getCurrentSpeed();
 
@@ -215,18 +215,38 @@ export default (world: OBC.World) => {
             }
         });
 
-        // Update display
-        const display = document.getElementById('camera-speed-display');
-        if (display) {
-            display.textContent = i18n.t('currentSpeed', { speed: multiplier });
-        }
+        // Update display with a small delay to ensure DOM is ready
+        setTimeout(() => {
+            const display = document.getElementById('camera-speed-display');
+            if (display) {
+                display.textContent = `Current: x${multiplier}`;
+                console.log(`Updated display to: Current: x${multiplier}`);
+            } else {
+                console.warn('camera-speed-display element not found');
+            }
+        }, 10);
     };
 
     // Set up global function for speed control access
     (window as any).setCameraSpeed = setSpeed;
 
-    return BUI.Component.create<BUI.PanelSection>(() => {
+    // Initialize display to show current speed when component loads
+    const initializeSpeedDisplay = () => {
+        setTimeout(() => {
+            const display = document.getElementById('camera-speed-display');
+            if (display) {
+                display.textContent = `Current: x${currentMultiplier}`;
+                console.log(`Initialized speed display to: Current: x${currentMultiplier}`);
+            }
+        }, 50); // Slightly longer delay to ensure DOM is fully rendered
+    };
+
+    const component = BUI.Component.create<BUI.PanelSection>(() => {
         const t = (key: string, options?: any) => i18n.t(key, options);
+        
+        // Call initialization after component is rendered
+        setTimeout(initializeSpeedDisplay, 100);
+        
         return BUI.html`
       <bim-toolbar-section label="${t('cameraSettings')}" icon="ph:camera-fill" style="pointer-events: auto">
         <!-- Horizontal Container for all control sections -->
@@ -392,4 +412,6 @@ export default (world: OBC.World) => {
       </bim-toolbar-section>
     `;
     });
+
+    return component;
 };
