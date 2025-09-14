@@ -707,15 +707,15 @@ export class WorldViewer extends HTMLElement {
       if (isDebugMode) {
         return html`
         <bim-tabs floating style="justify-self: center; border-radius: 0.5rem;padding:30px; z-index: 100000; pointer-events: auto;">
-          <bim-tab label="Import">
+          <bim-tab label="${i18n.t('import')}">
             <bim-toolbar style="pointer-events: auto;">${load(components)}</bim-toolbar>
           </bim-tab>
-          <bim-tab label="Camera Settings">
+          <bim-tab label="${i18n.t('cameraSettings')}">
             <bim-toolbar style="pointer-events: auto;">
               ${cameraSettings(world)} ${selection(components, world)}
             </bim-toolbar>
           </bim-tab>
-          <bim-tab label="Measurement">
+          <bim-tab label="${i18n.t('measurements')}">
             <bim-toolbar style="pointer-events: auto;"> ${measurement(world, components)} </bim-toolbar>
           </bim-tab>
         </bim-tabs>
@@ -724,7 +724,7 @@ export class WorldViewer extends HTMLElement {
       else {
         return html`
         <bim-tabs floating style="justify-self: center; border-radius: 0.5rem;padding:30px; z-index: 100000; pointer-events: auto;">
-          <bim-tab label="Camera Settings">
+          <bim-tab label="${i18n.t('cameraSettings')}">
             <bim-toolbar style="pointer-events: auto;">
               ${cameraSettings(world)}
             </bim-toolbar>

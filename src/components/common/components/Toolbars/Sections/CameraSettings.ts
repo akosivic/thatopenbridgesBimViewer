@@ -2,6 +2,7 @@ import * as OBC from "@thatopen/components";
 import * as BUI from "@thatopen/ui";
 import * as THREE from "three";
 import { PointerLockControls } from "three/examples/jsm/Addons.js";
+import i18n from "../../../utils/i18n";
 
 // Global reference to FPS controls - will be set from WorldViewer
 export let fpControls: PointerLockControls | null = null;
@@ -217,7 +218,7 @@ export default (world: OBC.World) => {
         // Update display
         const display = document.getElementById('camera-speed-display');
         if (display) {
-            display.textContent = `Current: x${multiplier}`;
+            display.textContent = i18n.t('currentSpeed', { speed: multiplier });
         }
     };
 
@@ -225,14 +226,15 @@ export default (world: OBC.World) => {
     (window as any).setCameraSpeed = setSpeed;
 
     return BUI.Component.create<BUI.PanelSection>(() => {
+        const t = (key: string, options?: any) => i18n.t(key, options);
         return BUI.html`
-      <bim-toolbar-section label="Camera Settings" icon="ph:camera-fill" style="pointer-events: auto">
+      <bim-toolbar-section label="${t('cameraSettings')}" icon="ph:camera-fill" style="pointer-events: auto">
         <!-- Horizontal Container for all control sections -->
         <div style="display: flex; gap: 10px; margin: 10px 0; align-items: flex-start;">
           
           <!-- Position Controls (Left) -->
           <div style="display: flex; flex-direction: column; gap: 5px; padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 4px; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px); flex: 1;">
-            <div style="font-size: 12px; font-weight: bold; color: #ccc; text-align: center;">Position Controls</div>
+            <div style="font-size: 12px; font-weight: bold; color: #ccc; text-align: center;">${t('positionControls')}</div>
             <!-- Horizontal Movement -->
             <div style="display: grid; grid-template-columns: 1fr auto 1fr; grid-template-rows: auto auto auto; gap: 2px; align-items: center;">
               <div></div>
@@ -242,7 +244,7 @@ export default (world: OBC.World) => {
                 @mouseup=${stopContinuousMovement}
                 @mouseleave=${stopContinuousMovement}
                 style="width: 30px; height: 30px;" 
-                title="Move Forward">
+                title="${t('moveForward')}">
               </bim-button>
               <div></div>
               <bim-button 
@@ -251,7 +253,7 @@ export default (world: OBC.World) => {
                 @mouseup=${stopContinuousMovement}
                 @mouseleave=${stopContinuousMovement}
                 style="width: 30px; height: 30px;" 
-                title="Move Left">
+                title="${t('moveLeft')}">
               </bim-button>
               <bim-button 
                 icon="material-symbols:keyboard-arrow-down" 
@@ -259,7 +261,7 @@ export default (world: OBC.World) => {
                 @mouseup=${stopContinuousMovement}
                 @mouseleave=${stopContinuousMovement}
                 style="width: 30px; height: 30px;" 
-                title="Move Backward">
+                title="${t('moveBackward')}">
               </bim-button>
               <bim-button 
                 icon="material-symbols:keyboard-arrow-right" 
@@ -267,20 +269,20 @@ export default (world: OBC.World) => {
                 @mouseup=${stopContinuousMovement}
                 @mouseleave=${stopContinuousMovement}
                 style="width: 30px; height: 30px;" 
-                title="Move Right">
+                title="${t('moveRight')}"
               </bim-button>
             </div>
           </div>
 
           <!-- Movement Speed (Middle) -->
           <div style="display: flex; flex-direction: column; gap: 5px; padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 4px; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px); flex: 1;">
-            <div style="font-size: 12px; font-weight: bold; color: #ccc; text-align: center;">Movement Speed</div>
+            <div style="font-size: 12px; font-weight: bold; color: #ccc; text-align: center;">${t('movementSpeed')}</div>
             <div style="display: flex; gap: 8px; justify-content: center;">
               <button 
                 class="camera-speed-button"
                 data-speed="1"
                 onclick="window.setCameraSpeed(1)"
-                title="Normal Speed (x1)"
+                title="${t('normalSpeed')}"
                 style="
                   background: #6528d7;
                   color: white;
@@ -299,7 +301,7 @@ export default (world: OBC.World) => {
                 class="camera-speed-button"
                 data-speed="2"
                 onclick="window.setCameraSpeed(2)"
-                title="Double Speed (x2)"
+                title="${t('doubleSpeed')}"
                 style="
                   background: rgba(255, 255, 255, 0.2);
                   color: white;
@@ -318,7 +320,7 @@ export default (world: OBC.World) => {
                 class="camera-speed-button"
                 data-speed="3"
                 onclick="window.setCameraSpeed(3)"
-                title="Triple Speed (x3)"
+                title="${t('tripleSpeed')}"
                 style="
                   background: rgba(255, 255, 255, 0.2);
                   color: white;
@@ -340,13 +342,13 @@ export default (world: OBC.World) => {
               text-align: center;
               margin-top: 4px;
             " id="camera-speed-display">
-              Current: x1
+              ${t('currentSpeed', { speed: 1 })}
             </div>
           </div>
 
           <!-- Rotation Controls (Right) -->
           <div style="display: flex; flex-direction: column; gap: 5px; padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 4px; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px); flex: 1;">
-            <div style="font-size: 12px; font-weight: bold; color: #ccc; text-align: center;">Rotation Controls</div>
+            <div style="font-size: 12px; font-weight: bold; color: #ccc; text-align: center;">${t('rotationControls')}</div>
             <div style="display: grid; grid-template-columns: 1fr auto 1fr; grid-template-rows: auto auto; gap: 2px; align-items: center;">
               <div></div>
               <bim-button 
@@ -355,7 +357,7 @@ export default (world: OBC.World) => {
                 @mouseup=${stopContinuousRotation}
                 @mouseleave=${stopContinuousRotation}
                 style="width: 30px; height: 30px;" 
-                title="Look Up">
+                title="${t('lookUp')}">
               </bim-button>
               <div></div>
               
@@ -365,7 +367,7 @@ export default (world: OBC.World) => {
                 @mouseup=${stopContinuousRotation}
                 @mouseleave=${stopContinuousRotation}
                 style="width: 30px; height: 30px;" 
-                title="Turn Left">
+                title="${t('turnLeft')}">
               </bim-button>
               <bim-button 
                 icon="material-symbols:keyboard-arrow-down" 
@@ -373,7 +375,7 @@ export default (world: OBC.World) => {
                 @mouseup=${stopContinuousRotation}
                 @mouseleave=${stopContinuousRotation}
                 style="width: 30px; height: 30px;" 
-                title="Look Down">
+                title="${t('lookDown')}">
               </bim-button>
               <bim-button 
                 icon="material-symbols:keyboard-arrow-right" 
@@ -381,7 +383,7 @@ export default (world: OBC.World) => {
                 @mouseup=${stopContinuousRotation}
                 @mouseleave=${stopContinuousRotation}
                 style="width: 30px; height: 30px;" 
-                title="Turn Right">
+                title="${t('turnRight')}">
               </bim-button>
             </div>
           </div>
