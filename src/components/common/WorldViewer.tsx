@@ -247,7 +247,6 @@ export class WorldViewer extends HTMLElement {
 
     // FPS-style movement controls
     let moveSpeed = 5.0; // Units per second for FPS movement (now variable)
-    let moveSpeed = 5.0; // Units per second for FPS movement (now variable)
     const sprintMultiplier = 2.0; // Sprint speed multiplier
 
     // Set up speed control integration
@@ -454,7 +453,6 @@ export class WorldViewer extends HTMLElement {
     });
 
     // Enable scroll wheel movement: scroll up = forward, scroll down = backward
-    // Enable scroll wheel movement: scroll up = forward, scroll down = backward
     viewport.addEventListener('wheel', (event: WheelEvent) => {
       if (!fpControls) return;
 
@@ -487,28 +485,6 @@ export class WorldViewer extends HTMLElement {
       world.camera.three.position.y = 1.6;
 
       console.log('New position:', world.camera.three.position);
-      // Calculate movement distance based on scroll
-      const scrollMovementSpeed = 2.0; // Adjust this value to control scroll sensitivity
-      const moveDistance = scrollMovementSpeed;
-
-      // Get camera's forward direction
-      const direction = new THREE.Vector3();
-      world.camera.three.getWorldDirection(direction);
-
-      // Scroll up (negative deltaY) = move forward (like up arrow)
-      // Scroll down (positive deltaY) = move backward (like down arrow)
-      if (event.deltaY < 0) {
-        // Scroll up = move forward
-        world.camera.three.position.addScaledVector(direction, moveDistance);
-        console.log('Scroll up: Moving FORWARD');
-      } else if (event.deltaY > 0) {
-        // Scroll down = move backward
-        world.camera.three.position.addScaledVector(direction, -moveDistance);
-        console.log('Scroll down: Moving BACKWARD');
-      }
-
-      // FORCE Y position to always be at eye level (1.6 meters)
-      world.camera.three.position.y = 1.6;
 
       console.log('New position:', world.camera.three.position);
     });
