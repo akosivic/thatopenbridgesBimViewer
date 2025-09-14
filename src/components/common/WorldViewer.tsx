@@ -794,9 +794,6 @@ export class WorldViewer extends HTMLElement {
           <bim-tab name="project" label="${i18n.t('project')}" icon="ph:building-fill">
             ${projectInformationPanel}
           </bim-tab>
-          <bim-tab name="infopanels" label="Info Panels" icon="material-symbols:info">
-            ${this.infoPanelsManager?.createManagementPanel()}
-          </bim-tab>
           <bim-tab name="settings" label="${i18n.t('settings')}" icon="solar:settings-bold">
             ${settings(components, isDebugMode)}
           </bim-tab>
