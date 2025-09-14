@@ -259,6 +259,9 @@ app.get('/ws/node/api/streamIfc', (req, res) => {
 // Serve static files from the dist directory (after build)
 app.use('/ws/node/bimviewer', express.static(path.join(__dirname, '../dist')));
 
+// Also serve static files from the public directory (for development)
+app.use('/', express.static(path.join(__dirname, '../public')));
+
 // Handle client-side routing - serve index.html for all non-API routes under the new base path
 app.get('/ws/node/bimviewer*', (req, res) => {
   res.sendFile(path.join(__dirname, '../dist/index.html'));

@@ -33,6 +33,7 @@ import { AppManager } from "./components/bim-components";
 import { loadIfc } from "./components/Toolbars/Sections/Import";
 import { setGlobalCamera } from "./components/Panels/ProjectInformation";
 import { setBaseSpeed } from "./components/Toolbars/Sections/SpeedControls";
+import { InfoPanelsManager } from "./components/InfoPanelsManager";
 
 
 interface State {
@@ -43,12 +44,21 @@ const dataState: State = {
   update: [],
 };
 export class WorldViewer extends HTMLElement {
+  private infoPanelsManager?: InfoPanelsManager;
+
   constructor() {
     super();
   }
 
   public fragmentIdMap = function () {
     return new Map<string, Set<number>>();
+  }
+
+  disconnectedCallback() {
+    // Clean up resources when the element is removed from DOM
+    if (this.infoPanelsManager) {
+      this.infoPanelsManager.dispose();
+    }
   }
   async connectedCallback() {
     try {
@@ -494,6 +504,22 @@ export class WorldViewer extends HTMLElement {
     postproduction.setPasses({ custom: true, ao: true, gamma: true });
     postproduction.customEffects.lineColor = 0x17191c;
 
+    // Initialize InfoPanelsManager for 3D information panels
+    console.log('🔧 Initializing InfoPanelsManager...');
+    this.infoPanelsManager = new InfoPanelsManager(
+      world.scene.three,
+      world.camera.three,
+      world.renderer.three,
+      (config) => {
+        console.log('Info panels configuration updated:', config);
+      }
+    );
+
+    // Load info panels configuration
+    console.log('📁 Loading info panels configuration...');
+    const configLoaded = await this.infoPanelsManager.loadConfig();
+    console.log('Config loading result:', configLoaded);
+
     const appManager = components.get(AppManager);
     const viewportGrid = viewport.querySelector<Grid>("bim-grid[floating]")!;
     appManager.grids.set("viewport", viewportGrid);
@@ -751,6 +777,9 @@ export class WorldViewer extends HTMLElement {
           <bim-tab name="project" label="${i18n.t('project')}" icon="ph:building-fill">
             ${projectInformationPanel}
           </bim-tab>
+          <bim-tab name="infopanels" label="Info Panels" icon="material-symbols:info">
+            ${this.infoPanelsManager?.createManagementPanel()}
+          </bim-tab>
           <bim-tab name="settings" label="${i18n.t('settings')}" icon="solar:settings-bold">
             ${settings(components, isDebugMode)}
           </bim-tab>
@@ -764,6 +793,9 @@ export class WorldViewer extends HTMLElement {
         return html` <bim-tabs switchers-full>
           <bim-tab name="project" label="${i18n.t('project')}" icon="ph:building-fill">
             ${projectInformationPanel}
+          </bim-tab>
+          <bim-tab name="infopanels" label="Info Panels" icon="material-symbols:info">
+            ${this.infoPanelsManager?.createManagementPanel()}
           </bim-tab>
           <bim-tab name="settings" label="${i18n.t('settings')}" icon="solar:settings-bold">
             ${settings(components, isDebugMode)}

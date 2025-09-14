@@ -1,0 +1,62 @@
+{
+  "version": "1.0.0",
+  "panels": [
+    {
+      "id": "zone-office-1",
+      "name": "Office Zone 1",
+      "position": {
+        "x": 2.5,
+        "y": 2.0,
+        "z": 1.8
+      },
+      "content": {
+        "zone": "Zone",
+        "temperature": 22.3,
+        "humidity": 45
+      },
+      "visible": true,
+      "created": "2025-09-14T10:00:00.000Z",
+      "modified": "2025-09-14T10:00:00.000Z"
+    },
+    {
+      "id": "zone-meeting-room",
+      "name": "Meeting Room",
+      "position": {
+        "x": -3.2,
+        "y": 2.0,
+        "z": 4.1
+      },
+      "content": {
+        "zone": "Zone",
+        "temperature": 21.8,
+        "humidity": 52
+      },
+      "visible": true,
+      "created": "2025-09-14T10:00:00.000Z",
+      "modified": "2025-09-14T10:00:00.000Z"
+    },
+    {
+      "id": "zone-corridor",
+      "name": "Main Corridor",
+      "position": {
+        "x": 0.0,
+        "y": 2.0,
+        "z": -2.5
+      },
+      "content": {
+        "zone": "Zone",
+        "temperature": 23.1,
+        "humidity": 38
+      },
+      "visible": true,
+      "created": "2025-09-14T10:00:00.000Z",
+      "modified": "2025-09-14T10:00:00.000Z"
+    }
+  ],
+  "editMode": false,
+  "settings": {
+    "panelScale": 1.0,
+    "opacity": 0.95,
+    "showConnectorLines": true
+  }
+}
