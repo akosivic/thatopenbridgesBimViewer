@@ -271,7 +271,7 @@ export default async (components: OBC.Components, isDebug: boolean, highlighter:
             ${relationsTree}
           </bim-panel-section>
           ${groupings(components, isDebug)}
-          <bim-panel-section label="${t('lights')}" icon="solar:lamp-bold">
+          <bim-panel-section label="${t('lights')}" icon="solar:lamp-bold" fixed>
             ${dpState.buttons}
           </bim-panel-section>
         </bim-panel>

@@ -191,3 +191,34 @@ bim-tab[name="settings"] bim-selector:has(bim-option[icon="solar:sun-bold"]),
 bim-tab[name="settings"] bim-selector:has(bim-option[icon="majesticons:laptop"]) {
   display: block !important;
 }
+
+/* Transparent backgrounds for panels */
+bim-panel {
+  background-color: transparent !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+bim-panel-section {
+  background-color: transparent !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Ensure lights section also has transparent background */
+bim-panel-section[icon="solar:lamp-bold"] {
+  background-color: transparent !important;
+  background: transparent !important;
+}
+
+/* Panel section headers with transparent background */
+bim-panel-section::part(header) {
+  background-color: transparent !important;
+  background: transparent !important;
+  color: #ecf0f1 !important;
+  font-weight: 600 !important;
+  font-size: 1.1em !important;
+  padding: 12px 16px !important;
+}
