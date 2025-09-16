@@ -77,9 +77,32 @@ bim-grid[floating]>bim-toolbar {
   transform: scale(1.05);
 }
 
-/* Grid layout transition */
-bim-grid {
-  transition: grid-template-columns 0.3s ease;
+/* Ensure floating camera settings stay centered and don't move */
+bim-tabs[floating] {
+  position: fixed !important;
+  bottom: 20px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  z-index: 100000 !important;
+  transition: none !important; /* Remove any transitions */
+}
+
+bim-grid[floating]>bim-toolbar {
+  justify-self: center !important;
+  transition: none !important; /* Remove any transitions */
+}
+
+/* Ensure floating elements are never affected by panel minimization */
+bim-tabs[floating],
+bim-toolbar[floating],
+*[floating] {
+  position: fixed !important;
+  transition: none !important;
+}
+
+/* Override any inherited transitions for floating camera settings */
+bim-tabs[floating] * {
+  transition: none !important;
 }
 
 /* Left panel minimized state */
@@ -88,10 +111,10 @@ bim-grid.left-panel-minimized {
   grid-template-columns: 1fr !important;
 }
 
-/* Hide left panel with multiple selectors but NOT the expand button */
+/* Hide left panel with multiple selectors but NOT the expand button or floating elements */
 bim-grid.left-panel-minimized [data-name="leftPanel"],
-bim-grid.left-panel-minimized bim-tabs,
-bim-grid.left-panel-minimized bim-tab,
+bim-grid.left-panel-minimized bim-tabs:not([floating]),
+bim-grid.left-panel-minimized bim-tab:not([floating]),
 bim-grid.left-panel-minimized > *:first-child {
   position: absolute !important;
   left: -100vw !important;
@@ -114,10 +137,10 @@ bim-grid:not(.left-panel-minimized) {
   grid-template-columns: 26rem 1fr !important;
 }
 
-/* Show all elements when not minimized */
+/* Show all elements when not minimized, but keep floating elements always centered */
 bim-grid:not(.left-panel-minimized) [data-name="leftPanel"],
-bim-grid:not(.left-panel-minimized) bim-tabs,
-bim-grid:not(.left-panel-minimized) bim-tab {
+bim-grid:not(.left-panel-minimized) bim-tabs:not([floating]),
+bim-grid:not(.left-panel-minimized) bim-tab:not([floating]) {
   position: static !important;
   left: auto !important;
   opacity: 1 !important;
