@@ -93,13 +93,19 @@ bim-grid.left-panel-minimized [data-name="leftPanel"],
 bim-grid.left-panel-minimized bim-tabs,
 bim-grid.left-panel-minimized bim-tab,
 bim-grid.left-panel-minimized > *:first-child {
-  display: none !important;
+  position: absolute !important;
+  left: -100vw !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transition: all 0.3s ease !important;
 }
 
-/* Make sure viewport takes full width when minimized */
+/* Make sure viewport takes full width and height when minimized */
 bim-grid.left-panel-minimized bim-viewport {
-  grid-column: 1 !important;
-  width: 100% !important;
+  grid-area: viewport !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  position: relative !important;
 }
 
 /* Full layout state */
@@ -112,21 +118,54 @@ bim-grid:not(.left-panel-minimized) {
 bim-grid:not(.left-panel-minimized) [data-name="leftPanel"],
 bim-grid:not(.left-panel-minimized) bim-tabs,
 bim-grid:not(.left-panel-minimized) bim-tab {
-  display: block !important;
+  position: static !important;
+  left: auto !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  transition: all 0.3s ease !important;
 }
 
-/* Ensure expand button is always visible */
+/* Additional viewport styling for full screen mode */
+bim-grid.left-panel-minimized {
+  width: 100vw !important;
+  height: 100vh !important;
+}
+
+bim-grid.left-panel-minimized bim-viewport canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Ensure expand button is properly styled */
 .bim-expand-button {
-  display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
   pointer-events: auto !important;
+  position: fixed !important;
+  top: 80px !important;
+  left: 10px !important;
+  z-index: 1000 !important;
+  background: rgba(0, 0, 0, 0.8) !important;
+  border: none !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  padding: 12px !important;
+  transition: all 0.2s ease !important;
+  backdrop-filter: blur(4px) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
 }
 
 .bim-expand-button:hover {
   background: rgba(0,0,0,0.9) !important;
-  transform: scale(1.05);
-  transition: all 0.2s ease;
+  transform: scale(1.05) !important;
+  transition: all 0.2s ease !important;
+}
+
+/* Ensure hamburger icon is properly styled */
+.bim-expand-button svg {
+  display: block !important;
+  width: 24px !important;
+  height: 24px !important;
 }
 
 /* Viewport should fill available space smoothly */

@@ -754,7 +754,7 @@ export class WorldViewer extends HTMLElement {
 
     // Create a function to update the panel when language changes
     const updatePanelOnLanguageChange = () => {
-      updateLeftPanel(dataState);
+      updateLeftPanelFn(dataState);
       updateToolbar(dataState);
     };
 
@@ -764,13 +764,14 @@ export class WorldViewer extends HTMLElement {
     // Simple tab state - bypass the framework's broken tabs
     let currentActiveTab = 'project';
 
-    const [leftPanel, updateLeftPanel] = Component.create<HTMLElement, State>((state) => {
+    // Create the left panel component first
+    const [leftPanel, updateLeftPanelFn] = Component.create<HTMLElement, State>((state) => {
       console.log('Updating left panel with state:', state, 'Active tab:', currentActiveTab);
       
       // Custom tab switcher function
       const switchTab = (newTab: string) => {
         currentActiveTab = newTab;
-        updateLeftPanel(state);
+        updateLeftPanelFn(state);
       };
       
       // Create custom tab buttons and content area
@@ -799,9 +800,13 @@ export class WorldViewer extends HTMLElement {
         }
       };
 
+      const containerStyle = state.leftPanelMinimized 
+        ? "display: flex; flex-direction: column; height: 100%; visibility: hidden; width: 0; overflow: hidden;"
+        : "display: flex; flex-direction: column; height: 100%;";
+
       return html`
-        <div class="custom-tabs-container" style="display: flex; flex-direction: column; height: 100%;">
-          <!-- Custom Tab Headers -->
+        <div class="custom-tabs-container" style="${containerStyle}">
+          <!-- Custom Tab Headers with Minimize Button -->
           <div class="custom-tab-headers" style="display: flex; border-bottom: 1px solid #333; margin-bottom: 1rem; flex-shrink: 0;">
             ${tabButtons.map(tab => html`
               <button 
@@ -826,6 +831,26 @@ export class WorldViewer extends HTMLElement {
                 ${tab.label}
               </button>
             `)}
+            <!-- Minimize Button -->
+            <button 
+              class="left-panel-minimize-btn" 
+              id="minimize-panel-btn"
+              style="
+                width: 40px; 
+                padding: 12px 8px; 
+                background: #333; 
+                color: white; 
+                border: none; 
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-left: 1px solid #555;
+              "
+              title="Minimize Panel"
+            >
+              <bim-icon icon="material-symbols:chevron-left" style="font-size: 16px;"></bim-icon>
+            </button>
           </div>
           
           <!-- Tab Content Area -->
@@ -835,6 +860,25 @@ export class WorldViewer extends HTMLElement {
         </div>
       `;
     }, dataState);
+
+    // Function to toggle left panel visibility (defined after component creation)
+    const toggleLeftPanel = () => {
+      dataState.leftPanelMinimized = !dataState.leftPanelMinimized;
+      updateLeftPanelFn({ ...dataState });
+      
+      // Get references that will be defined later
+      const gridApp = document.getElementById('app') as Grid;
+      const expandButton = document.querySelector('.left-panel-expand-btn') as HTMLElement;
+      
+      // Use CSS classes to show/hide panel instead of changing grid layout
+      if (dataState.leftPanelMinimized) {
+        gridApp?.classList.add('left-panel-minimized');
+        if (expandButton) expandButton.style.display = 'block';
+      } else {
+        gridApp?.classList.remove('left-panel-minimized');
+        if (expandButton) expandButton.style.display = 'none';
+      }
+    };
 
     const app = document.getElementsByTagName("world-viewer")[0];
     const grid = document.createElement("bim-grid") as Grid;
@@ -846,6 +890,62 @@ export class WorldViewer extends HTMLElement {
     
     // Store grid reference globally for the toggle function
     (window as any).bimGridApp = gridApp;
+
+    // Create floating expand button (hamburger menu)
+    const createExpandButton = () => {
+      const expandButton = document.createElement('button');
+      expandButton.className = 'left-panel-expand-btn bim-expand-button';
+      expandButton.innerHTML = `
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M3 12H21M3 6H21M3 18H21" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      `;
+      expandButton.title = 'Expand Panel';
+      expandButton.style.cssText = `
+        position: fixed;
+        top: 80px;
+        left: 10px;
+        z-index: 1000;
+        background: rgba(0, 0, 0, 0.8);
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        padding: 12px;
+        transition: all 0.2s ease;
+        display: none;
+        backdrop-filter: blur(4px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      `;
+      
+      // Event listener will be added after toggleLeftPanel is defined
+      
+      expandButton.addEventListener('mouseenter', () => {
+        expandButton.style.background = 'rgba(0, 0, 0, 0.9)';
+        expandButton.style.transform = 'scale(1.05)';
+      });
+      
+      expandButton.addEventListener('mouseleave', () => {
+        expandButton.style.background = 'rgba(0, 0, 0, 0.8)';
+        expandButton.style.transform = 'scale(1)';
+      });
+      
+      return expandButton;
+    };
+
+    const expandButton = createExpandButton();
+    app.appendChild(expandButton);
+
+    // Add event listeners after all elements are created
+    setTimeout(() => {
+      // Add expand button click listener
+      expandButton.addEventListener('click', toggleLeftPanel);
+      
+      // Add minimize button click listener
+      const minimizeBtn = document.getElementById('minimize-panel-btn');
+      if (minimizeBtn) {
+        minimizeBtn.addEventListener('click', toggleLeftPanel);
+      }
+    }, 100);
 
     // // Add tab switching event listener to fix aspect controls visibility
     // setTimeout(() => {
@@ -886,6 +986,8 @@ export class WorldViewer extends HTMLElement {
     //   }
     // }, 500);
 
+
+
     gridApp.layouts = {
       main: {
         template: `
@@ -894,6 +996,15 @@ export class WorldViewer extends HTMLElement {
             `,
         elements: {
           leftPanel,
+          viewport,
+        },
+      },
+      minimized: {
+        template: `
+        "viewport" 1fr
+           /1fr
+            `,
+        elements: {
           viewport,
         },
       },
