@@ -10,7 +10,7 @@ export class InfoPanelsManager {
   private renderer: THREE.WebGLRenderer;
   private config: InfoPanelsConfig;
   private isEditMode: boolean = false;
-  private configFilePath: string = '/data/info-panels-config.json';
+  private configFilePath: string = '/ws/node/api/getInfoPanelsConfig';
   private hasValidConfig: boolean = false;
   
   // UI Elements

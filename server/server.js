@@ -3,6 +3,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const compression = require('compression');
 const path = require('path');
+const fs = require('fs');
 
 
 const app = express();
@@ -211,6 +212,55 @@ app.get('/ws/node/api/GetDpsMapKeys', (req, res) => {
   }
 });
 
+// Get info panels configuration
+app.get('/ws/node/api/getInfoPanelsConfig', (req, res) => {
+  console.log('getInfoPanelsConfig function started');
+
+  try {
+    const configFilePath = path.join(__dirname, 'info-panels-config.json');
+
+    // Check if file exists
+    if (!fs.existsSync(configFilePath)) {
+      return res.status(404).json({ 
+        error: 'Info panels configuration file not found' 
+      });
+    }
+
+    console.log('Reading info panels configuration file');
+
+    // Read the file
+    fs.readFile(configFilePath, 'utf8', (err, data) => {
+      if (err) {
+        console.error('Error reading info panels config file:', err);
+        return res.status(500).json({ 
+          error: `Error reading configuration file: ${err.message}` 
+        });
+      }
+
+      try {
+        const configData = JSON.parse(data);
+        console.log('Info panels configuration loaded successfully');
+        
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Cache-Control', 'no-cache');
+        return res.status(200).json(configData);
+      } catch (parseError) {
+        console.error('Error parsing info panels config JSON:', parseError);
+        return res.status(500).json({ 
+          error: `Error parsing configuration file: ${parseError.message}` 
+        });
+      }
+    });
+
+  } catch (error) {
+    console.error('Error processing getInfoPanelsConfig request:', error);
+
+    return res.status(500).json({ 
+      error: `Error processing request: ${error.message}` 
+    });
+  }
+});
+
 // Stream IFC file (compatible with Azure Functions endpoint)
 app.get('/ws/node/api/streamIfc', (req, res) => {
   console.log('streamIfc function started');
@@ -220,7 +270,7 @@ app.get('/ws/node/api/streamIfc', (req, res) => {
     const ifcFilePath = path.join(__dirname, 'ifc-files', blobName);
 
     // Check if file exists
-    if (!require('fs').existsSync(ifcFilePath)) {
+    if (!fs.existsSync(ifcFilePath)) {
       return res.status(404).json({ 
         error: `IFC file not found: ${blobName}` 
       });
@@ -234,7 +284,7 @@ app.get('/ws/node/api/streamIfc', (req, res) => {
     res.setHeader('Cache-Control', 'no-cache');
 
     // Stream the file
-    const fileStream = require('fs').createReadStream(ifcFilePath);
+    const fileStream = fs.createReadStream(ifcFilePath);
     
     fileStream.on('error', (error) => {
       console.error(`Error reading IFC file:`, error);
@@ -281,6 +331,7 @@ app.listen(PORT, () => {
   console.log(`  - http://localhost:${PORT}/ws/node/api/getAllDataPointKeys`);
   console.log(`  - http://localhost:${PORT}/ws/node/api/getAllDatapoints`);
   console.log(`  - http://localhost:${PORT}/ws/node/api/GetDpsMapKeys`);
+  console.log(`  - http://localhost:${PORT}/ws/node/api/getInfoPanelsConfig`);
   console.log(`  - http://localhost:${PORT}/ws/node/api/streamIfc`);
 });
 
