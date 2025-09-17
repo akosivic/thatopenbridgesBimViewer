@@ -105,22 +105,34 @@ bim-tabs[floating] * {
   transition: none !important;
 }
 
-/* Left panel minimized state */
+/* Left panel minimized state - optimized for performance */
 bim-grid.left-panel-minimized {
   grid-template-areas: "viewport" !important;
   grid-template-columns: 1fr !important;
 }
 
-/* Hide left panel with multiple selectors but NOT the expand button or floating elements */
-bim-grid.left-panel-minimized [data-name="leftPanel"],
-bim-grid.left-panel-minimized bim-tabs:not([floating]),
-bim-grid.left-panel-minimized bim-tab:not([floating]),
-bim-grid.left-panel-minimized > *:first-child {
-  position: absolute !important;
-  left: -100vw !important;
+/* Optimized left panel hide/show with hardware acceleration */
+.custom-tabs-container {
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  transform: translate3d(0, 0, 0); /* Hardware acceleration */
+  transition: transform 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
+              opacity 0.15s ease-out,
+              visibility 0s linear 0s;
+  opacity: 1;
+  visibility: visible;
+  width: auto;
+}
+
+/* Hide left panel elements instantly and smoothly */
+bim-grid.left-panel-minimized .custom-tabs-container {
+  transform: translate3d(-100%, 0, 0) !important;
   opacity: 0 !important;
+  visibility: hidden !important;
   pointer-events: none !important;
-  transition: all 0.3s ease !important;
+  transition: transform 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
+              opacity 0.15s ease-out,
+              visibility 0s linear 0.15s; /* Delay visibility until after animation */
 }
 
 /* Make sure viewport takes full width and height when minimized */
@@ -137,15 +149,15 @@ bim-grid:not(.left-panel-minimized) {
   grid-template-columns: 26rem 1fr !important;
 }
 
-/* Show all elements when not minimized, but keep floating elements always centered */
-bim-grid:not(.left-panel-minimized) [data-name="leftPanel"],
-bim-grid:not(.left-panel-minimized) bim-tabs:not([floating]),
-bim-grid:not(.left-panel-minimized) bim-tab:not([floating]) {
-  position: static !important;
-  left: auto !important;
+/* Show left panel elements instantly and smoothly */
+bim-grid:not(.left-panel-minimized) .custom-tabs-container {
+  transform: translate3d(0, 0, 0) !important;
   opacity: 1 !important;
+  visibility: visible !important;
   pointer-events: auto !important;
-  transition: all 0.3s ease !important;
+  transition: transform 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
+              opacity 0.15s ease-out,
+              visibility 0s linear 0s; /* Show immediately */
 }
 
 /* Additional viewport styling for full screen mode */
@@ -158,6 +170,21 @@ bim-grid.left-panel-minimized bim-viewport canvas {
   width: 100% !important;
   height: 100% !important;
 }
+
+/* Prevent layout shifts during animations */
+bim-grid {
+  contain: layout style;
+}
+
+/* Optimize left panel expand button with instant show/hide */
+.left-panel-expand-btn {
+  will-change: transform, opacity;
+  transform: translate3d(0, 0, 0);
+  transition: transform 0.15s ease, opacity 0.15s ease;
+  display: none; /* Hidden by default */
+}
+
+/* The expand button display will be handled by JavaScript for better control */
 
 /* Ensure expand button is properly styled */
 .bim-expand-button {

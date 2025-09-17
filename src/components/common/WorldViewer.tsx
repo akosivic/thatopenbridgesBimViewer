@@ -800,9 +800,8 @@ export class WorldViewer extends HTMLElement {
         }
       };
 
-      const containerStyle = state.leftPanelMinimized 
-        ? "display: flex; flex-direction: column; height: 100%; visibility: hidden; width: 0; overflow: hidden;"
-        : "display: flex; flex-direction: column; height: 100%;";
+      // Use consistent container style - let CSS handle the visibility
+      const containerStyle = "display: flex; flex-direction: column; height: 100%;";
 
       return html`
         <div class="custom-tabs-container" style="${containerStyle}">
@@ -861,23 +860,25 @@ export class WorldViewer extends HTMLElement {
       `;
     }, dataState);
 
-    // Function to toggle left panel visibility (defined after component creation)
+    // Function to toggle left panel visibility (instant, no delays)
     const toggleLeftPanel = () => {
-      dataState.leftPanelMinimized = !dataState.leftPanelMinimized;
-      updateLeftPanelFn({ ...dataState });
-      
-      // Get references that will be defined later
       const gridApp = document.getElementById('app') as Grid;
       const expandButton = document.querySelector('.left-panel-expand-btn') as HTMLElement;
       
-      // Use CSS classes to show/hide panel instead of changing grid layout
+      // Toggle state and apply changes instantly via CSS classes only
+      dataState.leftPanelMinimized = !dataState.leftPanelMinimized;
+      
       if (dataState.leftPanelMinimized) {
+        // Hide panel
         gridApp?.classList.add('left-panel-minimized');
         if (expandButton) expandButton.style.display = 'block';
       } else {
+        // Show panel
         gridApp?.classList.remove('left-panel-minimized');
         if (expandButton) expandButton.style.display = 'none';
       }
+      
+      console.log('Panel toggled instantly. Minimized:', dataState.leftPanelMinimized);
     };
 
     const app = document.getElementsByTagName("world-viewer")[0];
