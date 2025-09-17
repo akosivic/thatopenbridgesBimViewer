@@ -912,7 +912,7 @@ export class WorldViewer extends HTMLElement {
         border-radius: 8px;
         cursor: pointer;
         padding: 12px;
-        transition: all 0.2s ease;
+        transition: none;
         display: none;
         backdrop-filter: blur(4px);
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
@@ -922,12 +922,12 @@ export class WorldViewer extends HTMLElement {
       
       expandButton.addEventListener('mouseenter', () => {
         expandButton.style.background = 'rgba(0, 0, 0, 0.9)';
-        expandButton.style.transform = 'scale(1.05)';
+        expandButton.style.transform = 'none';
       });
       
       expandButton.addEventListener('mouseleave', () => {
         expandButton.style.background = 'rgba(0, 0, 0, 0.8)';
-        expandButton.style.transform = 'scale(1)';
+        expandButton.style.transform = 'none';
       });
       
       return expandButton;
