@@ -3,6 +3,8 @@
   display: block;
   height: 100vh;
   padding-bottom: 37px;
+  background: transparent !important;
+  background-color: transparent !important;
   /* Ensure the component is block-level */
 }
 
@@ -111,15 +113,22 @@ bim-grid.left-panel-minimized {
   grid-template-columns: 1fr !important;
 }
 
-/* Instant left panel hide/show - no transitions */
+/* Left panel floats over full-screen model - transparent - positioned just below header */
 .custom-tabs-container {
   will-change: auto;
   backface-visibility: visible;
   transform: translate3d(0, 0, 0);
   transition: none !important;
-  opacity: 1;
+  opacity: 0.8;
   visibility: visible;
-  width: auto;
+  width: 26rem;
+  position: fixed !important;
+  left: 0 !important;
+  height: calc(100vh - 105px) !important;
+  z-index: 10 !important;
+  background: rgba(0, 0, 0, 0.2) !important;
+  background-color: rgba(0, 0, 0, 0.2) !important;
+  backdrop-filter: blur(8px);
 }
 
 /* Hide left panel elements instantly */
@@ -131,27 +140,40 @@ bim-grid.left-panel-minimized .custom-tabs-container {
   transition: none !important;
 }
 
-/* Make sure viewport takes full width and height when minimized */
+/* Make sure viewport stays fullscreen when minimized */
 bim-grid.left-panel-minimized bim-viewport {
   grid-area: viewport !important;
   width: 100vw !important;
   height: 100vh !important;
-  position: relative !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  z-index: -1 !important;
 }
 
-/* Full layout state */
+/* Full layout state - viewport always full screen */
 bim-grid:not(.left-panel-minimized) {
-  grid-template-areas: "leftPanel viewport" !important;
-  grid-template-columns: 26rem 1fr !important;
+  grid-template-areas: "viewport" !important;
+  grid-template-columns: 1fr !important;
 }
 
 /* Show left panel elements instantly */
 bim-grid:not(.left-panel-minimized) .custom-tabs-container {
   transform: translate3d(0, 0, 0) !important;
-  opacity: 1 !important;
+  opacity: 0.8 !important;
   visibility: visible !important;
   pointer-events: auto !important;
   transition: none !important;
+}
+
+/* Ensure viewport is full screen even when left panel is expanded */
+bim-grid:not(.left-panel-minimized) bim-viewport {
+  width: 100vw !important;
+  height: 100vh !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  z-index: -1 !important;
 }
 
 /* Additional viewport styling for full screen mode */
@@ -165,9 +187,11 @@ bim-grid.left-panel-minimized bim-viewport canvas {
   height: 100% !important;
 }
 
-/* Prevent layout shifts during animations */
+/* Make bim-grid transparent and prevent layout shifts */
 bim-grid {
   contain: layout style;
+  background: transparent !important;
+  background-color: transparent !important;
 }
 
 /* Instant left panel expand button - no transitions */
@@ -212,11 +236,15 @@ bim-grid {
   height: 24px !important;
 }
 
-/* Viewport should fill available space instantly */
+/* Viewport should fill full screen and be behind panels */
 bim-viewport {
   transition: none !important;
-  width: 100%;
-  height: 100%;
+  width: 100vw !important;
+  height: 100vh !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  z-index: -1 !important;
 }
 
 /* Hide aspect section when project tab is active */
@@ -304,4 +332,27 @@ bim-panel-section::part(header) {
   font-weight: 600 !important;
   font-size: 1.1em !important;
   padding: 12px 16px !important;
+}
+
+/* Make all content within the left panel semi-transparent */
+.custom-tabs-container * {
+  background-color: rgba(0, 0, 0, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Ensure tabs themselves are transparent */
+bim-tab {
+  background: rgba(0, 0, 0, 0.3) !important;
+  background-color: rgba(0, 0, 0, 0.3) !important;
+  backdrop-filter: blur(4px);
+}
+
+/* Light control buttons should be red */
+bim-panel-section[icon="solar:lamp-bold"] bim-button {
+  background-color: #ff4444 !important;
+  color: white !important;
+}
+
+bim-panel-section[icon="solar:lamp-bold"] bim-button:hover {
+  background-color: #ff6666 !important;
 }

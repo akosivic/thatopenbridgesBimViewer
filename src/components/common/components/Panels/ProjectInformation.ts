@@ -230,8 +230,8 @@ export default async (components: OBC.Components, isDebug: boolean, highlighter:
     dataPointState.buttons = dataPointState.keys.map((key) => {
       const isActive = dataPointState.buttonStates[key] || false;
       const buttonStyle = isActive
-        ? "flex: 0; background-color: #4CAF50;"
-        : "flex: 0; background-color: #f44336;";
+        ? "flex: 0; background-color: #ff4444;"
+        : "flex: 0; background-color: #ff3636;";
       return BUI.html`
         <bim-button
           style="${buttonStyle}"
