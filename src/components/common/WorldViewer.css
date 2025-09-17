@@ -15,6 +15,7 @@ bim-grid:not([floating])>bim-panel {
 bim-grid[floating]>bim-toolbar {
   justify-self: center;
 }
+
 /* Loading overlay styles */
 .loading-overlay {
   position: fixed;
@@ -46,8 +47,13 @@ bim-grid[floating]>bim-toolbar {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Left panel minimize/expand styles */
@@ -86,12 +92,14 @@ bim-tabs[floating] {
   left: 50% !important;
   transform: translateX(-50%) !important;
   z-index: 100000 !important;
-  transition: none !important; /* Remove any transitions */
+  transition: none !important;
+  /* Remove any transitions */
 }
 
 bim-grid[floating]>bim-toolbar {
   justify-self: center !important;
-  transition: none !important; /* Remove any transitions */
+  transition: none !important;
+  /* Remove any transitions */
 }
 
 /* Ensure floating elements are never affected by panel minimization */
@@ -199,7 +207,8 @@ bim-grid {
   will-change: auto;
   transform: translate3d(0, 0, 0);
   transition: none !important;
-  display: none; /* Hidden by default */
+  display: none;
+  /* Hidden by default */
 }
 
 /* The expand button display will be handled by JavaScript for better control */
@@ -224,7 +233,7 @@ bim-grid {
 }
 
 .bim-expand-button:hover {
-  background: rgba(0,0,0,0.9) !important;
+  background: rgba(0, 0, 0, 0.9) !important;
   transform: none !important;
   transition: none !important;
 }
@@ -248,7 +257,7 @@ bim-viewport {
 }
 
 /* Hide aspect section when project tab is active */
-bim-tab[name="project"][active] ~ * bim-panel-section[icon="solar:palette-bold"],
+bim-tab[name="project"][active]~* bim-panel-section[icon="solar:palette-bold"],
 bim-tabs:has(bim-tab[name="project"][active]) bim-panel-section[icon="solar:palette-bold"] {
   display: none !important;
 }
@@ -272,9 +281,9 @@ bim-tab[name="settings"] bim-panel-section[icon="solar:palette-bold"] {
 }
 
 /* Hide any global theme selectors that might be created by the framework */
-body > bim-selector[vertical],
-html > bim-selector[vertical],
-.world-viewer > bim-selector[vertical] {
+body>bim-selector[vertical],
+html>bim-selector[vertical],
+.world-viewer>bim-selector[vertical] {
   display: none !important;
 }
 
@@ -285,7 +294,7 @@ bim-selector[vertical][style*="position: fixed"] {
 }
 
 /* Aggressive hiding of any theme selector outside tabs */
-:not(bim-tab[name="settings"]) > * bim-selector[vertical] {
+:not(bim-tab[name="settings"])>* bim-selector[vertical] {
   display: none !important;
 }
 
@@ -354,5 +363,5 @@ bim-panel-section[icon="solar:lamp-bold"] bim-button {
 }
 
 bim-panel-section[icon="solar:lamp-bold"] bim-button:hover {
-  background-color: #ff6666 !important;
+  background-color:  #969606!important;
 }
