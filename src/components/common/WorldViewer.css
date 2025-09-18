@@ -1,8 +1,9 @@
 .world-viewer {
   padding-top: 64px;
   display: block;
-  height: 100vh;
-  padding-bottom: 37px;
+  height: calc(100vh - 64px); /* Full height minus header */
+  width: 100vw;
+  overflow: hidden; /* Prevent scrolling within the viewer */
   background: transparent !important;
   background-color: transparent !important;
   /* Ensure the component is block-level */
@@ -132,11 +133,14 @@ bim-grid.left-panel-minimized {
   width: 26rem;
   position: fixed !important;
   left: 0 !important;
-  height: calc(100vh - 105px) !important;
+  top: 64px !important; /* Position below header */
+  height: calc(100vh - 64px) !important; /* Full height minus header */
   z-index: 10 !important;
   background: rgba(0, 0, 0, 0.2) !important;
   background-color: rgba(0, 0, 0, 0.2) !important;
   backdrop-filter: blur(8px);
+  overflow-y: auto; /* Allow scrolling within panel if needed */
+  overflow-x: hidden;
 }
 
 /* Hide left panel elements instantly */
@@ -151,9 +155,9 @@ bim-grid.left-panel-minimized .custom-tabs-container {
 /* Make sure viewport stays fullscreen when minimized */
 bim-grid.left-panel-minimized bim-viewport {
   grid-area: viewport !important;
-  width: 100vw !important;
-  height: 100vh !important;
-  position: fixed !important;
+  width: 100% !important;
+  height: 100% !important;
+  position: relative !important;
   top: 0 !important;
   left: 0 !important;
   z-index: -1 !important;
@@ -176,9 +180,9 @@ bim-grid:not(.left-panel-minimized) .custom-tabs-container {
 
 /* Ensure viewport is full screen even when left panel is expanded */
 bim-grid:not(.left-panel-minimized) bim-viewport {
-  width: 100vw !important;
-  height: 100vh !important;
-  position: fixed !important;
+  width: 100% !important;
+  height: 100% !important;
+  position: relative !important;
   top: 0 !important;
   left: 0 !important;
   z-index: -1 !important;
@@ -186,8 +190,8 @@ bim-grid:not(.left-panel-minimized) bim-viewport {
 
 /* Additional viewport styling for full screen mode */
 bim-grid.left-panel-minimized {
-  width: 100vw !important;
-  height: 100vh !important;
+  width: 100% !important;
+  height: 100% !important;
 }
 
 bim-grid.left-panel-minimized bim-viewport canvas {
@@ -248,12 +252,23 @@ bim-grid {
 /* Viewport should fill full screen and be behind panels */
 bim-viewport {
   transition: none !important;
-  width: 100vw !important;
-  height: 100vh !important;
-  position: fixed !important;
+  width: 100% !important;
+  height: 100% !important;
+  position: relative !important;
   top: 0 !important;
   left: 0 !important;
   z-index: -1 !important;
+  overflow: hidden !important;
+}
+
+/* Ensure bim-grid takes full space */
+bim-grid {
+  width: 100% !important;
+  height: 100% !important;
+  overflow: hidden !important;
+  contain: layout style;
+  background: transparent !important;
+  background-color: transparent !important;
 }
 
 /* Hide aspect section when project tab is active */
@@ -364,4 +379,21 @@ bim-panel-section[icon="solar:lamp-bold"] bim-button {
 
 bim-panel-section[icon="solar:lamp-bold"] bim-button:hover {
   background-color:  #969606!important;
+}
+
+/* Datapoint button states - green when ON, red when OFF */
+.datapoint-button {
+  background: #f44336 !important; /* red by default (OFF) */
+  color: white !important;
+  transition: background 0.2s;
+}
+.datapoint-button.active {
+  background: #4CAF50 !important; /* green when ON */
+  color: white !important;
+}
+.datapoint-button:not(.active):hover {
+  background: #4CAF50 !important; /* hover green if OFF */
+}
+.datapoint-button.active:hover {
+  background: #f44336 !important; /* hover red if ON */
 }

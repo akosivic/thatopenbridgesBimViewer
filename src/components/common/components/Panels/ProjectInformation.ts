@@ -229,12 +229,9 @@ export default async (components: OBC.Components, isDebug: boolean, highlighter:
     // await getDpsValues();
     dataPointState.buttons = dataPointState.keys.map((key) => {
       const isActive = dataPointState.buttonStates[key] || false;
-      const buttonStyle = isActive
-        ? "flex: 0; background-color: #4CAF50;"
-        : "flex: 0; background-color: #f44336;";
       return BUI.html`
         <bim-button
-          style="${buttonStyle}"
+          class="datapoint-button${isActive ? ' active' : ''}"
           @click=${() => updateDataPoint(key)}
           icon="solar:lamp-bold"
           label="${key + (isActive ? " (" + i18n.t('on') + ")" : " (" + i18n.t('off') + ")")}">

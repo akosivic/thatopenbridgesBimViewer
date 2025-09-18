@@ -69,9 +69,15 @@ html.bim-ui-light {
   margin: 0;
 }
 
-/* body {
+html, body {
   height: 100vh;
-} */
+  overflow: hidden; /* Prevent any scrolling */
+}
+
+#root {
+  height: 100vh;
+  overflow: hidden;
+}
 
 html {
   font-family: sans-serif;
