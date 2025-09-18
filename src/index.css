@@ -74,11 +74,27 @@ html, body {
   overflow: hidden; /* Prevent any scrolling */
   background: transparent !important;
   background-color: transparent !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
 #root {
   height: 100vh;
   overflow: hidden;
+  background: transparent !important;
+  background-color: transparent !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Override any Material-UI default backgrounds */
+.MuiCssBaseline-root {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+/* Ensure no default Material-UI body styling */
+body {
   background: transparent !important;
   background-color: transparent !important;
 }
