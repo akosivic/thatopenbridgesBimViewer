@@ -72,11 +72,15 @@ html.bim-ui-light {
 html, body {
   height: 100vh;
   overflow: hidden; /* Prevent any scrolling */
+  background: transparent !important;
+  background-color: transparent !important;
 }
 
 #root {
   height: 100vh;
   overflow: hidden;
+  background: transparent !important;
+  background-color: transparent !important;
 }
 
 html {

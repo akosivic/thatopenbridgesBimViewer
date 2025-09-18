@@ -30,16 +30,18 @@ const HeaderComponent = () => {
       position: 'fixed',
       top: 0,
       left: 0,
-      width: '100%'
+      width: '100%',
+      minHeight: '32px'
     }}>
-      <Toolbar>
+      <Toolbar sx={{ minHeight: '32px !important', padding: '0 16px' }}>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <BridgesIcon sx={{ width: '6em', height: '2em' }} />
+          <BridgesIcon sx={{ width: '3em', height: '1em' }} />
           <Divider orientation="vertical" flexItem>
           </Divider>
-          <Typography variant="h6" component="div" sx={{
+          <Typography variant="subtitle1" component="div" sx={{
             cursor: 'default',
-            marginLeft: '1em'
+            marginLeft: '0.5em',
+            fontSize: '0.9rem'
           }}>
             {t('bimManager')}
           </Typography>
@@ -51,9 +53,21 @@ const HeaderComponent = () => {
             size="small"
             sx={{
               color: 'white',
-              mr: 2,
+              mr: 1,
+              minHeight: '20px',
+              height: '24px',
+              fontSize: '0.7rem',
+              '& .MuiSelect-select': {
+                paddingTop: '4px',
+                paddingBottom: '4px',
+                paddingLeft: '8px',
+                paddingRight: '20px !important'
+              },
               '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255, 255, 255, 0.5)' },
-              '& .MuiSvgIcon-root': { color: 'white' }
+              '& .MuiSvgIcon-root': { 
+                color: 'white',
+                fontSize: '1rem'
+              }
             }}
           >
             <MenuItem value="ja">日本語</MenuItem>

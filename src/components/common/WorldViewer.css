@@ -1,7 +1,7 @@
 .world-viewer {
-  padding-top: 64px;
+  padding-top: 32px;
   display: block;
-  height: calc(100vh - 64px); /* Full height minus header */
+  height: calc(100vh - 32px); /* Full height minus header */
   width: 100vw;
   overflow: hidden; /* Prevent scrolling within the viewer */
   background: transparent !important;
@@ -133,8 +133,8 @@ bim-grid.left-panel-minimized {
   width: 26rem;
   position: fixed !important;
   left: 0 !important;
-  top: 64px !important; /* Position below header */
-  height: calc(100vh - 64px) !important; /* Full height minus header */
+  top: 32px !important; /* Position below header */
+  height: calc(100vh - 32px) !important; /* Full height minus header */
   z-index: 10 !important;
   background: rgba(0, 0, 0, 0.2) !important;
   background-color: rgba(0, 0, 0, 0.2) !important;

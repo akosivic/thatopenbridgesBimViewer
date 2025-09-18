@@ -3,7 +3,6 @@ import Typography from '@mui/material/Typography';
 import { styled } from '@mui/material/styles';
 import Divider from '@mui/material/Divider';
 
-import FooterComponent from './components/FooterComponent';
 import HeaderComponent from './components/HeaderComponent';
 import LoginButtonComponent from './components/LoginButtonComponent';
 import { useAuth } from './components/common/authentication';
@@ -44,7 +43,6 @@ function App(): JSX.Element {
         <Divider orientation="vertical" flexItem />
         <LoginButtonComponent />
       </StyledBox>
-      <FooterComponent />
     </StyledBox>
   );
 }
