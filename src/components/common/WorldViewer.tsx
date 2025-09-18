@@ -168,12 +168,40 @@ export class WorldViewer extends HTMLElement {
     // Prevent FPS activation when clicking toolbar buttons or their children
     function isToolbarButton(target: EventTarget | null): boolean {
       if (!target || !(target instanceof HTMLElement)) return false;
-      // Check for toolbar/tab/button classes - allow buttons inside toolbars to work
-      return !!target.closest('bim-tabs, bim-tab, bim-toolbar, bim-button, bim-toolbar-section, .screenshot-btn');
+      // Check for toolbar/tab/button classes and UI elements that should block FPS
+      return !!target.closest(`
+        bim-tabs, 
+        bim-tab, 
+        bim-toolbar, 
+        bim-button, 
+        bim-toolbar-section, 
+        .screenshot-btn,
+        .custom-tabs-container,
+        .custom-tab-headers,
+        .custom-tab-button,
+        .left-panel-minimize-btn,
+        .left-panel-expand-btn,
+        bim-panel,
+        bim-panel-section,
+        bim-selector,
+        bim-option,
+        input,
+        button,
+        select
+      `.replace(/\s+/g, ''));
     }
 
+    // Track mousedown position to ensure consistent behavior
+    let mouseDownOnToolbar = false;
+
     viewport.addEventListener('mousedown', (e) => {
-      if (isToolbarButton(e.target)) return;
+      mouseDownOnToolbar = isToolbarButton(e.target);
+      
+      if (mouseDownOnToolbar) {
+        console.log('Mouse down on toolbar element, FPS blocked');
+        return;
+      }
+      
       if (fpControls && e.button === 0) {
         isMousePressed = true;
         fpControls.lock();
@@ -182,12 +210,24 @@ export class WorldViewer extends HTMLElement {
     });
 
     viewport.addEventListener('mouseup', (e) => {
-      if (isToolbarButton(e.target)) return;
-      if (fpControls && e.button === 0) {
+      // Check both current target and original mousedown target
+      const currentTargetIsToolbar = isToolbarButton(e.target);
+      
+      if (mouseDownOnToolbar || currentTargetIsToolbar) {
+        // Reset tracking variables
+        mouseDownOnToolbar = false;
+        console.log('Mouse up on/from toolbar element, FPS remains blocked');
+        return;
+      }
+      
+      if (fpControls && e.button === 0 && isMousePressed) {
         isMousePressed = false;
         fpControls.unlock();
         console.log('Mouse released - FPS mode DEACTIVATED');
       }
+      
+      // Reset tracking variables
+      mouseDownOnToolbar = false;
     });
 
     // Also handle mouse leave to deactivate FPS if mouse leaves the viewport
@@ -818,7 +858,6 @@ export class WorldViewer extends HTMLElement {
                   color: white; 
                   border: none; 
                   cursor: pointer;
-                  border-bottom: ${currentActiveTab === tab.name ? '2px solid #0078d4' : 'none'};
                   font-size: 12px;
                   display: flex;
                   align-items: center;
