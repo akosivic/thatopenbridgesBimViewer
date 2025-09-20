@@ -21,6 +21,11 @@ export class InfoPanel3D {
   private isEditMode: boolean = false;
   private isDragging: boolean = false;
   
+  // Distance-based visibility settings
+  private readonly VISIBILITY_DISTANCE = 2; // Distance at which icons start to appear (very close)
+  private readonly MAX_VISIBILITY_DISTANCE = 15; // Distance at which icons completely fade out
+  private readonly FADE_START_DISTANCE = 8; // Distance at which fade begins
+  
   // Event callbacks
   private onPositionChange?: (panel: InfoPanel3D) => void;
   
@@ -288,10 +293,26 @@ export class InfoPanel3D {
     const worldPosition = new THREE.Vector3();
     this.group.getWorldPosition(worldPosition);
 
-    // Check distance to camera for culling
+    // Check distance to camera for distance-based visibility
     const distance = camera.position.distanceTo(worldPosition);
-    if (distance > 100) {
+    
+    // Hide if too far away
+    if (distance > this.MAX_VISIBILITY_DISTANCE) {
       this.htmlContainer.style.visibility = 'hidden';
+      // Reduce console spam - only log occasionally
+      if (Math.random() < 0.01) {
+        console.log(`� [InfoPanel3D] Panel ${this.id} hidden - too far (${distance.toFixed(1)} > ${this.MAX_VISIBILITY_DISTANCE})`);
+      }
+      return;
+    }
+
+    // Hide if very close (within visibility threshold)
+    if (distance < this.VISIBILITY_DISTANCE) {
+      this.htmlContainer.style.visibility = 'hidden';
+      // Reduce console spam - only log occasionally  
+      if (Math.random() < 0.01) {
+        console.log(`� [InfoPanel3D] Panel ${this.id} hidden - too close (${distance.toFixed(1)} < ${this.VISIBILITY_DISTANCE})`);
+      }
       return;
     }
 
@@ -318,14 +339,35 @@ export class InfoPanel3D {
     // Show the container
     this.htmlContainer.style.visibility = 'visible';
     
-    console.log(`✅ [InfoPanel3D] Panel ${this.id} HTML positioned at: x=${x}, y=${y}, distance=${distance.toFixed(2)}, visible=true`);
+    // Reduce console spam - only log occasionally for visible panels
+    if (Math.random() < 0.005) {
+      console.log(`✅ [InfoPanel3D] Panel ${this.id} visible at distance: ${distance.toFixed(1)} (range: ${this.VISIBILITY_DISTANCE}-${this.MAX_VISIBILITY_DISTANCE})`);
+    }
 
-    // Apply distance-based scaling and opacity
-    const scale = Math.max(0.5, Math.min(1.0, 50 / distance));
-    const opacity = Math.max(0.6, Math.min(1.0, 50 / distance));
+    // Apply distance-based scaling and opacity with smooth transitions
+    let opacity = 1.0;
+    let scale = 1.0;
+
+    // Calculate fade based on distance ranges
+    if (distance > this.FADE_START_DISTANCE && distance <= this.MAX_VISIBILITY_DISTANCE) {
+      // Fade out as distance increases beyond FADE_START_DISTANCE
+      const fadeRange = this.MAX_VISIBILITY_DISTANCE - this.FADE_START_DISTANCE;
+      const fadeProgress = (distance - this.FADE_START_DISTANCE) / fadeRange;
+      opacity = Math.max(0.3, 1.0 - fadeProgress);
+      scale = Math.max(0.6, 1.0 - fadeProgress * 0.4);
+    } else if (distance >= this.VISIBILITY_DISTANCE && distance <= this.FADE_START_DISTANCE) {
+      // Full opacity and scale in the optimal viewing range
+      opacity = 1.0;
+      scale = 1.0;
+    }
     
-    this.iconElement.style.transform = `scale(${scale})`;
     this.iconElement.style.opacity = opacity.toString();
+    this.iconElement.style.transform = `scale(${scale})`;
+    
+    // Add smooth transition for opacity and scale changes
+    if (!this.iconElement.style.transition.includes('opacity') || !this.iconElement.style.transition.includes('transform')) {
+      this.iconElement.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
+    }
   }
 
   /**
@@ -548,6 +590,26 @@ export class InfoPanel3D {
     if (!visible) {
       this.htmlContainer.style.visibility = 'hidden';
     }
+  }
+
+  /**
+   * Update distance-based visibility thresholds
+   */
+  public updateVisibilitySettings(minDistance: number, maxDistance: number, fadeStartDistance?: number): void {
+    (this as any).VISIBILITY_DISTANCE = minDistance;
+    (this as any).MAX_VISIBILITY_DISTANCE = maxDistance;
+    (this as any).FADE_START_DISTANCE = fadeStartDistance || minDistance + ((maxDistance - minDistance) * 0.7);
+    
+    console.log(`🔧 [InfoPanel3D] Panel ${this.id} visibility updated: min=${minDistance}, max=${maxDistance}, fade=${(this as any).FADE_START_DISTANCE}`);
+  }
+
+  /**
+   * Get current distance from camera (for debugging)
+   */
+  public getDistanceFromCamera(camera: THREE.Camera): number {
+    const worldPosition = new THREE.Vector3();
+    this.group.getWorldPosition(worldPosition);
+    return camera.position.distanceTo(worldPosition);
   }
 
   /**

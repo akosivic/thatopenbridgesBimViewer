@@ -205,6 +205,33 @@ export class InfoPanelsManager {
   }
 
   /**
+   * Configure distance-based visibility for all panels
+   */
+  public setVisibilityDistance(minDistance: number = 2, maxDistance: number = 15, fadeStartDistance?: number): void {
+    console.log(`🔧 [InfoPanelsManager] Setting visibility distances: min=${minDistance}, max=${maxDistance}, fade=${fadeStartDistance || 'auto'}`);
+    
+    for (const panel of this.panels.values()) {
+      panel.updateVisibilitySettings(minDistance, maxDistance, fadeStartDistance);
+    }
+  }
+
+  /**
+   * Get distance information for all panels (debugging)
+   */
+  public getDistanceInfo(): Array<{id: string, distance: number}> {
+    const distances: Array<{id: string, distance: number}> = [];
+    
+    for (const panel of this.panels.values()) {
+      distances.push({
+        id: panel.id,
+        distance: panel.getDistanceFromCamera(this.camera)
+      });
+    }
+    
+    return distances.sort((a, b) => a.distance - b.distance);
+  }
+
+  /**
    * Get a specific panel
    */
   public getPanel(id: string): InfoPanel3D | undefined {

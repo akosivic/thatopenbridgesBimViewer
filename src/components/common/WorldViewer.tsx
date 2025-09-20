@@ -564,6 +564,13 @@ export class WorldViewer extends HTMLElement {
     const configLoaded = await this.infoPanelsManager.loadConfig();
     console.log('Config loading result:', configLoaded);
 
+    // Expose InfoPanelsManager to window for debugging distance settings
+    (window as any).infoPanelsManager = this.infoPanelsManager;
+    console.log('🔧 InfoPanelsManager exposed to window.infoPanelsManager for debugging');
+    console.log('💡 Use window.infoPanelsManager.setVisibilityDistance(min, max) to adjust distance thresholds');
+    console.log('💡 Current settings: Show when 2-8 units away, fade 8-15 units, hide beyond 15 units');
+    console.log('💡 Use window.infoPanelsManager.getDistanceInfo() to see current distances');
+
     const appManager = components.get(AppManager);
     const viewportGrid = viewport.querySelector<Grid>("bim-grid[floating]")!;
     appManager.grids.set("viewport", viewportGrid);
