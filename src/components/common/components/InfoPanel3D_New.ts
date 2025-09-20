@@ -56,6 +56,9 @@ export class InfoPanel3D {
     this.create3DMarker();
     this.updatePosition();
     
+    // Setup event listeners for panel controls
+    this.setupPanelEventListeners();
+    
     // Add to scene
     this.scene.add(this.group);
     document.body.appendChild(this.htmlContainer);
@@ -73,11 +76,14 @@ export class InfoPanel3D {
       position: absolute;
       left: 0;
       top: 0;
-      transform: translate(-50%, -100%);
+      transform: translate(-50%, 0);
       z-index: 1000;
       pointer-events: auto;
       will-change: transform;
       visibility: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     `;
     return container;
   }
@@ -103,7 +109,7 @@ export class InfoPanel3D {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       cursor: pointer;
       box-shadow: 0 4px 12px rgba(0, 120, 212, 0.4), 0 2px 4px rgba(0, 0, 0, 0.2);
-      margin-bottom: 8px;
+      margin-bottom: 0;
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       user-select: none;
       position: relative;
@@ -164,6 +170,7 @@ export class InfoPanel3D {
       border: 1px solid rgba(255, 255, 255, 0.15);
       animation: panelFadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       z-index: 1002;
+      margin-top: 8px;
     `;
     
     // Don't call updatePanelContent here - it will be called after setup
@@ -179,6 +186,50 @@ export class InfoPanel3D {
     
     // Now that panelElement is properly set up, update its content
     this.updatePanelContent();
+  }
+
+  /**
+   * Setup event listeners for panel controls (edit and close buttons)
+   */
+  private setupPanelEventListeners(): void {
+    // Listen for edit button clicks
+    this.htmlContainer.addEventListener('panel-edit', (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail.panelId === this.id) {
+        this.toggleEditMode();
+      }
+    });
+
+    // Listen for close button clicks  
+    this.htmlContainer.addEventListener('panel-close', (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail.panelId === this.id) {
+        this.closePanel();
+      }
+    });
+  }
+
+  /**
+   * Toggle edit mode for this individual panel
+   */
+  private toggleEditMode(): void {
+    this.isEditMode = !this.isEditMode;
+    this.setEditMode(this.isEditMode);
+    console.log(`🛠️ [InfoPanel3D] Panel ${this.id} edit mode: ${this.isEditMode}`);
+  }
+
+  /**
+   * Close the panel (hide the popup but keep the icon visible)
+   */
+  private closePanel(): void {
+    this.isPanelVisible = false;
+    this.panelElement.style.animation = 'panelFadeOut 0.2s ease-in-out';
+    setTimeout(() => {
+      this.panelElement.style.display = 'none';
+    }, 200);
+    this.iconElement.style.background = 'linear-gradient(135deg, #0078D4 0%, #005a9e 100%)';
+    this.iconElement.style.boxShadow = '0 4px 12px rgba(0, 120, 212, 0.4), 0 2px 4px rgba(0, 0, 0, 0.2)';
+    console.log(`❌ [InfoPanel3D] Panel ${this.id} closed`);
   }
 
   /**
@@ -258,8 +309,8 @@ export class InfoPanel3D {
     const x = (screenPosition.x * 0.5 + 0.5) * canvas.clientWidth;
     const y = (screenPosition.y * -0.5 + 0.5) * canvas.clientHeight;
 
-    // Update HTML position
-    const transform = `translate3d(${x}px, ${y}px, 0) translate(-50%, -100%)`;
+    // Update HTML position - center horizontally, position at the point vertically (icon at the point, panel below)
+    const transform = `translate3d(${x}px, ${y}px, 0) translate(-50%, 0)`;
     if (this.htmlContainer.style.transform !== transform) {
       this.htmlContainer.style.transform = transform;
     }
@@ -332,11 +383,16 @@ export class InfoPanel3D {
       <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.2);">
         <span style="font-size: 18px; font-weight: 600; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);">${zone}</span>
         <div style="display: flex; gap: 8px; align-items: center;">
-          ${this.isEditMode ? '<span style="font-size: 14px; cursor: move; opacity: 0.7;" title="Drag to move">⚙️</span>' : ''}
-          <span style="font-size: 20px; cursor: pointer; line-height: 1; opacity: 0.7; transition: opacity 0.2s ease;" 
-                onmouseover="this.style.opacity='1'" 
-                onmouseout="this.style.opacity='0.7'"
-                onclick="this.closest('.info-panel-content').style.display='none'; this.closest('.info-panel-3d-container').querySelector('.info-panel-icon').style.background='#0078D4';">×</span>
+          <span style="font-size: 16px; cursor: pointer; opacity: 0.7; transition: all 0.2s ease; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 4px;" 
+                onmouseover="this.style.opacity='1'; this.style.background='rgba(255,255,255,0.1)'" 
+                onmouseout="this.style.opacity='0.7'; this.style.background='transparent'"
+                onclick="this.dispatchEvent(new CustomEvent('panel-edit', { bubbles: true, detail: { panelId: '${this.id}' } }))"
+                title="Edit panel position">⚙️</span>
+          <span style="font-size: 18px; cursor: pointer; line-height: 1; opacity: 0.7; transition: all 0.2s ease; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 4px;" 
+                onmouseover="this.style.opacity='1'; this.style.background='rgba(255,255,255,0.1)'" 
+                onmouseout="this.style.opacity='0.7'; this.style.background='transparent'"
+                onclick="this.dispatchEvent(new CustomEvent('panel-close', { bubbles: true, detail: { panelId: '${this.id}' } }))"
+                title="Close panel">×</span>
         </div>
       </div>
       

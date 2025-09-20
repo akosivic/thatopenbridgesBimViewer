@@ -13,8 +13,7 @@ export class InfoPanelsManager {
   private configFilePath: string = '/ws/node/api/getInfoPanelsConfig';
   private hasValidConfig: boolean = false;
   
-  // UI Elements
-  private editButton?: HTMLElement;
+  // UI Elements  
   private onConfigChange?: (config: InfoPanelsConfig) => void;
   
   // Performance optimization
@@ -39,7 +38,6 @@ export class InfoPanelsManager {
     this.onConfigChange = onConfigChange;
     
     this.setupEventListeners();
-    this.createEditModeButton();
     console.log('✅ InfoPanelsManager (New) initialized');
   }
 
@@ -56,36 +54,7 @@ export class InfoPanelsManager {
     this.startAnimation();
   }
 
-  /**
-   * Create the edit mode toggle button
-   */
-  private createEditModeButton(): void {
-    // Only create if not already exists
-    if (this.editButton) return;
-    
-    this.editButton = document.createElement('button');
-    this.editButton.innerHTML = '⚙️ Edit Panels';
-    this.editButton.style.cssText = `
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      z-index: 10000;
-      background: #0078D4;
-      color: white;
-      border: none;
-      padding: 8px 12px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 12px;
-      display: none;
-    `;
-    
-    this.editButton.addEventListener('click', () => {
-      this.toggleEditMode();
-    });
-    
-    document.body.appendChild(this.editButton);
-  }
+
 
   /**
    * Mouse down handler for edit mode dragging
@@ -185,11 +154,7 @@ export class InfoPanelsManager {
       panel.setEditMode(this.isEditMode);
     }
     
-    // Update button appearance
-    if (this.editButton) {
-      this.editButton.style.background = this.isEditMode ? '#d13438' : '#0078D4';
-      this.editButton.innerHTML = this.isEditMode ? '💾 Save & Exit' : '⚙️ Edit Panels';
-    }
+    // Edit mode toggled - panels will handle their own edit state
     
     // Save config when exiting edit mode
     if (!this.isEditMode) {
@@ -334,19 +299,14 @@ export class InfoPanelsManager {
         console.log(`✅ Successfully loaded ${config.panels.length} info panels from config`);
         console.log('🔍 [InfoPanelsManager] Final panel count in collection:', this.panels.size);
         
-        // Show edit button now that we have valid config
-        if (this.editButton) {
-          this.editButton.style.display = 'block';
-        }
+        // Config loaded successfully
         
         return true;
       } else {
         console.warn('Failed to load config:', response.status, response.statusText);
         this.hasValidConfig = false;
         
-        if (this.editButton) {
-          this.editButton.style.display = 'none';
-        }
+
         
         return false;
       }
@@ -354,9 +314,7 @@ export class InfoPanelsManager {
       console.error('Error loading info panels config:', error);
       this.hasValidConfig = false;
       
-      if (this.editButton) {
-        this.editButton.style.display = 'none';
-      }
+
       
       return false;
     }
@@ -492,10 +450,7 @@ export class InfoPanelsManager {
     // Clear all panels
     this.clearAllPanels();
     
-    // Remove edit button
-    if (this.editButton && this.editButton.parentNode) {
-      this.editButton.parentNode.removeChild(this.editButton);
-    }
+    // UI cleanup complete
     
     console.log('InfoPanelsManager disposed');
   }
