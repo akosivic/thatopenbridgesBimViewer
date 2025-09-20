@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { InfoPanelData } from "../types/InfoPanelTypes";
+import { defaultCoordinateConverter, RealWorldCoordinate } from "../utils/CoordinateConverter";
 
 export class InfoPanel3D {
   private static panelId = 0;
@@ -202,18 +203,33 @@ export class InfoPanel3D {
   }
 
   public updatePosition() {
+    // For floating panels (high Z values), position the group at the actual height
+    // For ground-level panels, keep the group at ground level
+    const isFloatingPanel = this.data.position.z > 1.5; // 1.5m threshold
+    
     this.group.position.set(
       this.data.position.x,
-      0, // Group stays at ground level
-      this.data.position.z
+      isFloatingPanel ? this.data.position.z : 0, // Position at height for floating panels
+      this.data.position.y // Note: Y and Z are swapped for Three.js coordinate system
     );
+    
+    // Update connector line and ground point if they exist
+    const connectorLine = this.group.getObjectByName("connector-line") as THREE.Line;
+    if (connectorLine && connectorLine.geometry) {
+      const positions = [
+        new THREE.Vector3(0, 0, 0), // Ground point
+        new THREE.Vector3(0, isFloatingPanel ? 0 : this.data.position.z, 0) // Panel height relative to group
+      ];
+      connectorLine.geometry.setFromPoints(positions);
+    }
   }
 
   public updateHTMLPosition(camera: THREE.Camera, renderer: THREE.WebGLRenderer) {
+    // Use the actual 3D world position for HTML positioning
     const panelWorldPosition = new THREE.Vector3(
       this.data.position.x,
-      this.data.position.y,
-      this.data.position.z
+      this.data.position.z, // Three.js Y is our Z (height)
+      this.data.position.y  // Three.js Z is our Y (depth)
     );
 
     // Early visibility check to avoid unnecessary calculations
@@ -359,6 +375,56 @@ export class InfoPanel3D {
     if (iconElement) {
       iconElement.style.display = visible ? 'flex' : 'none';
     }
+  }
+
+  /**
+   * Set panel position using real-world coordinates
+   */
+  public setRealWorldPosition(realWorldCoords: RealWorldCoordinate) {
+    this.data.realWorldPosition = realWorldCoords;
+    
+    // Convert to scene coordinates
+    const sceneCoords = defaultCoordinateConverter.realWorldToScene(realWorldCoords);
+    this.data.position = sceneCoords;
+    
+    // Update coordinate string in content for backwards compatibility
+    this.data.content.coordinates = defaultCoordinateConverter.formatCoordinateString(sceneCoords);
+    
+    this.updatePosition();
+    this.data.modified = new Date();
+  }
+
+  /**
+   * Set panel position using coordinate string (e.g., "x=N3614,y=E-13342,z=2500mm")
+   */
+  public setPositionFromString(coordString: string) {
+    try {
+      const realWorldCoords = defaultCoordinateConverter.parseCoordinateString(coordString);
+      this.setRealWorldPosition(realWorldCoords);
+    } catch (error) {
+      console.error(`Failed to parse coordinate string "${coordString}":`, error);
+    }
+  }
+
+  /**
+   * Get real-world coordinates for this panel
+   */
+  public getRealWorldPosition(): RealWorldCoordinate | null {
+    if (this.data.realWorldPosition) {
+      return this.data.realWorldPosition;
+    }
+
+    // Try to parse from legacy coordinate string
+    if (this.data.content.coordinates) {
+      try {
+        return defaultCoordinateConverter.parseCoordinateString(this.data.content.coordinates);
+      } catch (error) {
+        console.warn(`Failed to parse legacy coordinates for panel ${this.id}:`, error);
+      }
+    }
+
+    // Convert current scene position back to real-world
+    return defaultCoordinateConverter.sceneToRealWorld(this.data.position);
   }
 
   public dispose() {

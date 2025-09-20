@@ -1,4 +1,6 @@
 // Types for 3D Information Panels
+import { RealWorldCoordinate } from '../utils/CoordinateConverter';
+
 export interface Vector3 {
   x: number;
   y: number;
@@ -8,11 +10,13 @@ export interface Vector3 {
 export interface InfoPanelData {
   id: string;
   name: string;
-  position: Vector3;
+  position: Vector3;  // Scene coordinates (meters)
+  realWorldPosition?: RealWorldCoordinate;  // Optional real-world coordinates
   content: {
     zone?: string;
     temperature?: number;
     humidity?: number;
+    coordinates?: string;  // Legacy coordinate string for backwards compatibility
     [key: string]: any; // Allow flexible content
   };
   visible: boolean;

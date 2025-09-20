@@ -2,175 +2,184 @@
   "version": "1.0.0",
   "panels": [
     {
-      "id": "zone-office-1",
-      "name": "Office Zone 1",
-      "position": {
-        "x": 2.5,
-        "y": 2.0,
-        "z": 1.8
-      },
-      "content": {
-        "zone": "Zone",
-        "temperature": 22.3,
-        "humidity": 45
-      },
-      "visible": true,
-      "created": "2025-09-14T10:00:00.000Z",
-      "modified": "2025-09-14T10:00:00.000Z"
-    },
-    {
-      "id": "zone-meeting-room",
-      "name": "Meeting Room",
-      "position": {
-        "x": 44.0,
-        "y": 2.0,
-        "z": 4.1
-      },
-      "content": {
-        "zone": "Zone",
-        "temperature": 21.8,
-        "humidity": 52
-      },
-      "visible": true,
-      "created": "2025-09-14T10:00:00.000Z",
-      "modified": "2025-09-14T10:00:00.000Z"
-    },
-    {
-      "id": "zone-corridor",
-      "name": "Main Corridor",
-      "position": {
-        "x": 0.0,
-        "y": 2.0,
-        "z": -2.5
-      },
-      "content": {
-        "zone": "Zone",
-        "temperature": 23.1,
-        "humidity": 38
-      },
-      "visible": true,
-      "created": "2025-09-14T10:00:00.000Z",
-      "modified": "2025-09-14T10:00:00.000Z"
-    },
-    {
-      "id": "datapoint-1",
-      "name": "Datapoint 1",
+      "id": "hvac-group-001",
+      "name": "HVAC Group 1",
       "position": {
         "x": 3.614,
         "y": -13.342,
         "z": 2.5
       },
+      "realWorldPosition": {
+        "north": 3614,
+        "east": -13342,
+        "z": 2500,
+        "unit": "mm"
+      },
       "content": {
-        "zone": "Bridge Monitoring",
-        "temperature": 18.5,
-        "humidity": 62,
-        "strain": "12.3 µε",
-        "displacement": "2.1 mm",
-        "vibration": "0.15 Hz"
+        "zone": "HVAC Group 1 - Ceiling Terminal",
+        "type": "Ceiling_HVAC_Group",
+        "id": "HG001",
+        "coordinates": "x=N3614,y=E-13342,z=2500mm",
+        "manufacturer": "HVAC Systems Inc",
+        "temperature": 19.2,
+        "humidity": 45,
+        "status": "Operational",
+        "airFlow": "Normal",
+        "pressure": "Optimal"
       },
       "visible": true,
-      "created": "2025-09-18T09:30:00.000Z",
-      "modified": "2025-09-18T09:30:00.000Z"
+      "created": "2025-09-19T00:00:00.000Z",
+      "modified": "2025-09-19T00:00:00.000Z"
     },
     {
-      "id": "datapoint-2",
-      "name": "Datapoint 2",
+      "id": "hvac-group-002",
+      "name": "HVAC Group 2",
       "position": {
         "x": 3.545,
         "y": -8.222,
         "z": 2.5
       },
+      "realWorldPosition": {
+        "north": 3545,
+        "east": -8222,
+        "z": 2500,
+        "unit": "mm"
+      },
       "content": {
-        "zone": "Bridge Monitoring",
-        "temperature": 19.2,
-        "humidity": 58,
-        "strain": "8.7 µε",
-        "displacement": "1.8 mm",
-        "vibration": "0.12 Hz"
+        "zone": "HVAC Group 2 - Ceiling Terminal",
+        "type": "Ceiling_HVAC_Group",
+        "id": "HG002",
+        "coordinates": "x=N3545,y=E-8222,z=2500mm",
+        "manufacturer": "HVAC Systems Inc",
+        "temperature": 18.8,
+        "humidity": 43,
+        "status": "Operational",
+        "airFlow": "Normal",
+        "pressure": "Optimal"
       },
       "visible": true,
-      "created": "2025-09-18T09:35:00.000Z",
-      "modified": "2025-09-18T09:35:00.000Z"
+      "created": "2025-09-19T00:00:00.000Z",
+      "modified": "2025-09-19T00:00:00.000Z"
     },
     {
-      "id": "datapoint-3",
-      "name": "Datapoint 3",
+      "id": "hvac-group-003",
+      "name": "HVAC Group 3",
       "position": {
         "x": 3.570,
         "y": -2.861,
         "z": 2.5
       },
+      "realWorldPosition": {
+        "north": 3570,
+        "east": -2861,
+        "z": 2500,
+        "unit": "mm"
+      },
       "content": {
-        "zone": "Bridge Monitoring",
-        "temperature": 20.1,
-        "humidity": 55,
-        "strain": "15.2 µε",
-        "displacement": "3.2 mm",
-        "vibration": "0.18 Hz"
+        "zone": "HVAC Group 3 - Ceiling Terminal",
+        "type": "Ceiling_HVAC_Group",
+        "id": "HG003",
+        "coordinates": "x=N3570,y=E-2861,z=2500mm",
+        "manufacturer": "HVAC Systems Inc",
+        "temperature": 19.5,
+        "humidity": 44,
+        "status": "Operational",
+        "airFlow": "Normal",
+        "pressure": "Optimal"
       },
       "visible": true,
-      "created": "2025-09-18T09:40:00.000Z",
-      "modified": "2025-09-18T09:40:00.000Z"
+      "created": "2025-09-19T00:00:00.000Z",
+      "modified": "2025-09-19T00:00:00.000Z"
     },
     {
-      "id": "datapoint-4",
-      "name": "Datapoint 4",
+      "id": "hvac-group-004",
+      "name": "HVAC Group 4",
       "position": {
         "x": 3.571,
         "y": 2.539,
         "z": 2.5
       },
+      "realWorldPosition": {
+        "north": 3571,
+        "east": 2539,
+        "z": 2500,
+        "unit": "mm"
+      },
       "content": {
-        "zone": "Bridge Monitoring",
-        "temperature": 21.3,
-        "humidity": 48,
-        "strain": "9.8 µε",
-        "displacement": "1.5 mm",
-        "vibration": "0.14 Hz"
+        "zone": "HVAC Group 4 - Ceiling Terminal",
+        "type": "Ceiling_HVAC_Group",
+        "id": "HG004",
+        "coordinates": "x=N3571,y=E2539,z=2500mm",
+        "manufacturer": "HVAC Systems Inc",
+        "temperature": 18.9,
+        "humidity": 46,
+        "status": "Operational",
+        "airFlow": "Normal",
+        "pressure": "Optimal"
       },
       "visible": true,
-      "created": "2025-09-18T09:45:00.000Z",
-      "modified": "2025-09-18T09:45:00.000Z"
+      "created": "2025-09-19T00:00:00.000Z",
+      "modified": "2025-09-19T00:00:00.000Z"
     },
     {
-      "id": "datapoint-5",
-      "name": "Datapoint 5",
+      "id": "hvac-group-005",
+      "name": "HVAC Group 5",
       "position": {
         "x": 3.570,
         "y": 8.029,
         "z": 2.5
       },
+      "realWorldPosition": {
+        "north": 3570,
+        "east": 8029,
+        "z": 2500,
+        "unit": "mm"
+      },
       "content": {
-        "zone": "Bridge Monitoring",
-        "temperature": 22.7,
-        "humidity": 41,
-        "strain": "11.4 µε",
-        "displacement": "2.7 mm",
-        "vibration": "0.16 Hz"
+        "zone": "HVAC Group 5 - Ceiling Terminal",
+        "type": "Ceiling_HVAC_Group",
+        "id": "HG005",
+        "coordinates": "x=N3570,y=E8029,z=2500mm",
+        "manufacturer": "HVAC Systems Inc",
+        "temperature": 19.1,
+        "humidity": 42,
+        "status": "Operational",
+        "airFlow": "Normal",
+        "pressure": "Optimal"
       },
       "visible": true,
-      "created": "2025-09-18T09:50:00.000Z",
-      "modified": "2025-09-18T09:50:00.000Z"
+      "created": "2025-09-19T00:00:00.000Z",
+      "modified": "2025-09-19T00:00:00.000Z"
     },
     {
-      "id": "datapoint-6",
-      "name": "Datapoint 6",
+      "id": "hvac-group-006",
+      "name": "HVAC Group 6",
       "position": {
         "x": 3.570,
         "y": 12.428,
         "z": 2.5
       },
+      "realWorldPosition": {
+        "north": 3570,
+        "east": 12428,
+        "z": 2500,
+        "unit": "mm"
+      },
       "content": {
-        "zone": "Bridge Monitoring",
-        "temperature": 17.9,
-        "humidity": 67,
-        "strain": "14.6 µε",
-        "displacement": "4.1 mm",
-        "vibration": "0.21 Hz"
+        "zone": "HVAC Group 6 - Ceiling Terminal",
+        "type": "Ceiling_HVAC_Group",
+        "id": "HG006",
+        "coordinates": "x=N3570,y=E12428,z=2500mm",
+        "manufacturer": "HVAC Systems Inc",
+        "temperature": 18.7,
+        "humidity": 47,
+        "status": "Operational",
+        "airFlow": "Normal",
+        "pressure": "Optimal"
       },
       "visible": true,
-      "created": "2025-09-18T09:55:00.000Z",
-      "modified": "2025-09-18T09:55:00.000Z"
+      "created": "2025-09-19T00:00:00.000Z",
+      "modified": "2025-09-19T00:00:00.000Z"
     }
   ],
   "editMode": false,

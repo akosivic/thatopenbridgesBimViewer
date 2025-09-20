@@ -33,7 +33,7 @@ import { AppManager } from "./components/bim-components";
 import { loadIfc } from "./components/Toolbars/Sections/Import";
 import { setGlobalCamera } from "./components/Panels/ProjectInformation";
 import { setBaseSpeed } from "./components/Toolbars/Sections/SpeedControls";
-import { InfoPanelsManager } from "./components/InfoPanelsManager";
+import { InfoPanelsManager } from "./components/InfoPanelsManager_New";
 
 
 interface State {
@@ -821,7 +821,8 @@ export class WorldViewer extends HTMLElement {
         { name: 'settings', label: i18n.t('settings'), icon: 'solar:settings-bold' },
         { name: 'help', label: i18n.t('help'), icon: 'material-symbols:help' }
       ] : [
-        { name: 'project', label: i18n.t('project'), icon: 'ph:building-fill' }
+        { name: 'project', label: i18n.t('project'), icon: 'ph:building-fill' },
+        { name: 'infopanels', label: 'Info Panels', icon: 'material-symbols:info' }
       ];
 
       // Get current tab content
