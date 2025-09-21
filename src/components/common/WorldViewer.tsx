@@ -196,12 +196,12 @@ export class WorldViewer extends HTMLElement {
 
     viewport.addEventListener('mousedown', (e) => {
       mouseDownOnToolbar = isToolbarButton(e.target);
-      
+
       if (mouseDownOnToolbar) {
         console.log('Mouse down on toolbar element, FPS blocked');
         return;
       }
-      
+
       if (fpControls && e.button === 0) {
         isMousePressed = true;
         fpControls.lock();
@@ -212,20 +212,20 @@ export class WorldViewer extends HTMLElement {
     viewport.addEventListener('mouseup', (e) => {
       // Check both current target and original mousedown target
       const currentTargetIsToolbar = isToolbarButton(e.target);
-      
+
       if (mouseDownOnToolbar || currentTargetIsToolbar) {
         // Reset tracking variables
         mouseDownOnToolbar = false;
         console.log('Mouse up on/from toolbar element, FPS remains blocked');
         return;
       }
-      
+
       if (fpControls && e.button === 0 && isMousePressed) {
         isMousePressed = false;
         fpControls.unlock();
         console.log('Mouse released - FPS mode DEACTIVATED');
       }
-      
+
       // Reset tracking variables
       mouseDownOnToolbar = false;
     });
@@ -444,7 +444,7 @@ export class WorldViewer extends HTMLElement {
         if (!keys.q && !keys.e) {
           world.camera.three.position.y = 1.6;
         }
-        
+
         // Clamp Y position to prevent going underground
         world.camera.three.position.y = Math.max(0.1, world.camera.three.position.y);
       }
@@ -814,22 +814,22 @@ export class WorldViewer extends HTMLElement {
     // Create the left panel component first
     const [leftPanel, updateLeftPanelFn] = Component.create<HTMLElement, State>((state) => {
       console.log('Updating left panel with state:', state, 'Active tab:', currentActiveTab);
-      
+
       // Custom tab switcher function
       const switchTab = (newTab: string) => {
         currentActiveTab = newTab;
         updateLeftPanelFn(state);
       };
-      
+
       // Create custom tab buttons and content area
       const tabButtons = isDebugMode ? [
         { name: 'project', label: i18n.t('project'), icon: 'ph:building-fill' },
         { name: 'infopanels', label: 'Info Panels', icon: 'material-symbols:info' },
         { name: 'settings', label: i18n.t('settings'), icon: 'solar:settings-bold' },
+        { name: 'infopanels', label: 'Info Panels', icon: 'material-symbols:info' },
         { name: 'help', label: i18n.t('help'), icon: 'material-symbols:help' }
       ] : [
-        { name: 'project', label: i18n.t('project'), icon: 'ph:building-fill' },
-        { name: 'infopanels', label: 'Info Panels', icon: 'material-symbols:info' }
+        { name: 'project', label: i18n.t('project'), icon: 'ph:building-fill' }
       ];
 
       // Get current tab content
@@ -911,10 +911,10 @@ export class WorldViewer extends HTMLElement {
     const toggleLeftPanel = () => {
       const gridApp = document.getElementById('app') as Grid;
       const expandButton = document.querySelector('.left-panel-expand-btn') as HTMLElement;
-      
+
       // Toggle state and apply changes instantly via CSS classes only
       dataState.leftPanelMinimized = !dataState.leftPanelMinimized;
-      
+
       if (dataState.leftPanelMinimized) {
         // Hide panel
         gridApp?.classList.add('left-panel-minimized');
@@ -924,7 +924,7 @@ export class WorldViewer extends HTMLElement {
         gridApp?.classList.remove('left-panel-minimized');
         if (expandButton) expandButton.style.display = 'none';
       }
-      
+
       console.log('Panel toggled instantly. Minimized:', dataState.leftPanelMinimized);
     };
 
@@ -935,7 +935,7 @@ export class WorldViewer extends HTMLElement {
     app.appendChild(grid);
 
     const gridApp = grid as Grid;
-    
+
     // Store grid reference globally for the toggle function
     (window as any).bimGridApp = gridApp;
 
@@ -964,19 +964,19 @@ export class WorldViewer extends HTMLElement {
         backdrop-filter: blur(4px);
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
       `;
-      
+
       // Event listener will be added after toggleLeftPanel is defined
-      
+
       expandButton.addEventListener('mouseenter', () => {
         expandButton.style.background = 'rgba(0, 0, 0, 0.9)';
         expandButton.style.transform = 'none';
       });
-      
+
       expandButton.addEventListener('mouseleave', () => {
         expandButton.style.background = 'rgba(0, 0, 0, 0.8)';
         expandButton.style.transform = 'none';
       });
-      
+
       return expandButton;
     };
 
@@ -987,7 +987,7 @@ export class WorldViewer extends HTMLElement {
     setTimeout(() => {
       // Add expand button click listener
       expandButton.addEventListener('click', toggleLeftPanel);
-      
+
       // Add minimize button click listener
       const minimizeBtn = document.getElementById('minimize-panel-btn');
       if (minimizeBtn) {
@@ -1008,7 +1008,7 @@ export class WorldViewer extends HTMLElement {
     //           allAspectSections.forEach((section: any) => {
     //             section.style.display = 'none';
     //           });
-              
+
     //           // Only show aspect controls if settings tab is active
     //           const activeTab = leftPanelElement.querySelector('bim-tab[active]');
     //           if (activeTab && activeTab.getAttribute('name') === 'settings') {
@@ -1020,7 +1020,7 @@ export class WorldViewer extends HTMLElement {
     //         }, 10);
     //       });
     //     });
-        
+
     //     // Initial setup - hide aspect controls if not on settings tab
     //     setTimeout(() => {
     //       const activeTab = leftPanelElement.querySelector('bim-tab[active]');
