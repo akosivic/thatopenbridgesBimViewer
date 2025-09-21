@@ -297,8 +297,17 @@ export class InfoPanelsManager {
         // Clear existing panels
         this.clearAllPanels();
         
-        // Load panels from config
-        for (const panelData of config.panels) {
+        // Load panels from config - sort by east coordinate (descending) to start from easternmost panels
+        const sortedPanels = [...config.panels].sort((a, b) => {
+          const aEast = a.realWorldPosition?.east ?? 0;
+          const bEast = b.realWorldPosition?.east ?? 0;
+          return bEast - aEast; // Sort descending (easternmost first)
+        });
+        
+        console.log('🧭 [InfoPanelsManager] Loading panels from east to west:', 
+          sortedPanels.map(p => ({ id: p.id, east: p.realWorldPosition?.east })));
+        
+        for (const panelData of sortedPanels) {
           console.log('🎯 [InfoPanelsManager] Creating panel from config:', panelData);
           
           // Ensure dates are properly converted
