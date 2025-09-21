@@ -397,3 +397,85 @@ bim-panel-section[icon="solar:lamp-bold"] bim-button:hover {
 .datapoint-button.active:hover {
   background: #f44336 !important; /* hover red if ON */
 }
+
+/* Debug Compass Styles */
+.debug-compass {
+  position: fixed;
+  top: 80px;
+  left: 20px;
+  width: 120px;
+  height: 120px;
+  background: rgba(0, 0, 0, 0.8);
+  border: 2px solid #00ff00;
+  border-radius: 50%;
+  z-index: 9999;
+  pointer-events: none;
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+}
+
+.compass-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+
+.compass-direction {
+  position: absolute;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  font-weight: bold;
+  color: #00ff00;
+  text-shadow: 0 0 3px rgba(0, 255, 0, 0.5);
+}
+
+.compass-direction.north {
+  top: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #ff4444;
+  text-shadow: 0 0 3px rgba(255, 68, 68, 0.5);
+}
+
+.compass-direction.south {
+  bottom: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.compass-direction.east {
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.compass-direction.west {
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.compass-needle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 2px;
+  height: 40px;
+  background: linear-gradient(to bottom, #ff4444, #00ff00);
+  transform-origin: bottom center;
+  transform: translate(-50%, -100%);
+  border-radius: 1px;
+  box-shadow: 0 0 3px rgba(255, 68, 68, 0.5);
+}
+
+.compass-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  background: #00ff00;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 3px rgba(0, 255, 0, 0.8);
+}

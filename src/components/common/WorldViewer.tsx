@@ -285,6 +285,27 @@ export class WorldViewer extends HTMLElement {
       console.log('Position display created and added to BOTTOM RIGHT');
     }
 
+    // Create compass display only in debug mode
+    let compassDisplay: HTMLElement | null = null;
+    let compassNeedle: HTMLElement | null = null;
+    if (isDebugMode) {
+      compassDisplay = document.createElement('div');
+      compassDisplay.className = 'debug-compass';
+      compassDisplay.innerHTML = `
+        <div class="compass-inner">
+          <div class="compass-direction north">N</div>
+          <div class="compass-direction south">S</div>
+          <div class="compass-direction east">E</div>
+          <div class="compass-direction west">W</div>
+          <div class="compass-needle"></div>
+          <div class="compass-center"></div>
+        </div>
+      `;
+      document.body.appendChild(compassDisplay);
+      compassNeedle = compassDisplay.querySelector('.compass-needle');
+      console.log('Debug compass created and added to TOP LEFT');
+    }
+
     // FPS-style movement controls
     let moveSpeed = 5.0; // Units per second for FPS movement (now variable)
     const sprintMultiplier = 2.0; // Sprint speed multiplier
@@ -407,6 +428,19 @@ export class WorldViewer extends HTMLElement {
         } catch (error) {
           console.error('Error updating position display:', error);
         }
+      }
+
+      // Update compass needle direction in debug mode
+      if (isDebugMode && compassNeedle) {
+        const rot = world.camera.three.rotation;
+        // Convert camera Y rotation to compass degrees (0° = North, clockwise)
+        // rot.y is in radians, need to convert to degrees and adjust for compass convention
+        const yawDegrees = (rot.y * 180 / Math.PI) % 360;
+        // Adjust so that 0° points north (negative Z in THREE.js), and rotate clockwise
+        const compassDegrees = (90 - yawDegrees + 360) % 360;
+        
+        // Apply rotation to needle (CSS transform)
+        compassNeedle.style.transform = `translate(-50%, -100%) rotate(${compassDegrees}deg)`;
       }
 
       if (keys.arrowup || keys.arrowdown || keys.arrowleft || keys.arrowright ||
