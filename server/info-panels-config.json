@@ -5,8 +5,8 @@
       "id": "hvac-group-001",
       "name": "HVAC Group 1",
       "position": {
-        "x": 1.0,
-        "y": -12.0,
+        "x": 1,
+        "y": -12,
         "z": 2.5
       },
       "realWorldPosition": {
@@ -36,7 +36,7 @@
       "name": "HVAC Group 2",
       "position": {
         "x": 2.5,
-        "y": -8.0,
+        "y": -8,
         "z": 2.5
       },
       "realWorldPosition": {
@@ -65,8 +65,8 @@
       "id": "hvac-group-003",
       "name": "HVAC Group 3",
       "position": {
-        "x": 4.0,
-        "y": -4.0,
+        "x": 4,
+        "y": -4,
         "z": 2.5
       },
       "realWorldPosition": {
@@ -93,10 +93,10 @@
     },
     {
       "id": "hvac-group-004",
-      "name": "HVAC Group 4",
+      "name": "HVAC Group 44",
       "position": {
         "x": 5.5,
-        "y": 0.0,
+        "y": 0,
         "z": 2.5
       },
       "realWorldPosition": {
@@ -119,14 +119,14 @@
       },
       "visible": true,
       "created": "2025-09-19T00:00:00.000Z",
-      "modified": "2025-09-19T00:00:00.000Z"
+      "modified": "2025-09-21T14:47:00.895Z"
     },
     {
       "id": "hvac-group-005",
       "name": "HVAC Group 5",
       "position": {
-        "x": 7.0,
-        "y": 4.0,
+        "x": 7,
+        "y": 4,
         "z": 2.5
       },
       "realWorldPosition": {
@@ -156,7 +156,7 @@
       "name": "HVAC Group 6",
       "position": {
         "x": 8.5,
-        "y": 8.0,
+        "y": 8,
         "z": 2.5
       },
       "realWorldPosition": {
@@ -184,7 +184,7 @@
   ],
   "editMode": false,
   "settings": {
-    "panelScale": 1.0,
+    "panelScale": 1,
     "opacity": 0.95,
     "showConnectorLines": true
   }

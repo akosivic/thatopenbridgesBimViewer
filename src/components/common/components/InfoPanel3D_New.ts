@@ -24,6 +24,7 @@ export class InfoPanel3D {
   
   // Content editing state
   private isContentEditMode: boolean = false;
+  private isInlineTitleEdit: boolean = false;
   
   // Distance-based visibility settings
   private readonly VISIBILITY_DISTANCE = 2; // Distance at which icons start to appear (very close)
@@ -225,19 +226,19 @@ export class InfoPanel3D {
   }
 
   /**
-   * Toggle edit mode for this individual panel - now supports content editing
+   * Toggle edit mode for this individual panel - now supports inline title editing
    */
   private toggleEditMode(): void {
     if (this.isEditMode) {
-      // If already in position edit mode, switch to content edit mode
+      // If already in position edit mode, switch to inline title edit mode
       this.isEditMode = false;
-      this.isContentEditMode = true;
+      this.isInlineTitleEdit = true;
       this.setEditMode(false);
       this.updatePanelContent();
-      console.log(`✏️ [InfoPanel3D] Panel ${this.id} content edit mode enabled`);
-    } else if (this.isContentEditMode) {
-      // If in content edit mode, disable both modes
-      this.isContentEditMode = false;
+      console.log(`✏️ [InfoPanel3D] Panel ${this.id} inline title edit mode enabled`);
+    } else if (this.isInlineTitleEdit) {
+      // If in inline title edit mode, disable edit mode
+      this.isInlineTitleEdit = false;
       this.updatePanelContent();
       console.log(`🛠️ [InfoPanel3D] Panel ${this.id} edit mode disabled`);
     } else {
@@ -383,6 +384,63 @@ export class InfoPanel3D {
   private addNewPoint(): void {
     console.log('🔗 [InfoPanel3D] Add new point - DPAL integration placeholder');
     // TODO: Implement DPAL device communication
+  }
+
+  /**
+   * Save title changes to the info-panels JSON file
+   */
+  private async saveTitleToFile(newTitle: string): Promise<void> {
+    try {
+      // Update the local data
+      this.data.name = newTitle;
+      
+      // Prepare the update payload
+      const updatePayload = {
+        id: this.id,
+        name: newTitle,
+        position: this.data.position,
+        content: this.data.content,
+        visible: this.data.visible,
+        modified: new Date()
+      };
+
+      // Send update to server
+      const response = await fetch('/ws/node/api/updateInfoPanel', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatePayload)
+      });
+
+      if (response.ok) {
+        console.log(`✅ [InfoPanel3D] Panel ${this.id} title updated to "${newTitle}"`);
+      } else {
+        console.error(`❌ [InfoPanel3D] Failed to update panel ${this.id} title`);
+        // Could revert the local change here if needed
+      }
+    } catch (error) {
+      console.error(`❌ [InfoPanel3D] Error updating panel ${this.id} title:`, error);
+    }
+  }
+
+  /**
+   * Handle inline title editing completion (save)
+   */
+  public async finishInlineTitleEdit(newTitle: string): Promise<void> {
+    if (newTitle.trim() && newTitle !== this.data.name) {
+      await this.saveTitleToFile(newTitle.trim());
+    }
+    this.isInlineTitleEdit = false;
+    this.updatePanelContent();
+  }
+
+  /**
+   * Cancel inline title editing
+   */
+  public cancelInlineTitleEdit(): void {
+    this.isInlineTitleEdit = false;
+    this.updatePanelContent();
   }
 
   /**
@@ -537,7 +595,6 @@ export class InfoPanel3D {
    */
   private updatePanelContent(): void {
     const { content } = this.data;
-    const zone = content.zone || content.id || 'Zone';
     const temperature = content.temperature;
     const humidity = content.humidity;
     
@@ -589,13 +646,26 @@ export class InfoPanel3D {
       
       <div class="panel-content${panelClass}">
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.2);">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="font-size: 18px; font-weight: 600; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);">${zone}</span>
-            ${this.isContentEditMode ? `
-              <button class="content-edit-button" onclick="window.infoPanels?.get('${this.id}')?.showEditModal?.()" title="${i18n.t('edit')}">
-                <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
-              </button>
-            ` : ''}
+          <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
+            ${this.isInlineTitleEdit ? `
+              <input 
+                type="text" 
+                value="${this.data.name}" 
+                id="panel-title-input-${this.id}"
+                style="font-size: 18px; font-weight: 600; background: rgba(255,255,255,0.9); color: #333; border: 2px solid #007acc; border-radius: 4px; padding: 4px 8px; flex: 1; outline: none;"
+                onkeydown="
+                  if (event.key === 'Enter') {
+                    window.infoPanels?.get('${this.id}')?.finishInlineTitleEdit?.(this.value);
+                  } else if (event.key === 'Escape') {
+                    window.infoPanels?.get('${this.id}')?.cancelInlineTitleEdit?.();
+                  }
+                "
+                onblur="window.infoPanels?.get('${this.id}')?.finishInlineTitleEdit?.(this.value)"
+                placeholder="${i18n.t('enterTitle')}"
+              />
+            ` : `
+              <span style="font-size: 18px; font-weight: 600; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);">${this.data.name}</span>
+            `}
           </div>
           <div style="display: flex; gap: 8px; align-items: center;">
             <span style="font-size: 16px; cursor: pointer; opacity: 0.7; transition: all 0.2s ease; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 4px;" 
@@ -644,6 +714,17 @@ export class InfoPanel3D {
         ` : ''}
       </div>
     `;
+    
+    // Auto-focus and select text when entering inline edit mode
+    if (this.isInlineTitleEdit) {
+      setTimeout(() => {
+        const input = document.getElementById(`panel-title-input-${this.id}`) as HTMLInputElement;
+        if (input) {
+          input.focus();
+          input.select();
+        }
+      }, 10);
+    }
   }
 
   /**
