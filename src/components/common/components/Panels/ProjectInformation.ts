@@ -234,6 +234,7 @@ export default async (components: OBC.Components, isDebug: boolean, highlighter:
           class="datapoint-button${isActive ? ' active' : ''}"
           @click=${() => updateDataPoint(key)}
           icon="solar:lamp-bold"
+          style="opacity: 1 !important;"
           label="${key + (isActive ? " (" + i18n.t('on') + ")" : " (" + i18n.t('off') + ")")}">
         </bim-button>
       `;
