@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { InfoPanelData } from "../types/InfoPanelTypes";
+import i18n from "../utils/i18n";
 
 export class InfoPanel3D {
   private static panelCount = 0;
@@ -20,6 +21,9 @@ export class InfoPanel3D {
   private isPanelVisible: boolean = false;
   private isEditMode: boolean = false;
   private isDragging: boolean = false;
+  
+  // Content editing state
+  private isContentEditMode: boolean = false;
   
   // Distance-based visibility settings
   private readonly VISIBILITY_DISTANCE = 2; // Distance at which icons start to appear (very close)
@@ -67,6 +71,12 @@ export class InfoPanel3D {
     // Add to scene
     this.scene.add(this.group);
     document.body.appendChild(this.htmlContainer);
+    
+    // Add to global reference for onclick handlers
+    if (!(window as any).infoPanels) {
+      (window as any).infoPanels = new Map();
+    }
+    (window as any).infoPanels.set(this.id, this);
     
     console.log('✅ [InfoPanel3D] Panel fully created:', this.id, 'HTML added to body');
   }
@@ -215,12 +225,164 @@ export class InfoPanel3D {
   }
 
   /**
-   * Toggle edit mode for this individual panel
+   * Toggle edit mode for this individual panel - now supports content editing
    */
   private toggleEditMode(): void {
-    this.isEditMode = !this.isEditMode;
-    this.setEditMode(this.isEditMode);
-    console.log(`🛠️ [InfoPanel3D] Panel ${this.id} edit mode: ${this.isEditMode}`);
+    if (this.isEditMode) {
+      // If already in position edit mode, switch to content edit mode
+      this.isEditMode = false;
+      this.isContentEditMode = true;
+      this.setEditMode(false);
+      this.updatePanelContent();
+      console.log(`✏️ [InfoPanel3D] Panel ${this.id} content edit mode enabled`);
+    } else if (this.isContentEditMode) {
+      // If in content edit mode, disable both modes
+      this.isContentEditMode = false;
+      this.updatePanelContent();
+      console.log(`🛠️ [InfoPanel3D] Panel ${this.id} edit mode disabled`);
+    } else {
+      // If not in any edit mode, enable position edit mode
+      this.isEditMode = true;
+      this.setEditMode(true);
+      console.log(`🛠️ [InfoPanel3D] Panel ${this.id} position edit mode enabled`);
+    }
+  }
+
+  /**
+   * Show edit modal for panel title
+   */
+  public showEditModal(): void {
+    const overlay = document.createElement('div');
+    overlay.className = 'edit-modal-overlay';
+    
+    const modal = document.createElement('div');
+    modal.className = 'edit-modal';
+    
+    modal.innerHTML = `
+      <h3>${i18n.t('edit')} ${this.data.name}</h3>
+      <input type="text" class="edit-modal-input" value="${this.data.name}" placeholder="${i18n.t('enterTitle')}">
+      <div class="edit-modal-buttons">
+        <button class="edit-modal-button secondary" data-action="cancel">${i18n.t('cancel')}</button>
+        <button class="edit-modal-button primary" data-action="save">${i18n.t('save')}</button>
+      </div>
+    `;
+    
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+    
+    const input = modal.querySelector('.edit-modal-input') as HTMLInputElement;
+    input.focus();
+    input.select();
+    
+    const handleAction = (action: string) => {
+      if (action === 'save') {
+        const newTitle = input.value.trim();
+        if (newTitle && newTitle !== this.data.name) {
+          this.data.name = newTitle;
+          this.updatePanelContent();
+        }
+      }
+      document.body.removeChild(overlay);
+    };
+    
+    modal.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      const action = target.getAttribute('data-action');
+      if (action) {
+        handleAction(action);
+      }
+    });
+    
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        handleAction('save');
+      } else if (e.key === 'Escape') {
+        handleAction('cancel');
+      }
+    });
+    
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) {
+        handleAction('cancel');
+      }
+    });
+  }
+
+  /**
+   * Show point list modal
+   */
+  public showPointListModal(): void {
+    const overlay = document.createElement('div');
+    overlay.className = 'point-list-modal-overlay';
+    
+    const modal = document.createElement('div');
+    modal.className = 'point-list-modal';
+    
+    modal.innerHTML = `
+      <div class="point-list-header">
+        <h3 class="point-list-title">${i18n.t('pointList')}</h3>
+        <button class="point-list-close">&times;</button>
+      </div>
+      <div class="point-list-content">
+        <div class="point-list-loading">${i18n.t('loadingPoints')}</div>
+      </div>
+      <button class="point-list-add-button">${i18n.t('newItem')}</button>
+    `;
+    
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+    
+    const closeModal = () => {
+      document.body.removeChild(overlay);
+    };
+    
+    modal.querySelector('.point-list-close')?.addEventListener('click', closeModal);
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) {
+        closeModal();
+      }
+    });
+    
+    // Simulate loading points from DPAL
+    setTimeout(() => {
+      this.loadPointsFromDPAL(modal.querySelector('.point-list-content') as HTMLElement);
+    }, 1500);
+    
+    modal.querySelector('.point-list-add-button')?.addEventListener('click', () => {
+      this.addNewPoint();
+    });
+  }
+
+  /**
+   * Simulate loading points from DPAL device
+   */
+  private loadPointsFromDPAL(container: HTMLElement): void {
+    // Placeholder for DPAL integration
+    const mockPoints = [
+      { name: 'Temperature Sensor 1', x: 10.5, y: 2.3, z: 5.8 },
+      { name: 'Humidity Sensor 1', x: 12.1, y: 2.3, z: 6.2 },
+      { name: 'Pressure Sensor 1', x: 11.0, y: 2.5, z: 5.0 }
+    ];
+    
+    container.innerHTML = mockPoints.map(point => `
+      <div class="point-list-item">
+        <div class="point-list-item-info">
+          <div class="point-list-item-name">${point.name}</div>
+          <div class="point-list-item-coords">x: ${point.x}, y: ${point.y}, z: ${point.z}</div>
+        </div>
+        <div class="point-list-actions">
+          <button class="content-edit-button" onclick="console.log('Add point: ${point.name}')">${i18n.t('addPoint')}</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  /**
+   * Add a new point (placeholder for DPAL integration)
+   */
+  private addNewPoint(): void {
+    console.log('🔗 [InfoPanel3D] Add new point - DPAL integration placeholder');
+    // TODO: Implement DPAL device communication
   }
 
   /**
@@ -379,6 +541,9 @@ export class InfoPanel3D {
     const temperature = content.temperature;
     const humidity = content.humidity;
     
+    // Add content editing class if in content edit mode
+    const panelClass = this.isContentEditMode ? ' panel-content-editing' : '';
+    
     this.panelElement.innerHTML = `
       <style>
         @keyframes panelFadeIn {
@@ -422,47 +587,62 @@ export class InfoPanel3D {
         }
       </style>
       
-      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.2);">
-        <span style="font-size: 18px; font-weight: 600; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);">${zone}</span>
-        <div style="display: flex; gap: 8px; align-items: center;">
-          <span style="font-size: 16px; cursor: pointer; opacity: 0.7; transition: all 0.2s ease; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 4px;" 
-                onmouseover="this.style.opacity='1'; this.style.background='rgba(255,255,255,0.1)'" 
-                onmouseout="this.style.opacity='0.7'; this.style.background='transparent'"
-                onclick="this.dispatchEvent(new CustomEvent('panel-edit', { bubbles: true, detail: { panelId: '${this.id}' } }))"
-                title="Edit panel position">⚙️</span>
-          <span style="font-size: 18px; cursor: pointer; line-height: 1; opacity: 0.7; transition: all 0.2s ease; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 4px;" 
-                onmouseover="this.style.opacity='1'; this.style.background='rgba(255,255,255,0.1)'" 
-                onmouseout="this.style.opacity='0.7'; this.style.background='transparent'"
-                onclick="this.dispatchEvent(new CustomEvent('panel-close', { bubbles: true, detail: { panelId: '${this.id}' } }))"
-                title="Close panel">×</span>
+      <div class="panel-content${panelClass}">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.2);">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 18px; font-weight: 600; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);">${zone}</span>
+            ${this.isContentEditMode ? `
+              <button class="content-edit-button" onclick="window.infoPanels?.get('${this.id}')?.showEditModal?.()" title="${i18n.t('edit')}">
+                <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+              </button>
+            ` : ''}
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <span style="font-size: 16px; cursor: pointer; opacity: 0.7; transition: all 0.2s ease; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 4px;" 
+                  onmouseover="this.style.opacity='1'; this.style.background='rgba(255,255,255,0.1)'" 
+                  onmouseout="this.style.opacity='0.7'; this.style.background='transparent'"
+                  onclick="this.dispatchEvent(new CustomEvent('panel-edit', { bubbles: true, detail: { panelId: '${this.id}' } }))"
+                  title="Edit panel">⚙️</span>
+            <span style="font-size: 18px; cursor: pointer; line-height: 1; opacity: 0.7; transition: all 0.2s ease; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 4px;" 
+                  onmouseover="this.style.opacity='1'; this.style.background='rgba(255,255,255,0.1)'" 
+                  onmouseout="this.style.opacity='0.7'; this.style.background='transparent'"
+                  onclick="this.dispatchEvent(new CustomEvent('panel-close', { bubbles: true, detail: { panelId: '${this.id}' } }))"
+                  title="Close panel">×</span>
+          </div>
         </div>
+        
+        ${temperature !== undefined ? `
+          <div class="info-metric" style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 16px;">🌡️</span>
+              <strong>Temperature</strong>
+            </div>
+            <span style="font-size: 16px; font-weight: 600; color: #fff;">${temperature}°C</span>
+          </div>
+        ` : ''}
+        
+        ${humidity !== undefined ? `
+          <div class="info-metric" style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 16px;">💧</span>
+              <strong>Humidity</strong>
+            </div>
+            <span style="font-size: 16px; font-weight: 600; color: #fff;">${humidity}%</span>
+          </div>
+        ` : ''}
+        
+        ${content.coordinates ? `
+          <div style="margin-top: 12px; padding: 8px; background: rgba(0, 0, 0, 0.2); border-radius: 6px; font-size: 11px; color: rgba(255,255,255,0.8); font-family: 'Consolas', 'Monaco', monospace;">
+            📍 ${content.coordinates}
+          </div>
+        ` : ''}
+        
+        ${this.isContentEditMode ? `
+          <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.2);">
+            <button class="point-list-add-button" onclick="window.infoPanels?.get('${this.id}')?.showPointListModal?.()" style="background: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px;">${i18n.t('newItem')}</button>
+          </div>
+        ` : ''}
       </div>
-      
-      ${temperature !== undefined ? `
-        <div class="info-metric" style="display: flex; justify-content: space-between; align-items: center;">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="font-size: 16px;">🌡️</span>
-            <strong>Temperature</strong>
-          </div>
-          <span style="font-size: 16px; font-weight: 600; color: #fff;">${temperature}°C</span>
-        </div>
-      ` : ''}
-      
-      ${humidity !== undefined ? `
-        <div class="info-metric" style="display: flex; justify-content: space-between; align-items: center;">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="font-size: 16px;">💧</span>
-            <strong>Humidity</strong>
-          </div>
-          <span style="font-size: 16px; font-weight: 600; color: #fff;">${humidity}%</span>
-        </div>
-      ` : ''}
-      
-      ${content.coordinates ? `
-        <div style="margin-top: 12px; padding: 8px; background: rgba(0, 0, 0, 0.2); border-radius: 6px; font-size: 11px; color: rgba(255,255,255,0.8); font-family: 'Consolas', 'Monaco', monospace;">
-          📍 ${content.coordinates}
-        </div>
-      ` : ''}
     `;
   }
 
@@ -636,6 +816,11 @@ export class InfoPanel3D {
     // Remove HTML elements
     if (this.htmlContainer && this.htmlContainer.parentNode) {
       this.htmlContainer.parentNode.removeChild(this.htmlContainer);
+    }
+    
+    // Clean up global reference
+    if ((window as any).infoPanels) {
+      (window as any).infoPanels.delete(this.id);
     }
   }
 }

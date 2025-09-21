@@ -48,7 +48,7 @@ export default async (components: OBC.Components, isDebug: boolean, highlighter:
   const dataPointState: DataPointState = {
     keys: [],
     buttonStates: {},
-    buttons: [],
+    buttons: []
   };
 
   // Fetch all datapoint keys (memoized, refreshable)
@@ -221,8 +221,6 @@ export default async (components: OBC.Components, isDebug: boolean, highlighter:
     }
   };
 
-
-
   // Render datapoint buttons
   const renderDataPointButtons = async () => {
     await getAllDataPointKeys();
@@ -234,7 +232,6 @@ export default async (components: OBC.Components, isDebug: boolean, highlighter:
           class="datapoint-button${isActive ? ' active' : ''}"
           @click=${() => updateDataPoint(key)}
           icon="solar:lamp-bold"
-          style="opacity: 1 !important;"
           label="${key + (isActive ? " (" + i18n.t('on') + ")" : " (" + i18n.t('off') + ")")}">
         </bim-button>
       `;
