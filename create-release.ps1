@@ -20,10 +20,11 @@ try {
     }
     New-Item -ItemType Directory -Path $tempPath -Force | Out-Null
     
-    # Step 1: Copy server folder to temp directory
+    # Step 1: Copy server folder to temp directory with zip filename
     Write-Host "Copying server folder..." -ForegroundColor Yellow
     $serverSource = Join-Path $PSScriptRoot "server"
-    $serverDest = Join-Path $tempPath "server"
+    $releaseBaseName = "release-$timestamp"
+    $serverDest = Join-Path $tempPath $releaseBaseName
     
     if (-not (Test-Path $serverSource)) {
         throw "Server folder not found at: $serverSource"

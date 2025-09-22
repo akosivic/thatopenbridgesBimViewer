@@ -285,27 +285,6 @@ export class WorldViewer extends HTMLElement {
       console.log('Position display created and added to BOTTOM RIGHT');
     }
 
-    // Create compass display only in debug mode
-    let compassDisplay: HTMLElement | null = null;
-    let compassNeedle: HTMLElement | null = null;
-    if (isDebugMode) {
-      compassDisplay = document.createElement('div');
-      compassDisplay.className = 'debug-compass';
-      compassDisplay.innerHTML = `
-        <div class="compass-inner">
-          <div class="compass-direction north">N</div>
-          <div class="compass-direction south">S</div>
-          <div class="compass-direction east">E</div>
-          <div class="compass-direction west">W</div>
-          <div class="compass-needle"></div>
-          <div class="compass-center"></div>
-        </div>
-      `;
-      document.body.appendChild(compassDisplay);
-      compassNeedle = compassDisplay.querySelector('.compass-needle');
-      console.log('Debug compass created and added to TOP LEFT');
-    }
-
     // FPS-style movement controls
     let moveSpeed = 5.0; // Units per second for FPS movement (now variable)
     const sprintMultiplier = 2.0; // Sprint speed multiplier
@@ -363,11 +342,6 @@ export class WorldViewer extends HTMLElement {
       arrowdown: false,
       arrowleft: false,
       arrowright: false,
-      // WASD keys
-      w: false,
-      a: false,
-      s: false,
-      d: false,
       // Vertical movement
       q: false, // Up
       e: false, // Down
@@ -416,7 +390,7 @@ export class WorldViewer extends HTMLElement {
             </div>
             <div style="margin-bottom: 4px; font-size: 10px;"><strong>Speed:</strong> ${keys.shift ? 'FAST' : 'NORM'}</div>
             <div style="font-size: 9px; color: #ccc; border-top: 1px solid #333; padding-top: 4px;">
-              WASD: Move | Shift: Sprint<br>
+              Arrows: Move | Shift: Sprint<br>
               <span style="color: #00ff00;">Hold Mouse: Look</span>
             </div>
           `;
@@ -430,39 +404,26 @@ export class WorldViewer extends HTMLElement {
         }
       }
 
-      // Update compass needle direction in debug mode
-      if (isDebugMode && compassNeedle) {
-        const rot = world.camera.three.rotation;
-        // Convert camera Y rotation to compass degrees (0° = North, clockwise)
-        // rot.y is in radians, need to convert to degrees and adjust for compass convention
-        const yawDegrees = (rot.y * 180 / Math.PI) % 360;
-        // Adjust so that 0° points north (negative Z in THREE.js), and rotate clockwise
-        const compassDegrees = (90 - yawDegrees + 360) % 360;
-        
-        // Apply rotation to needle (CSS transform)
-        compassNeedle.style.transform = `translate(-50%, -100%) rotate(${compassDegrees}deg)`;
-      }
-
       if (keys.arrowup || keys.arrowdown || keys.arrowleft || keys.arrowright ||
-        keys.w || keys.a || keys.s || keys.d || keys.q || keys.e) {
+        keys.q || keys.e) {
 
         // Get camera's current orientation
         world.camera.three.getWorldDirection(direction);
         sideways.crossVectors(direction, upVector).normalize();
 
-        // Forward/backward movement (W/S or Arrow Up/Down)
-        if (keys.arrowup || keys.w) {
+        // Forward/backward movement (Arrow Up/Down only)
+        if (keys.arrowup) {
           world.camera.three.position.addScaledVector(direction, moveDistance);
         }
-        if (keys.arrowdown || keys.s) {
+        if (keys.arrowdown) {
           world.camera.three.position.addScaledVector(direction, -moveDistance);
         }
 
-        // Left/right strafing (A/D or Arrow Left/Right)
-        if (keys.arrowleft || keys.a) {
+        // Left/right strafing (Arrow Left/Right only)
+        if (keys.arrowleft) {
           world.camera.three.position.addScaledVector(sideways, -moveDistance);
         }
-        if (keys.arrowright || keys.d) {
+        if (keys.arrowright) {
           world.camera.three.position.addScaledVector(sideways, moveDistance);
         }
 
@@ -474,7 +435,7 @@ export class WorldViewer extends HTMLElement {
           world.camera.three.position.y -= moveDistance;
         }
 
-        // Only force Y position for horizontal movement (WASD/Arrow keys, not Q/E)
+        // Only force Y position for horizontal movement (Arrow keys, not Q/E)
         if (!keys.q && !keys.e) {
           world.camera.three.position.y = 1.6;
         }
