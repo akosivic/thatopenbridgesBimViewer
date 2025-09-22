@@ -226,26 +226,21 @@ export class InfoPanel3D {
   }
 
   /**
-   * Toggle edit mode for this individual panel - now supports inline title editing
+   * Toggle edit mode for this individual panel - directly enables inline title editing
    */
   private toggleEditMode(): void {
-    if (this.isEditMode) {
-      // If already in position edit mode, switch to inline title edit mode
-      this.isEditMode = false;
-      this.isInlineTitleEdit = true;
-      this.setEditMode(false);
-      this.updatePanelContent();
-      console.log(`✏️ [InfoPanel3D] Panel ${this.id} inline title edit mode enabled`);
-    } else if (this.isInlineTitleEdit) {
+    if (this.isInlineTitleEdit) {
       // If in inline title edit mode, disable edit mode
       this.isInlineTitleEdit = false;
       this.updatePanelContent();
       console.log(`🛠️ [InfoPanel3D] Panel ${this.id} edit mode disabled`);
     } else {
-      // If not in any edit mode, enable position edit mode
-      this.isEditMode = true;
-      this.setEditMode(true);
-      console.log(`🛠️ [InfoPanel3D] Panel ${this.id} position edit mode enabled`);
+      // If not in inline edit mode, enable inline title edit mode directly
+      this.isEditMode = false; // Ensure position edit mode is off
+      this.setEditMode(false);
+      this.isInlineTitleEdit = true;
+      this.updatePanelContent();
+      console.log(`✏️ [InfoPanel3D] Panel ${this.id} inline title edit mode enabled`);
     }
   }
 
