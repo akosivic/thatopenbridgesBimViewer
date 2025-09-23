@@ -17,6 +17,7 @@ export class InfoPanel3D {
   private dragOffset: THREE.Vector3;
   private scene: THREE.Scene;
   private onPositionChange?: (panel: InfoPanel3D) => void;
+  private panelMode: 'display' | 'config' | 'pointList' = 'display';
 
   constructor(
     data: InfoPanelData,
@@ -93,6 +94,27 @@ export class InfoPanel3D {
   }
 
   private createHTMLElement() {
+    // Add CSS for panel styles
+    if (!document.getElementById('info-panel-styles')) {
+      const style = document.createElement('style');
+      style.id = 'info-panel-styles';
+      style.textContent = `
+        .info-panel-3d-container {
+          font-family: Arial, sans-serif;
+        }
+        .info-panel-content input:focus {
+          outline: 2px solid rgba(255,255,255,0.5);
+        }
+        .point-list-item:hover {
+          background: rgba(255,255,255,0.1) !important;
+        }
+        .point-list-item:active {
+          background: rgba(255,255,255,0.2) !important;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
     // Create container for both icon and panel
     this.htmlElement = document.createElement('div');
     this.htmlElement.className = 'info-panel-3d-container';
@@ -108,6 +130,12 @@ export class InfoPanel3D {
     
     this.createIconAndPanel();
     document.body.appendChild(this.htmlElement);
+
+    // Add to global reference for onclick handlers
+    if (!(window as any).infoPanels) {
+      (window as any).infoPanels = new Map();
+    }
+    (window as any).infoPanels.set(this.id, this);
   }
 
   private createIconAndPanel() {
@@ -178,28 +206,179 @@ export class InfoPanel3D {
     const panelElement = (this.htmlElement as any).panelElement;
     
     if (panelElement) {
-      panelElement.innerHTML = `
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-          <span style="font-size: 16px; font-weight: bold;">${zone || 'Zone'}</span>
-          <div style="display: flex; gap: 8px; align-items: center;">
-            ${this.isEditable ? '<span style="font-size: 14px; cursor: move;">⚙️</span>' : ''}
-            <span style="font-size: 18px; cursor: pointer; line-height: 1;" onclick="this.parentElement.parentElement.parentElement.style.display='none'">×</span>
-          </div>
-        </div>
-        ${temperature !== undefined ? `
-          <div style="margin-bottom: 8px; display: flex; justify-content: space-between;">
-            <strong>Temperature</strong> 
-            <span>${temperature}°C</span>
-          </div>
-        ` : ''}
-        ${humidity !== undefined ? `
-          <div style="display: flex; justify-content: space-between;">
-            <strong>Humidity</strong> 
-            <span>${humidity}%</span>
-          </div>
-        ` : ''}
-      `;
+      const zoneName = zone || 'Zone';
+      switch (this.panelMode) {
+        case 'display':
+          this.renderDisplayMode(panelElement, zoneName, temperature, humidity);
+          break;
+        case 'config':
+          this.renderConfigMode(panelElement, zoneName);
+          break;
+        case 'pointList':
+          this.renderPointListMode(panelElement);
+          break;
+      }
     }
+  }
+
+  private renderDisplayMode(panelElement: HTMLElement, zone: string, temperature?: number, humidity?: number) {
+    panelElement.innerHTML = `
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+        <span style="font-size: 16px; font-weight: bold;">${zone || 'Zone'}</span>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <span style="font-size: 16px; cursor: pointer; color: #ccc;" onclick="window.infoPanels?.get('${this.id}')?.switchToConfigMode()" title="Switch to configuration mode">⚙️</span>
+          <span style="font-size: 18px; cursor: pointer; line-height: 1; color: #ccc;" onclick="this.parentElement.parentElement.parentElement.style.display='none'" title="Close">×</span>
+        </div>
+      </div>
+      ${temperature !== undefined ? `
+        <div style="margin-bottom: 8px; display: flex; justify-content: space-between;">
+          <strong>Temperature</strong> 
+          <span>${temperature}°C</span>
+        </div>
+      ` : ''}
+      ${humidity !== undefined ? `
+        <div style="display: flex; justify-content: space-between;">
+          <strong>Humidity</strong> 
+          <span>${humidity}%</span>
+        </div>
+      ` : ''}
+    `;
+  }
+
+  private renderConfigMode(panelElement: HTMLElement, zone: string) {
+    panelElement.innerHTML = `
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+        <input type="text" value="${zone || 'Zone'}" 
+               style="font-size: 16px; font-weight: bold; background: transparent; border: 1px solid #ccc; color: white; padding: 4px 8px; border-radius: 4px; flex: 1; margin-right: 8px;"
+               onchange="window.infoPanels?.get('${this.id}')?.updateZoneName(this.value)"
+               placeholder="Enter zone name">
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <span style="font-size: 16px; cursor: pointer; color: #ccc;" onclick="window.infoPanels?.get('${this.id}')?.switchToDisplayMode()" title="Switch back to display mode">⚙️</span>
+          <span style="font-size: 18px; cursor: pointer; line-height: 1; color: #ccc;" onclick="this.parentElement.parentElement.parentElement.style.display='none'" title="Close">×</span>
+        </div>
+      </div>
+      <button style="background: rgba(255,255,255,0.2); border: 1px solid #ccc; color: white; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 14px; width: 100%;"
+              onclick="window.infoPanels?.get('${this.id}')?.showPointList()" 
+              title="Click to select points from DPAL">
+        + New item
+      </button>
+    `;
+  }
+
+  private renderPointListMode(panelElement: HTMLElement) {
+    panelElement.innerHTML = `
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+        <span style="font-size: 16px; font-weight: bold;">Point list</span>
+        <span style="font-size: 18px; cursor: pointer; line-height: 1; color: #ccc;" onclick="window.infoPanels?.get('${this.id}')?.switchToConfigMode()" title="Back to configuration">×</span>
+      </div>
+      <div id="point-list-${this.id}" style="max-height: 200px; overflow-y: auto;">
+        <div style="color: #ccc; text-align: center; padding: 20px;">Loading points from DPAL...</div>
+      </div>
+    `;
+    
+    // Simulate loading points from DPAL
+    setTimeout(() => {
+      this.loadPointsFromDPAL();
+    }, 1000);
+  }
+
+  public switchToConfigMode() {
+    this.panelMode = 'config';
+    this.updateHTMLContent();
+  }
+
+  public switchToDisplayMode() {
+    this.panelMode = 'display';
+    this.updateHTMLContent();
+  }
+
+  public showPointList() {
+    this.panelMode = 'pointList';
+    this.updateHTMLContent();
+  }
+
+  public updateZoneName(newName: string) {
+    this.data.content.zone = newName;
+    this.data.modified = new Date();
+  }
+
+  private loadPointsFromDPAL() {
+    // Placeholder for DPAL integration - using dpal.js when available
+    const pointListContainer = document.getElementById(`point-list-${this.id}`);
+    if (!pointListContainer) return;
+
+    // Check if dpal.js is available
+    if (typeof (window as any).DPAL !== 'undefined') {
+      // Use actual DPAL integration
+      try {
+        (window as any).DPAL.getPoints()
+          .then((points: any[]) => {
+            this.renderPointList(pointListContainer, points);
+          })
+          .catch((error: any) => {
+            console.error('Error loading points from DPAL:', error);
+            this.renderMockPointList(pointListContainer);
+          });
+      } catch (error) {
+        console.error('DPAL integration error:', error);
+        this.renderMockPointList(pointListContainer);
+      }
+    } else {
+      // Use mock data as placeholder
+      console.log('🔗 [InfoPanel3D] DPAL not available, using mock data');
+      this.renderMockPointList(pointListContainer);
+    }
+  }
+
+  private renderPointList(container: HTMLElement, points: any[]) {
+    container.innerHTML = points.map(point => `
+      <div style="padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.2); cursor: pointer; transition: background 0.2s;"
+           onmouseover="this.style.background='rgba(255,255,255,0.1)'"
+           onmouseout="this.style.background='transparent'"
+           onclick="window.infoPanels?.get('${this.id}')?.selectPoint('${point.name}')">
+        ${point.name || 'Point name on LINX'}
+      </div>
+    `).join('');
+  }
+
+  private renderMockPointList(container: HTMLElement) {
+    const mockPoints = [
+      { name: 'Point name on LINX', id: 'point_001' },
+      { name: 'Point name on LINX', id: 'point_002' },
+      { name: 'Point name on LINX', id: 'point_003' },
+      { name: 'Point name on LINX', id: 'point_004' },
+      { name: 'Point name on LINX', id: 'point_005' }
+    ];
+    
+    this.renderPointList(container, mockPoints);
+  }
+
+  public selectPoint(pointName: string) {
+    console.log(`🔗 [InfoPanel3D] Selected point: ${pointName} for zone: ${this.data.content.zone}`);
+    // TODO: Implement point selection logic with DPAL integration
+    
+    // For now, just switch back to config mode
+    this.switchToConfigMode();
+    
+    // Show a temporary notification
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #0078B4;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 6px;
+      z-index: 10000;
+      font-family: Arial, sans-serif;
+    `;
+    notification.textContent = `Point "${pointName}" selected for ${this.data.content.zone}`;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+      document.body.removeChild(notification);
+    }, 3000);
   }
 
   public updatePosition() {
@@ -448,6 +627,11 @@ export class InfoPanel3D {
     // Remove HTML element
     if (this.htmlElement && this.htmlElement.parentNode) {
       this.htmlElement.parentNode.removeChild(this.htmlElement);
+    }
+
+    // Remove from global reference
+    if ((window as any).infoPanels) {
+      (window as any).infoPanels.delete(this.id);
     }
   }
 }
