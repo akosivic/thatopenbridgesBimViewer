@@ -287,7 +287,6 @@ export class WorldViewer extends HTMLElement {
 
     // FPS-style movement controls
     let moveSpeed = 5.0; // Units per second for FPS movement (now variable)
-    const sprintMultiplier = 2.0; // Sprint speed multiplier
 
     // Set up speed control integration
     setBaseSpeed(moveSpeed);
@@ -336,51 +335,28 @@ export class WorldViewer extends HTMLElement {
 
       console.log(`Moved ${direction}, new position:`, world.camera.three.position);
     });
-    const keys: Record<string, boolean> = {
-      // Arrow keys
-      arrowup: false,
-      arrowdown: false,
-      arrowleft: false,
-      arrowright: false,
-      // Vertical movement
-      q: false, // Up
-      e: false, // Down
-      // Speed modifier
-      shift: false, // Sprint
-    };
 
-    // Movement vectors for FPS navigation
-    const direction = new THREE.Vector3();
-    const sideways = new THREE.Vector3();
-    const upVector = new THREE.Vector3(0, 1, 0);
-
-    // FPS movement update function
-    const updateFPSMovement = () => {
-      if (!fpControls) {
-        requestAnimationFrame(updateFPSMovement);
-        return;
-      }
-
-      const currentSpeed = keys.shift ? moveSpeed * sprintMultiplier : moveSpeed;
-      const deltaTime = 0.016; // Approximate 60 FPS
-      const moveDistance = currentSpeed * deltaTime;
-
-      // Always update position display in debug mode
-      if (isDebugMode && positionDisplay) {
+    // Create enhanced position display update function for debug mode
+    const updatePositionDisplay = async () => {
+      if (isDebugMode && positionDisplay && fpControls) {
         const pos = world.camera.three.position;
         const rot = world.camera.three.rotation;
         const isLocked = fpControls.isLocked;
 
         try {
+          const { getCurrentProjection } = await import('./components/Toolbars/Sections/ProjectionControls');
+          const projection = getCurrentProjection();
+          
           positionDisplay.innerHTML = `
             <div style="font-weight: bold; color: #00ff00; margin-bottom: 4px; font-size: 12px;">🎮 DEBUG</div>
             <div style="font-weight: bold; color: ${isLocked ? '#00ff00' : '#ff8800'}; font-size: 11px; margin-bottom: 4px;">
               ${isLocked ? '🔒 FPS ON' : '🔓 HOLD MOUSE'}
             </div>
+            <div style="margin-bottom: 2px;"><strong>Mode:</strong> <span style="color: #ffdd00;">${projection}</span></div>
             <div style="margin-bottom: 2px;"><strong>Pos:</strong></div>
             <div style="margin-left: 8px; margin-bottom: 4px; font-size: 10px;">
               X: ${pos.x.toFixed(2)}<br>
-              Y: ${pos.y.toFixed(2)} <span style="color: #ff0000;">(LOCKED)</span><br>
+              Y: ${pos.y.toFixed(2)}<br>
               Z: ${pos.z.toFixed(2)}
             </div>
             <div style="margin-bottom: 2px;"><strong>Rot:</strong></div>
@@ -388,10 +364,9 @@ export class WorldViewer extends HTMLElement {
               H: ${(rot.y * 180 / Math.PI).toFixed(1)}°<br>
               V: ${(90 - rot.x * 180 / Math.PI).toFixed(1)}°
             </div>
-            <div style="margin-bottom: 4px; font-size: 10px;"><strong>Speed:</strong> ${keys.shift ? 'FAST' : 'NORM'}</div>
             <div style="font-size: 9px; color: #ccc; border-top: 1px solid #333; padding-top: 4px;">
-              Arrows: Move | Shift: Sprint<br>
-              <span style="color: #00ff00;">Hold Mouse: Look</span>
+              <span style="color: #00ff00;">Enhanced Controls Active</span><br>
+              Projection-aware bindings
             </div>
           `;
 
@@ -403,89 +378,22 @@ export class WorldViewer extends HTMLElement {
           console.error('Error updating position display:', error);
         }
       }
-
-      if (keys.arrowup || keys.arrowdown || keys.arrowleft || keys.arrowright ||
-        keys.q || keys.e) {
-
-        // Get camera's current orientation
-        world.camera.three.getWorldDirection(direction);
-        sideways.crossVectors(direction, upVector).normalize();
-
-        // Forward/backward movement (Arrow Up/Down only)
-        if (keys.arrowup) {
-          world.camera.three.position.addScaledVector(direction, moveDistance);
-        }
-        if (keys.arrowdown) {
-          world.camera.three.position.addScaledVector(direction, -moveDistance);
-        }
-
-        // Left/right strafing (Arrow Left/Right only)
-        if (keys.arrowleft) {
-          world.camera.three.position.addScaledVector(sideways, -moveDistance);
-        }
-        if (keys.arrowright) {
-          world.camera.three.position.addScaledVector(sideways, moveDistance);
-        }
-
-        // Vertical movement (Q/E keys for up/down)
-        if (keys.q) {
-          world.camera.three.position.y += moveDistance;
-        }
-        if (keys.e) {
-          world.camera.three.position.y -= moveDistance;
-        }
-
-        // Only force Y position for horizontal movement (Arrow keys, not Q/E)
-        if (!keys.q && !keys.e) {
-          world.camera.three.position.y = 1.6;
-        }
-
-        // Clamp Y position to prevent going underground
-        world.camera.three.position.y = Math.max(0.1, world.camera.three.position.y);
-      }
-
-      // SAFETY: Enforce Y position constraints but allow explicit vertical movement
-      if (!keys.q && !keys.e) {
-        world.camera.three.position.y = 1.6; // Force eye level only when not using Q/E
-      }
-      world.camera.three.position.y = Math.max(0.1, world.camera.three.position.y); // Always prevent underground
-
-      requestAnimationFrame(updateFPSMovement);
+      requestAnimationFrame(updatePositionDisplay);
     };
-    // Start the FPS movement update loop
-    updateFPSMovement();
 
-    // Ensure position display is visible after a short delay (debug mode)
-    if (isDebugMode && positionDisplay) {
-      setTimeout(() => {
-        const displayElement = document.getElementById('fps-position-display');
-        if (displayElement) {
-          displayElement.style.display = 'block';
-          displayElement.style.visibility = 'visible';
-          console.log('Position display forced visible in BOTTOM RIGHT after delay');
-        } else {
-          console.error('Position display element not found in DOM after delay');
-        }
-      }, 1000);
-    } else if (isDebugMode) {
-      console.log('Debug mode is on but positionDisplay is null');
+    // Start position display update loop
+    if (isDebugMode) {
+      updatePositionDisplay();
     }
 
-    window.addEventListener('keydown', (e) => {
-      const key = e.key.toLowerCase();
-      if (key in keys) {
-        keys[key] = true;
-        e.preventDefault(); // Prevent default browser behavior for these keys
-      }
-    });
-
-    window.addEventListener('keyup', (e) => {
-      const key = e.key.toLowerCase();
-      if (key in keys) {
-        keys[key] = false;
-        e.preventDefault(); // Prevent default browser behavior for these keys
-      }
-    });
+    // Import enhanced keyboard controls
+    const { initializeKeyboardControls, setKeyboardControlsContext } = await import('./components/Toolbars/Sections/EnhancedKeyboardControls');
+    
+    // Initialize enhanced keyboard controls with projection-aware bindings
+    setKeyboardControlsContext(fpControls, world, moveSpeed);
+    initializeKeyboardControls();
+    
+    console.log('Enhanced keyboard controls initialized with projection-specific bindings');
 
     // Enable scroll wheel movement: scroll up = forward, scroll down = backward
     viewport.addEventListener('wheel', (event: WheelEvent) => {

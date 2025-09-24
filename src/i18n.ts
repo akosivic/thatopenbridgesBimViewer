@@ -49,6 +49,15 @@ const enTranslations = {
   doubleSpeed: 'Double Speed (x2)',
   tripleSpeed: 'Triple Speed (x3)',
   currentSpeed: 'Current: x{speed}',
+  // Projection controls
+  projection: 'Projection',
+  perspective: 'Perspective',
+  orthographic: 'Orthographic',
+  projectionMode: 'Projection Mode',
+  perspectiveMode: 'Perspective Mode',
+  orthographicMode: 'Orthographic Mode',
+  switchToPerspective: 'Switch to Perspective',
+  switchToOrthographic: 'Switch to Orthographic',
   // Measurement toolbar
   measurements: 'Measurements',
   enabled: 'Enabled',
@@ -157,6 +166,15 @@ const jaTranslations = {
   doubleSpeed: '倍速 (x2)',
   tripleSpeed: '3倍速 (x3)',
   currentSpeed: '現在: x{speed}',
+  // Projection controls
+  projection: '投影',
+  perspective: '透視投影',
+  orthographic: '正投影',
+  projectionMode: '投影モード',
+  perspectiveMode: '透視投影モード',
+  orthographicMode: '正投影モード',
+  switchToPerspective: '透視投影に切替',
+  switchToOrthographic: '正投影に切替',
   // Measurement toolbar
   measurements: '測定',
   enabled: '有効',
@@ -227,8 +245,8 @@ i18n
         translation: jaTranslations
       }
     },
-    lng: 'ja',
-    fallbackLng: 'ja',
+    lng: 'en',
+    fallbackLng: 'en',
     interpolation: {
       escapeValue: false
     }

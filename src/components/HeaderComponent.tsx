@@ -11,7 +11,7 @@ const HeaderComponent = () => {
   const { t, i18n } = useTranslation();
 
   useEffect(() => {
-    i18n.changeLanguage('ja');
+    i18n.changeLanguage('en');
   }, [i18n]);
 
   const handleLanguageChange = (event: React.ChangeEvent<{ value: unknown }>) => {
