@@ -35,6 +35,7 @@ import { setGlobalCamera } from "./components/Panels/ProjectInformation";
 import { setBaseSpeed } from "./components/Toolbars/Sections/SpeedControls";
 import { InfoPanelsManager } from "./components/InfoPanelsManager";
 import ZoomOptions from "./components/UI/ZoomOptions";
+import NaviCube from "./components/UI/NaviCube";
 
 
 interface State {
@@ -935,6 +936,10 @@ export class WorldViewer extends HTMLElement {
     const zoomOptionsComponent = ZoomOptions(world);
     console.log('ZoomOptions component created:', zoomOptionsComponent);
 
+    // Create the NaviCube component
+    const naviCubeComponent = NaviCube(world);
+    console.log('NaviCube component created:', naviCubeComponent);
+
     // Create a function to update the panel when language changes
     const updatePanelOnLanguageChange = () => {
       updateLeftPanelFn(dataState);
@@ -1122,6 +1127,10 @@ export class WorldViewer extends HTMLElement {
     // Add the ZoomOptions component to the body instead of app
     document.body.appendChild(zoomOptionsComponent);
     console.log('ZoomOptions component added to DOM body:', document.getElementById('zoom-options-panel'));
+
+    // Add the NaviCube component to the body
+    document.body.appendChild(naviCubeComponent);
+    console.log('NaviCube component added to DOM body:', document.getElementById('navi-cube'));
 
     // Add event listeners after all elements are created
     setTimeout(() => {
