@@ -34,6 +34,7 @@ import { loadIfc } from "./components/Toolbars/Sections/Import";
 import { setGlobalCamera } from "./components/Panels/ProjectInformation";
 import { setBaseSpeed } from "./components/Toolbars/Sections/SpeedControls";
 import { InfoPanelsManager } from "./components/InfoPanelsManager";
+import ZoomOptions from "./components/UI/ZoomOptions";
 
 
 interface State {
@@ -702,6 +703,9 @@ export class WorldViewer extends HTMLElement {
       }
     }, dataState);
 
+    // Create the ZoomOptions component
+    const zoomOptions = ZoomOptions(world);
+
     // Create a function to update the panel when language changes
     const updatePanelOnLanguageChange = () => {
       updateLeftPanelFn(dataState);
@@ -885,6 +889,9 @@ export class WorldViewer extends HTMLElement {
 
     const expandButton = createExpandButton();
     app.appendChild(expandButton);
+
+    // Add floating zoom options
+    app.appendChild(zoomOptions);
 
     // Add event listeners after all elements are created
     setTimeout(() => {

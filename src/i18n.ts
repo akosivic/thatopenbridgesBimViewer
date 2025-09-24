@@ -58,6 +58,13 @@ const enTranslations = {
   orthographicMode: 'Orthographic Mode',
   switchToPerspective: 'Switch to Perspective',
   switchToOrthographic: 'Switch to Orthographic',
+  // Zoom controls
+  zoomOptions: 'Zoom Options',
+  zoomToExtents: 'Zoom to Extents',
+  zoomToFit: 'Zoom to Fit',
+  zoomToCenter: 'Zoom to Center',
+  zoomIn: 'Zoom In',
+  zoomOut: 'Zoom Out',
   // Measurement toolbar
   measurements: 'Measurements',
   enabled: 'Enabled',
@@ -175,6 +182,13 @@ const jaTranslations = {
   orthographicMode: '正投影モード',
   switchToPerspective: '透視投影に切替',
   switchToOrthographic: '正投影に切替',
+  // Zoom controls
+  zoomOptions: 'ズームオプション',
+  zoomToExtents: '全体表示',
+  zoomToFit: 'フィット表示',
+  zoomToCenter: '中央表示',
+  zoomIn: 'ズームイン',
+  zoomOut: 'ズームアウト',
   // Measurement toolbar
   measurements: '測定',
   enabled: '有効',
