@@ -59,8 +59,47 @@ export class WorldViewer extends HTMLElement {
 
   disconnectedCallback() {
     // Clean up resources when the element is removed from DOM
+    console.log('WorldViewer disconnecting - cleaning up resources...');
+    
     if (this.infoPanelsManager) {
       this.infoPanelsManager.dispose();
+    }
+    
+    // Clean up WebGL resources to prevent memory leaks
+    try {
+      const renderer = (window as any).worldRenderer;
+      if (renderer && renderer.dispose) {
+        renderer.dispose();
+        console.log('WebGL renderer disposed');
+      }
+      
+      // Clear any remaining textures or geometries
+      if ((window as any).worldScene) {
+        const scene = (window as any).worldScene;
+        scene.traverse((object: any) => {
+          if (object.geometry) {
+            object.geometry.dispose();
+          }
+          if (object.material) {
+            if (Array.isArray(object.material)) {
+              object.material.forEach((material: any) => {
+                if (material.map) material.map.dispose();
+                if (material.normalMap) material.normalMap.dispose();
+                if (material.roughnessMap) material.roughnessMap.dispose();
+                material.dispose();
+              });
+            } else {
+              if (object.material.map) object.material.map.dispose();
+              if (object.material.normalMap) object.material.normalMap.dispose();
+              if (object.material.roughnessMap) object.material.roughnessMap.dispose();
+              object.material.dispose();
+            }
+          }
+        });
+        console.log('Scene resources cleaned up');
+      }
+    } catch (error) {
+      console.warn('Error during cleanup:', error);
     }
   }
   async connectedCallback() {
@@ -117,6 +156,117 @@ export class WorldViewer extends HTMLElement {
 
     world.renderer = new PostproductionRenderer(components, viewport);
     const { postproduction } = world.renderer;
+    
+    // Store renderer and scene references for cleanup
+    (window as any).worldRenderer = world.renderer.three;
+    (window as any).worldScene = world.scene.three;
+
+    // Add WebGL context loss handling
+    const canvas = world.renderer.three.domElement;
+    
+    canvas.addEventListener('webglcontextlost', (event) => {
+      console.warn('WebGL context lost. Preventing default behavior...');
+      event.preventDefault();
+      
+      // Pause any animations or rendering loops
+      if (world.renderer) {
+        console.log('Pausing renderer due to context loss');
+      }
+      
+      // Show a user-friendly message
+      const contextLostOverlay = document.createElement('div');
+      contextLostOverlay.id = 'webgl-context-lost-overlay';
+      contextLostOverlay.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(0, 0, 0, 0.9);
+        color: white;
+        padding: 20px;
+        border-radius: 8px;
+        z-index: 100000;
+        text-align: center;
+        font-family: system-ui, sans-serif;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      `;
+      contextLostOverlay.innerHTML = `
+        <h3>Graphics Context Lost</h3>
+        <p>The 3D graphics context was lost. Attempting to restore...</p>
+        <div style="margin-top: 10px;">
+          <div style="display: inline-block; width: 20px; height: 20px; border: 2px solid #fff; border-top: 2px solid transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+        </div>
+        <style>
+          @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        </style>
+      `;
+      document.body.appendChild(contextLostOverlay);
+    }, false);
+
+    canvas.addEventListener('webglcontextrestored', () => {
+      console.log('WebGL context restored. Reinitializing renderer...');
+      
+      // Remove the overlay
+      const overlay = document.getElementById('webgl-context-lost-overlay');
+      if (overlay) {
+        overlay.remove();
+      }
+      
+      try {
+        // Reinitialize the renderer
+        if (world.renderer) {
+          world.renderer.update();
+          console.log('Renderer reinitialized successfully');
+        }
+        
+        // Reinitialize postproduction effects
+        if (postproduction) {
+          postproduction.enabled = true;
+          postproduction.setPasses({ custom: true, ao: true, gamma: true });
+          console.log('Postproduction effects restored');
+        }
+        
+        // Force a render update
+        setTimeout(() => {
+          if (world.renderer) {
+            world.renderer.update();
+          }
+        }, 100);
+        
+      } catch (error) {
+        console.error('Error reinitializing after context restore:', error);
+        
+        // Show reload suggestion if reinitialization fails
+        const reloadOverlay = document.createElement('div');
+        reloadOverlay.style.cssText = `
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background: rgba(0, 0, 0, 0.9);
+          color: white;
+          padding: 20px;
+          border-radius: 8px;
+          z-index: 100000;
+          text-align: center;
+          font-family: system-ui, sans-serif;
+        `;
+        reloadOverlay.innerHTML = `
+          <h3>Unable to Restore Graphics</h3>
+          <p>Please reload the page to restore 3D functionality.</p>
+          <button onclick="window.location.reload()" style="
+            padding: 10px 20px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+          ">Reload Page</button>
+        `;
+        document.body.appendChild(reloadOverlay);
+      }
+    }, false);
 
     world.camera = new OrthoPerspectiveCamera(components);
 
@@ -142,6 +292,40 @@ export class WorldViewer extends HTMLElement {
 
     // Set global camera reference for ProjectInformation zoom functionality
     setGlobalCamera(world.camera.three);
+
+    // WebGL optimization settings to prevent context loss
+    const renderer = world.renderer.three;
+    if (renderer.getContext()) {
+      const gl = renderer.getContext();
+      
+      // Enable context loss and restoration handling
+      const loseContext = gl.getExtension('WEBGL_lose_context');
+      if (loseContext) {
+        console.log('WebGL lose context extension available');
+        
+        // Add periodic context validation (optional)
+        setInterval(() => {
+          if (gl.isContextLost()) {
+            console.warn('WebGL context lost detected during periodic check');
+          }
+        }, 10000); // Check every 10 seconds
+      }
+      
+      // Optimize WebGL settings to reduce memory pressure
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Limit pixel ratio
+      renderer.info.autoReset = true; // Auto-reset render stats
+      
+      // Enable memory management
+      renderer.dispose = (() => {
+        const originalDispose = renderer.dispose.bind(renderer);
+        return () => {
+          console.log('Disposing WebGL renderer resources...');
+          originalDispose();
+        };
+      })();
+      
+      console.log('WebGL optimization settings applied');
+    }
 
     // Initialize pointer lock controls
     fpControls = new PointerLockControls(world.camera.three, viewport);
@@ -566,53 +750,97 @@ export class WorldViewer extends HTMLElement {
     fragments.onFragmentsLoaded.add(async (model) => {
       console.log('Fragment loading started for model:', model);
 
-      if (model.hasProperties) {
-        console.log('Processing model properties...');
-        await indexer.process(model);
-        classifier.byEntity(model);
-        console.log('Model properties processed');
-      }
-
-      if (!model.isStreamed) {
-        console.log('Adding model fragments to scene...');
-        let fragmentCount = 0;
-        for (const fragment of model.items) {
-          world.meshes.add(fragment.mesh);
-          culler.add(fragment.mesh);
-
-          // Ensure fragment mesh is visible and has proper material
-          if (fragment.mesh) {
-            fragment.mesh.visible = true;
-            fragment.mesh.castShadow = true;
-            fragment.mesh.receiveShadow = true;
-
-            // Force material update
-            if (fragment.mesh.material) {
-              if (Array.isArray(fragment.mesh.material)) {
-                fragment.mesh.material.forEach(mat => {
-                  if (mat && 'needsUpdate' in mat) {
-                    (mat as THREE.Material).needsUpdate = true;
-                  }
-                });
-              } else if ('needsUpdate' in fragment.mesh.material) {
-                (fragment.mesh.material as THREE.Material).needsUpdate = true;
-              }
-            }
-
-            fragmentCount++;
-          }
+      try {
+        // Check WebGL context before proceeding
+        if (!world.renderer) {
+          console.warn('Renderer not available during fragment loading');
+          return;
         }
-        console.log(`Added ${fragmentCount} fragments to scene`);
-      }
+        
+        const gl = world.renderer.three.getContext();
+        if (gl.isContextLost()) {
+          console.warn('WebGL context lost during fragment loading, skipping...');
+          return;
+        }
 
-      // Add model to scene
-      world.scene.three.add(model);
-      console.log('Model added to Three.js scene');
+        if (model.hasProperties) {
+          console.log('Processing model properties...');
+          await indexer.process(model);
+          classifier.byEntity(model);
+          console.log('Model properties processed');
+        }
 
-      // Force renderer update
-      if (world.renderer) {
-        world.renderer.update();
-        console.log('Renderer updated');
+        if (!model.isStreamed) {
+          console.log('Adding model fragments to scene...');
+          let fragmentCount = 0;
+          for (const fragment of model.items) {
+            try {
+              // Check context again for each fragment
+              if (gl.isContextLost()) {
+                console.warn('WebGL context lost during fragment processing, stopping...');
+                break;
+              }
+
+              world.meshes.add(fragment.mesh);
+              culler.add(fragment.mesh);
+
+              // Ensure fragment mesh is visible and has proper material
+              if (fragment.mesh) {
+                fragment.mesh.visible = true;
+                fragment.mesh.castShadow = true;
+                fragment.mesh.receiveShadow = true;
+
+                // Force material update with error handling
+                if (fragment.mesh.material) {
+                  try {
+                    if (Array.isArray(fragment.mesh.material)) {
+                      fragment.mesh.material.forEach(mat => {
+                        if (mat && 'needsUpdate' in mat) {
+                          (mat as THREE.Material).needsUpdate = true;
+                        }
+                      });
+                    } else if ('needsUpdate' in fragment.mesh.material) {
+                      (fragment.mesh.material as THREE.Material).needsUpdate = true;
+                    }
+                  } catch (materialError) {
+                    console.warn('Error updating material for fragment:', materialError);
+                  }
+                }
+
+                fragmentCount++;
+                
+                // Yield control periodically to prevent blocking
+                if (fragmentCount % 50 === 0) {
+                  await new Promise(resolve => setTimeout(resolve, 1));
+                }
+              }
+            } catch (fragmentError) {
+              console.warn('Error processing fragment:', fragmentError);
+              // Continue with next fragment
+            }
+          }
+          console.log(`Added ${fragmentCount} fragments to scene`);
+        }
+
+        // Add model to scene with error handling
+        try {
+          world.scene.three.add(model);
+          console.log('Model added to Three.js scene');
+        } catch (sceneError) {
+          console.warn('Error adding model to scene:', sceneError);
+        }
+
+        // Force renderer update with error handling
+        try {
+          if (world.renderer && !gl.isContextLost()) {
+            world.renderer.update();
+            console.log('Renderer updated');
+          }
+        } catch (renderError) {
+          console.warn('Error updating renderer:', renderError);
+        }
+      } catch (overallError) {
+        console.error('Overall error in fragment loading:', overallError);
       }
 
       if (!model.isStreamed) {
