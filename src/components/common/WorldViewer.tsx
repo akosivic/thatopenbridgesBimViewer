@@ -33,7 +33,7 @@ import { AppManager } from "./components/bim-components";
 import { loadIfc } from "./components/Toolbars/Sections/Import";
 import { setGlobalCamera } from "./components/Panels/ProjectInformation";
 import { setBaseSpeed } from "./components/Toolbars/Sections/SpeedControls";
-import { InfoPanelsManager } from "./components/InfoPanelsManager_New";
+import { InfoPanelsManager } from "./components/InfoPanelsManager";
 
 
 interface State {
