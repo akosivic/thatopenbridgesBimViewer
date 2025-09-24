@@ -1,7 +1,5 @@
 import * as OBC from "@thatopen/components";
-import * as BUI from "@thatopen/ui";
 import * as THREE from "three";
-import i18n from "../../utils/i18n";
 
 export default (world: OBC.World) => {
     const { camera } = world;
@@ -60,303 +58,155 @@ export default (world: OBC.World) => {
         }
     };
 
-    return BUI.Component.create<HTMLElement>(() => {
-        const t = (key: string) => i18n.t(key);
-        
-        return BUI.html`
-            <div id="zoom-options-panel" class="zoom-options-panel">
-                <div class="zoom-panel-content">
-                    <div class="zoom-title">${t('zoomOptions')}</div>
-                    <div class="zoom-buttons">
-                        <button 
-                            class="zoom-button zoom-extents"
-                            @click=${zoomToExtents}
-                            title="${t('zoomToExtents')}"
-                        >
-                            <span class="zoom-icon">📐</span>
-                            <span class="zoom-label">${t('zoomToExtents')}</span>
-                        </button>
-                        
-                        <button 
-                            class="zoom-button zoom-fit"
-                            @click=${zoomToFit}
-                            title="${t('zoomToFit')}"
-                        >
-                            <span class="zoom-icon">🎯</span>
-                            <span class="zoom-label">${t('zoomToFit')}</span>
-                        </button>
-                        
-                        <button 
-                            class="zoom-button zoom-center"
-                            @click=${zoomToCenter}
-                            title="${t('zoomToCenter')}"
-                        >
-                            <span class="zoom-icon">🎪</span>
-                            <span class="zoom-label">${t('zoomToCenter')}</span>
-                        </button>
-                        
-                        <div class="zoom-controls">
-                            <button 
-                                class="zoom-button zoom-in"
-                                @click=${zoomIn}
-                                title="${t('zoomIn')}"
-                            >
-                                <span class="zoom-icon">➕</span>
-                                <span class="zoom-label">${t('zoomIn')}</span>
-                            </button>
-                            
-                            <button 
-                                class="zoom-button zoom-out"
-                                @click=${zoomOut}
-                                title="${t('zoomOut')}"
-                            >
-                                <span class="zoom-icon">➖</span>
-                                <span class="zoom-label">${t('zoomOut')}</span>
-                            </button>
-                        </div>
-                    </div>
+    // Create a simple DOM element without BUI
+    const element = document.createElement('div');
+    element.id = 'zoom-options-panel';
+    element.className = 'zoom-options-panel';
+    element.innerHTML = `
+        <div class="zoom-panel-content">
+            <div class="zoom-title">Zoom Options</div>
+            <div class="zoom-buttons">
+                <button class="zoom-button zoom-extents" title="Zoom to Extents">
+                    <span class="zoom-icon">📐</span>
+                    <span class="zoom-label">Zoom to Extents</span>
+                </button>
+                <button class="zoom-button zoom-fit" title="Zoom to Fit">
+                    <span class="zoom-icon">🎯</span>
+                    <span class="zoom-label">Zoom to Fit</span>
+                </button>
+                <button class="zoom-button zoom-center" title="Zoom to Center">
+                    <span class="zoom-icon">🎪</span>
+                    <span class="zoom-label">Zoom to Center</span>
+                </button>
+                <div class="zoom-controls">
+                    <button class="zoom-button zoom-in" title="Zoom In">
+                        <span class="zoom-icon">➕</span>
+                        <span class="zoom-label">Zoom In</span>
+                    </button>
+                    <button class="zoom-button zoom-out" title="Zoom Out">
+                        <span class="zoom-icon">➖</span>
+                        <span class="zoom-label">Zoom Out</span>
+                    </button>
                 </div>
             </div>
+        </div>
+    `;
 
-            <style>
-                .zoom-options-panel {
-                    position: fixed;
-                    top: 50%;
-                    right: 20px;
-                    transform: translateY(-50%);
-                    background: rgba(0, 0, 0, 0.8);
-                    backdrop-filter: blur(10px);
-                    border: 1px solid rgba(255, 255, 255, 0.2);
-                    border-radius: 12px;
-                    padding: 16px;
-                    z-index: 50000;
-                    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-                    min-width: 140px;
-                    max-width: 200px;
-                }
+    // Add event listeners
+    const extentsBtn = element.querySelector('.zoom-extents');
+    const fitBtn = element.querySelector('.zoom-fit');
+    const centerBtn = element.querySelector('.zoom-center');
+    const inBtn = element.querySelector('.zoom-in');
+    const outBtn = element.querySelector('.zoom-out');
 
-                .zoom-panel-content {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 12px;
-                }
+    if (extentsBtn) extentsBtn.addEventListener('click', zoomToExtents);
+    if (fitBtn) fitBtn.addEventListener('click', zoomToFit);
+    if (centerBtn) centerBtn.addEventListener('click', zoomToCenter);
+    if (inBtn) inBtn.addEventListener('click', zoomIn);
+    if (outBtn) outBtn.addEventListener('click', zoomOut);
 
-                .zoom-title {
-                    font-size: 14px;
-                    font-weight: 600;
-                    color: #ffffff;
-                    text-align: center;
-                    margin-bottom: 4px;
-                    opacity: 0.9;
-                }
+    // Add styles
+    const style = document.createElement('style');
+    style.textContent = `
+        .zoom-options-panel {
+            position: fixed;
+            top: 50%;
+            right: 20px;
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(10px);
+            border: 3px solid rgba(255, 255, 255, 0.8);
+            border-radius: 12px;
+            padding: 16px;
+            z-index: 100000;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            min-width: 140px;
+            max-width: 200px;
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
 
-                .zoom-buttons {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 8px;
-                }
+        .zoom-panel-content {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
 
-                .zoom-controls {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 2px;
-                }
+        .zoom-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #ffffff;
+            text-align: center;
+            margin-bottom: 4px;
+            opacity: 0.9;
+        }
 
-                .zoom-button {
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                    padding: 10px 12px;
-                    background: rgba(255, 255, 255, 0.1);
-                    border: 1px solid rgba(255, 255, 255, 0.2);
-                    border-radius: 8px;
-                    color: white;
-                    cursor: pointer;
-                    transition: all 0.2s ease;
-                    font-size: 12px;
-                    font-weight: 500;
-                    min-height: 40px;
-                    white-space: nowrap;
-                }
+        .zoom-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
 
-                .zoom-button:hover {
-                    background: rgba(255, 255, 255, 0.2);
-                    border-color: rgba(255, 255, 255, 0.3);
-                    transform: translateY(-1px);
-                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-                }
+        .zoom-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
 
-                .zoom-button:active {
-                    transform: translateY(0);
-                    background: rgba(255, 255, 255, 0.25);
-                }
+        .zoom-button {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 12px;
+            font-weight: 500;
+            min-height: 40px;
+            white-space: nowrap;
+        }
 
-                .zoom-icon {
-                    font-size: 16px;
-                    flex-shrink: 0;
-                }
+        .zoom-button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
 
-                .zoom-label {
-                    flex: 1;
-                    text-align: left;
-                }
+        .zoom-button:active {
+            transform: translateY(0);
+            background: rgba(255, 255, 255, 0.25);
+        }
 
-                .zoom-controls .zoom-button {
-                    flex: 1;
-                    justify-content: center;
-                }
+        .zoom-icon {
+            font-size: 16px;
+            flex-shrink: 0;
+        }
 
-                .zoom-controls .zoom-label {
-                    text-align: center;
-                }
+        .zoom-label {
+            flex: 1;
+            text-align: left;
+        }
 
-                /* Tablet Styles (768px to 1024px) */
-                @media (max-width: 1024px) and (min-width: 768px) {
-                    .zoom-options-panel {
-                        right: 16px;
-                        min-width: 120px;
-                        max-width: 160px;
-                        padding: 14px;
-                    }
+        .zoom-controls .zoom-button {
+            flex: 1;
+            justify-content: center;
+        }
 
-                    .zoom-title {
-                        font-size: 13px;
-                    }
+        .zoom-controls .zoom-label {
+            text-align: center;
+        }
+    `;
 
-                    .zoom-button {
-                        padding: 8px 10px;
-                        font-size: 11px;
-                        min-height: 36px;
-                    }
+    document.head.appendChild(style);
 
-                    .zoom-icon {
-                        font-size: 14px;
-                    }
-                }
-
-                /* Mobile Styles (up to 767px) */
-                @media (max-width: 767px) {
-                    .zoom-options-panel {
-                        position: fixed;
-                        top: auto;
-                        bottom: 20px;
-                        right: 20px;
-                        left: auto;
-                        transform: none;
-                        min-width: 100px;
-                        max-width: 120px;
-                        padding: 12px;
-                    }
-
-                    .zoom-title {
-                        font-size: 12px;
-                        margin-bottom: 6px;
-                    }
-
-                    .zoom-button {
-                        padding: 6px 8px;
-                        font-size: 10px;
-                        min-height: 32px;
-                        gap: 6px;
-                    }
-
-                    .zoom-icon {
-                        font-size: 12px;
-                    }
-
-                    .zoom-label {
-                        display: none; /* Hide labels on mobile for space */
-                    }
-
-                    .zoom-controls {
-                        display: flex;
-                        flex-direction: column;
-                        gap: 2px;
-                    }
-
-                    .zoom-controls .zoom-button {
-                        padding: 6px;
-                        min-width: 36px;
-                    }
-                }
-
-                /* Very small mobile devices (up to 480px) */
-                @media (max-width: 480px) {
-                    .zoom-options-panel {
-                        bottom: 80px; /* Move up to avoid conflicts with bottom tabs */
-                        right: 10px;
-                        min-width: 80px;
-                        max-width: 100px;
-                        padding: 10px;
-                    }
-
-                    .zoom-buttons {
-                        gap: 6px;
-                    }
-
-                    .zoom-button {
-                        padding: 4px 6px;
-                        min-height: 28px;
-                        border-radius: 6px;
-                    }
-
-                    .zoom-icon {
-                        font-size: 10px;
-                    }
-
-                    .zoom-controls {
-                        gap: 4px;
-                    }
-
-                    .zoom-controls .zoom-button {
-                        min-width: 28px;
-                        padding: 4px;
-                    }
-                }
-
-                /* Large desktop screens */
-                @media (min-width: 1440px) {
-                    .zoom-options-panel {
-                        right: 30px;
-                        min-width: 160px;
-                        max-width: 220px;
-                        padding: 18px;
-                    }
-
-                    .zoom-title {
-                        font-size: 15px;
-                    }
-
-                    .zoom-button {
-                        padding: 12px 14px;
-                        font-size: 13px;
-                        min-height: 44px;
-                    }
-
-                    .zoom-icon {
-                        font-size: 18px;
-                    }
-                }
-
-                /* Landscape mobile orientation */
-                @media (max-width: 767px) and (orientation: landscape) {
-                    .zoom-options-panel {
-                        top: 50%;
-                        right: 10px;
-                        bottom: auto;
-                        transform: translateY(-50%);
-                    }
-                }
-
-                /* High DPI displays */
-                @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
-                    .zoom-options-panel {
-                        border-width: 0.5px;
-                    }
-                }
-            </style>
-        `;
-        console.log('ZoomOptions BUI component created and returning element');
-    });
-    console.log('ZoomOptions component finished creation');
+    console.log('ZoomOptions component created (DOM version):', element);
+    
+    return element;
 };

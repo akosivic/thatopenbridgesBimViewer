@@ -933,6 +933,7 @@ export class WorldViewer extends HTMLElement {
 
     // Create the ZoomOptions component
     const zoomOptionsComponent = ZoomOptions(world);
+    console.log('ZoomOptions component created:', zoomOptionsComponent);
 
     // Create a function to update the panel when language changes
     const updatePanelOnLanguageChange = () => {
@@ -1118,8 +1119,9 @@ export class WorldViewer extends HTMLElement {
     const expandButton = createExpandButton();
     app.appendChild(expandButton);
 
-    // Add the ZoomOptions component to the app
-    app.appendChild(zoomOptionsComponent);
+    // Add the ZoomOptions component to the body instead of app
+    document.body.appendChild(zoomOptionsComponent);
+    console.log('ZoomOptions component added to DOM body:', document.getElementById('zoom-options-panel'));
 
     // Add event listeners after all elements are created
     setTimeout(() => {
