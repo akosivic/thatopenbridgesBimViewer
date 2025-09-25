@@ -20,13 +20,35 @@ const StyledBox = styled(Box)({
 });
 
 function App(): JSX.Element {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const { t } = useTranslation();
 
-  if (isAuthenticated) {
-    return <Navigate to="/ws/node/bimviewer/worldviewer" />;
+  // Show loading state while checking authentication
+  if (isLoading) {
+    return (
+      <StyledBox>
+        <HeaderComponent />
+        <StyledBox>
+          <Typography
+            variant="h6"
+            component="h6"
+            sx={{
+              cursor: 'default',
+            }}
+          >
+            {t('loading')}
+          </Typography>
+        </StyledBox>
+      </StyledBox>
+    );
   }
 
+  // Redirect to WorldViewer if already authenticated
+  if (isAuthenticated) {
+    return <Navigate to="/ws/node/bimviewer/worldviewer" replace />;
+  }
+
+  // Show login screen if not authenticated
   return (
     <StyledBox>
       <HeaderComponent />

@@ -5,6 +5,7 @@ import './i18n' // Import i18n configuration
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from '@mui/material/styles'; // Import ThemeProvider
 import { createTheme } from '@mui/material/styles';
+import App from './App.tsx';
 import WorldViewer from './worldviewer/WorldViewer.tsx';
 // Create the custom theme
 const theme = createTheme({
@@ -19,7 +20,8 @@ createRoot(document.getElementById('root')!).render(
     <ThemeProvider theme={theme}> {/* Apply the custom theme */}
       <BrowserRouter>
         <Routes>
-          <Route path="/ws/node/bimviewer/" element={<WorldViewer />} />
+          <Route path="/ws/node/bimviewer/" element={<App />} />
+          <Route path="/ws/node/bimviewer/worldviewer" element={<WorldViewer />} />
         </Routes>
       </BrowserRouter>
     </ThemeProvider>
