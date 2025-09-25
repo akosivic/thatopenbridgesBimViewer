@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import loytecAuthService from '../../services/loytecAuth';
 import { UserProfile } from '../../types/auth';
+import { getAppConfig } from '../../config/appConfig';
 
 // Storage keys for session management
 const SESSION_STORAGE_KEY = 'loytec_session_id';
@@ -10,6 +11,24 @@ export const checkAuthStatus = async (): Promise<{
   isAuthenticated: boolean;
   userDetails: { userId: string; userRoles: Array<string>; identityProvider: string; userDetails: string } | null;
 }> => {
+  const config = getAppConfig();
+  
+  // Only bypass authentication in development mode when explicitly enabled
+  // This provides a secure way to disable auth for local development
+  if (config.isDevelopment && config.skipAuthInDev) {
+    console.warn('🚧 DEVELOPMENT MODE: Bypassing authentication for local development');
+    console.warn('⚠️  This bypass is automatically disabled in production builds');
+    return {
+      isAuthenticated: true,
+      userDetails: {
+        userId: 'dev-user',
+        userRoles: ['authenticated', 'admin', 'developer'],
+        identityProvider: 'development-bypass',
+        userDetails: 'Development User (Auth Bypassed)'
+      }
+    };
+  }
+
   const sessionId = sessionStorage.getItem(SESSION_STORAGE_KEY);
   const userProfile = sessionStorage.getItem(USER_STORAGE_KEY);
   
