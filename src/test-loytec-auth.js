@@ -54,7 +54,7 @@ async function testLoytecAuth() {
   console.log('✓ Authenticated request helper for future API calls');
   
   console.log('\n4. Configuration:');
-  console.log('Current Loytec server URL:', process.env.VITE_LOYTEC_BASE_URL || 'http://192.168.50.56');
+  console.log('Current Loytec server URL:', process.env.VITE_LOYTEC_BASE_URL || 'https://192.168.50.56');
   console.log('To change server URL, update VITE_LOYTEC_BASE_URL in .env file');
 }
 

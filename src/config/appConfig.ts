@@ -9,7 +9,7 @@ export interface AppConfig {
 // Get configuration from environment variables or use defaults
 export const getAppConfig = (): AppConfig => {
   return {
-    loytecBaseUrl: import.meta.env.VITE_LOYTEC_BASE_URL || 'http://192.168.50.56',
+    loytecBaseUrl: import.meta.env.VITE_LOYTEC_BASE_URL || 'https://192.168.50.56',
     isDevelopment: import.meta.env.DEV || false,
     apiTimeout: parseInt(import.meta.env.VITE_API_TIMEOUT || '10000', 10)
   };

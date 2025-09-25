@@ -46,11 +46,12 @@ class LoytecAuthService {
         throw new Error('Invalid response format from Loytec server');
       }
       
-      if (!loytecResponse.loggedIn || loytecResponse.loginState !== 1) {
-        // Authentication failed according to Loytec
+      // Strict authentication check: MUST have loginState = 2 AND loggedIn = true
+      if (loytecResponse.loginState !== 2 || !loytecResponse.loggedIn) {
+        // Authentication failed - strict requirements not met
         const errorMessage = loytecResponse.authFail?.length > 0 
           ? loytecResponse.authFail.join(', ')
-          : 'Authentication failed';
+          : `Authentication failed - Required: loginState=2 and loggedIn=true. Got: loginState=${loytecResponse.loginState}, loggedIn=${loytecResponse.loggedIn}`;
         
         return {
           success: false,
@@ -67,7 +68,7 @@ class LoytecAuthService {
         success: true,
         sessionId,
         sessionCookie: sessionCookie || undefined,
-        message: `Successfully authenticated as ${loytecResponse.sessUser}`,
+        message: `Successfully authenticated as ${loytecResponse.sessUser} (Login State: ${loytecResponse.loginState})`,
         loytecResponse
       };
 
@@ -137,16 +138,31 @@ class LoytecAuthService {
     if (!sessionId) return false;
     
     try {
-      const url = `${this.config.baseUrl}/webui/`;
+      // Try to validate session by calling the login endpoint without credentials
+      // This should return current session status
+      const url = `${this.config.baseUrl}/webui/login`;
       const response = await fetch(url, {
         method: 'GET',
         headers: {
           'Cookie': `sessionid=${sessionId}`
-        }
+        },
+        credentials: 'include'
       });
       
-      return response.ok;
-    } catch {
+      if (response.ok) {
+        try {
+          const data = await response.json();
+          // If we get a valid response with loggedIn status, use it
+          return data.loggedIn === true;
+        } catch {
+          // If JSON parsing fails, assume session is valid if response was OK
+          return true;
+        }
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Session validation error:', error);
       return false;
     }
   }

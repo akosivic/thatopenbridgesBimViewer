@@ -40,7 +40,6 @@ const LoginForm: React.FC<LoginFormProps> = ({ open, onClose, onLoginSuccess }) 
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [connectionStatus, setConnectionStatus] = useState<'checking' | 'connected' | 'disconnected'>('checking');
   const [rememberMe, setRememberMe] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [loytecUrl, setLoytecUrl] = useState('');
@@ -59,17 +58,8 @@ const LoginForm: React.FC<LoginFormProps> = ({ open, onClose, onLoginSuccess }) 
       }
 
       setLoytecUrl(config.loytecBaseUrl);
-      
-      // Test connection when dialog opens
-      testConnection();
     }
   }, [open, config.loytecBaseUrl]);
-
-  const testConnection = async () => {
-    setConnectionStatus('checking');
-    const isConnected = await loytecAuthService.testConnection();
-    setConnectionStatus(isConnected ? 'connected' : 'disconnected');
-  };
 
   const handleInputChange = (field: keyof LoginCredentials) => (
     event: React.ChangeEvent<HTMLInputElement>
@@ -117,8 +107,8 @@ const LoginForm: React.FC<LoginFormProps> = ({ open, onClose, onLoginSuccess }) 
         
         if (result.loytecResponse?.authFail && result.loytecResponse.authFail.length > 0) {
           errorMessage = `Authentication failed: ${result.loytecResponse.authFail.join(', ')}`;
-        } else if (result.loytecResponse?.loginState !== undefined && result.loytecResponse.loginState !== 1) {
-          errorMessage = `Login state error: ${result.loytecResponse.loginState}`;
+        } else if (result.loytecResponse?.loginState !== 2 || !result.loytecResponse?.loggedIn) {
+          errorMessage = `Login failed - Required: loginState=2 and loggedIn=true. Got: loginState=${result.loytecResponse?.loginState}, loggedIn=${result.loytecResponse?.loggedIn}`;
         }
         
         setError(errorMessage);
@@ -136,22 +126,6 @@ const LoginForm: React.FC<LoginFormProps> = ({ open, onClose, onLoginSuccess }) 
     setLoading(false);
     setShowPassword(false);
     onClose();
-  };
-
-  const getConnectionStatusColor = () => {
-    switch (connectionStatus) {
-      case 'connected': return 'success';
-      case 'disconnected': return 'error';
-      default: return 'info';
-    }
-  };
-
-  const getConnectionStatusText = () => {
-    switch (connectionStatus) {
-      case 'connected': return t('connectionSuccessful') || 'Connection successful';
-      case 'disconnected': return t('connectionFailed') || 'Cannot connect to Loytec system';
-      default: return t('checkingConnection') || 'Checking connection...';
-    }
   };
 
   return (
@@ -178,47 +152,31 @@ const LoginForm: React.FC<LoginFormProps> = ({ open, onClose, onLoginSuccess }) 
       </DialogTitle>
 
       <DialogContent>
-        {/* Connection Status */}
-        <Alert 
-          severity={getConnectionStatusColor()} 
-          sx={{ mb: 2 }}
-          action={
-            <Button 
-              size="small" 
-              onClick={testConnection}
-              disabled={connectionStatus === 'checking'}
-            >
-              {connectionStatus === 'checking' ? <CircularProgress size={16} /> : t('retry') || 'Retry'}
-            </Button>
-          }
-        >
-          {getConnectionStatusText()}
-        </Alert>
+        <>
+          {/* Advanced Settings */}
+          {showAdvanced && (
+            <Box sx={{ mb: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+              <TextField
+                fullWidth
+                label={t('loytecServerUrl') || 'Loytec Server URL'}
+                value={loytecUrl}
+                onChange={(e) => setLoytecUrl(e.target.value)}
+                helperText={t('serverUrlHelp') || 'Configure the Loytec system base URL'}
+                variant="outlined"
+                size="small"
+              />
+            </Box>
+          )}
 
-        {/* Advanced Settings */}
-        {showAdvanced && (
-          <Box sx={{ mb: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
-            <TextField
-              fullWidth
-              label={t('loytecServerUrl') || 'Loytec Server URL'}
-              value={loytecUrl}
-              onChange={(e) => setLoytecUrl(e.target.value)}
-              helperText={t('serverUrlHelp') || 'Configure the Loytec system base URL'}
-              variant="outlined"
-              size="small"
-            />
-          </Box>
-        )}
+          {/* Error Message */}
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+          )}
 
-        {/* Error Message */}
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
-
-        {/* Login Form */}
-        <Box component="form" onSubmit={handleSubmit}>
+          {/* Login Form */}
+          <Box component="form" onSubmit={handleSubmit}>
           <TextField
             fullWidth
             label={t('username') || 'Username'}
@@ -269,6 +227,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ open, onClose, onLoginSuccess }) 
             sx={{ mt: 1 }}
           />
         </Box>
+        </>
       </DialogContent>
 
       <DialogActions sx={{ px: 3, pb: 2 }}>
@@ -278,7 +237,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ open, onClose, onLoginSuccess }) 
         <Button
           onClick={handleSubmit}
           variant="contained"
-          disabled={loading || connectionStatus === 'disconnected' || !credentials.username || !credentials.password}
+          disabled={loading || !credentials.username || !credentials.password}
           startIcon={loading ? <CircularProgress size={16} /> : null}
         >
           {loading ? (t('loggingIn') || 'Logging in...') : (t('login') || 'Login')}

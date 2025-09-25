@@ -91,6 +91,7 @@ const UserMenu: React.FC = () => {
         }}
         transformOrigin={{ horizontal: 'right', vertical: 'top' }}
         anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+        sx={{ zIndex: 100001 }} // Higher than NaviCube (99999) and other UI elements
       >
         {/* User Info */}
         <Box sx={{ px: 2, py: 1 }}>
