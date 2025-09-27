@@ -1,166 +1,125 @@
-// Loytec Authentication Service
+// Loytec Authentication Service - Server Proxy Implementation
 
-import { LoginCredentials, AuthResponse, LoytecAuthConfig, LoytecAuthResponse } from '../types/auth';
-import { getAppConfig } from '../config/appConfig';
+import { LoginCredentials, AuthResponse } from '../types/auth';
 
 class LoytecAuthService {
-  private config: LoytecAuthConfig;
+  private apiBaseUrl: string;
 
   constructor() {
-    const appConfig = getAppConfig();
-    this.config = {
-      baseUrl: appConfig.loytecBaseUrl,
-      endpoint: '/webui/login'
-    };
+    // Use local server API endpoints
+    this.apiBaseUrl = '/ws/node/api/auth';
   }
 
   /**
-   * Authenticate with Loytec system using the /webui/login endpoint
+   * Authenticate with Loytec system via Node.js server proxy
    */
   async authenticate(credentials: LoginCredentials): Promise<AuthResponse> {
     try {
-      const url = `${this.config.baseUrl}${this.config.endpoint}`;
-      
-      // Prepare Basic Auth header
-      const authString = btoa(`${credentials.username}:${credentials.password}`);
-      
-      const response = await fetch(url, {
-        method: 'GET',
+      const response = await fetch(`${this.apiBaseUrl}/login`, {
+        method: 'POST',
         headers: {
-          'Authorization': `Basic ${authString}`,
-          'X-Create-Session': '1',
           'Content-Type': 'application/json'
         },
-        credentials: 'include' // Include cookies for session management
+        credentials: 'same-origin',
+        body: JSON.stringify(credentials)
       });
 
-      if (!response.ok) {
-        throw new Error(`Authentication failed: ${response.status} ${response.statusText}`);
-      }
+      const result = await response.json();
 
-      // Parse response data
-      const loytecResponse: LoytecAuthResponse = await response.json();
-      
-      // Validate the response structure and authentication status
-      if (typeof loytecResponse.loggedIn !== 'boolean') {
-        throw new Error('Invalid response format from Loytec server');
-      }
-      
-      // Strict authentication check: MUST have loginState = 2 AND loggedIn = true
-      if (loytecResponse.loginState !== 2 || !loytecResponse.loggedIn) {
-        // Authentication failed - strict requirements not met
-        const errorMessage = loytecResponse.authFail?.length > 0 
-          ? loytecResponse.authFail.join(', ')
-          : `Authentication failed - Required: loginState=2 and loggedIn=true. Got: loginState=${loytecResponse.loginState}, loggedIn=${loytecResponse.loggedIn}`;
-        
+      if (!response.ok) {
+        console.error('Server authentication error:', result);
         return {
           success: false,
-          error: errorMessage,
-          loytecResponse
+          error: result.error || `Server error: ${response.status} ${response.statusText}`
         };
       }
-      
-      // Extract session information from response headers
-      const sessionCookie = response.headers.get('set-cookie');
-      const sessionId = this.extractSessionId(sessionCookie) || this.generateSessionId();
 
+      if (!result.success) {
+        return {
+          success: false,
+          error: result.error || 'Authentication failed',
+          loytecResponse: result.loytecResponse
+        };
+      }
+
+      // Authentication successful
+      console.log('Authentication successful via server proxy');
       return {
         success: true,
-        sessionId,
-        sessionCookie: sessionCookie || undefined,
-        message: `Successfully authenticated as ${loytecResponse.sessUser} (Login State: ${loytecResponse.loginState})`,
-        loytecResponse
+        sessionId: result.sessionId,
+        message: result.message,
+        loytecResponse: {
+          sessUser: result.username,
+          loginState: result.loginState,
+          loggedIn: true,
+          pwdMaxLen: 0,
+          authFail: [],
+          selectOptions: [],
+          hiddenInput: []
+        }
       };
 
     } catch (error) {
-      console.error('Loytec authentication error:', error);
+      console.error('Authentication service error:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Authentication failed'
+        error: error instanceof Error ? error.message : 'Authentication failed - network error'
       };
     }
   }
 
   /**
-   * Test connection to Loytec system
+   * Test connection to Loytec system via server proxy
    */
   async testConnection(): Promise<boolean> {
     try {
-      const url = `${this.config.baseUrl}/webui/`;
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
       
-      const response = await fetch(url, {
-        method: 'HEAD',
-        signal: controller.signal
+      const response = await fetch(`${this.apiBaseUrl}/test-connection`, {
+        method: 'GET',
+        signal: controller.signal,
+        credentials: 'same-origin'
       });
       
       clearTimeout(timeoutId);
-      return response.ok || response.status === 401; // 401 is expected without auth
-    } catch {
+      
+      if (!response.ok) {
+        return false;
+      }
+
+      const result = await response.json();
+      return result.success && result.connected;
+      
+    } catch (error) {
+      console.error('Connection test error:', error);
       return false;
     }
   }
 
   /**
-   * Extract session ID from cookie header
-   */
-  private extractSessionId(cookieHeader: string | null): string | undefined {
-    if (!cookieHeader) return undefined;
-    
-    // Try multiple common session cookie patterns
-    const patterns = [
-      /sessionid=([^;]+)/i,
-      /session=([^;]+)/i,
-      /JSESSIONID=([^;]+)/i,
-      /sid=([^;]+)/i
-    ];
-    
-    for (const pattern of patterns) {
-      const match = cookieHeader.match(pattern);
-      if (match) return match[1];
-    }
-    
-    return undefined;
-  }
-
-  /**
-   * Generate a fallback session ID when none is provided
-   */
-  private generateSessionId(): string {
-    return `loytec_session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  }
-
-  /**
-   * Validate current session
+   * Validate current session via server proxy
    */
   async validateSession(sessionId?: string): Promise<boolean> {
     if (!sessionId) return false;
     
     try {
-      // Try to validate session by calling the login endpoint without credentials
-      // This should return current session status
-      const url = `${this.config.baseUrl}/webui/login`;
-      const response = await fetch(url, {
-        method: 'GET',
+      const response = await fetch(`${this.apiBaseUrl}/validate`, {
+        method: 'POST',
         headers: {
-          'Cookie': `sessionid=${sessionId}`
+          'Content-Type': 'application/json'
         },
-        credentials: 'include'
+        credentials: 'same-origin',
+        body: JSON.stringify({ sessionId })
       });
-      
-      if (response.ok) {
-        try {
-          const data = await response.json();
-          // If we get a valid response with loggedIn status, use it
-          return data.loggedIn === true;
-        } catch {
-          // If JSON parsing fails, assume session is valid if response was OK
-          return true;
-        }
+
+      if (!response.ok) {
+        return false;
       }
-      
-      return false;
+
+      const result = await response.json();
+      return result.success === true;
+
     } catch (error) {
       console.error('Session validation error:', error);
       return false;
@@ -168,18 +127,19 @@ class LoytecAuthService {
   }
 
   /**
-   * Logout from Loytec system
+   * Logout from system via server proxy
    */
   async logout(sessionId?: string): Promise<void> {
     if (!sessionId) return;
     
     try {
-      const url = `${this.config.baseUrl}/webui/logout`;
-      await fetch(url, {
-        method: 'GET',
+      await fetch(`${this.apiBaseUrl}/logout`, {
+        method: 'POST',
         headers: {
-          'Cookie': `sessionid=${sessionId}`
-        }
+          'Content-Type': 'application/json'
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify({ sessionId })
       });
     } catch (error) {
       console.error('Logout error:', error);
@@ -194,28 +154,25 @@ class LoytecAuthService {
   }
 
   /**
-   * Make an authenticated request to Loytec system
+   * Make an authenticated request to the server API
    */
   async makeAuthenticatedRequest(endpoint: string, options: RequestInit = {}): Promise<Response> {
     const sessionId = sessionStorage.getItem('loytec_session_id');
-    const csrfToken = this.getCsrfToken();
     
     if (!sessionId) {
       throw new Error('No active session');
     }
 
     const headers = new Headers(options.headers);
-    headers.set('Cookie', `sessionid=${sessionId}`);
-    
-    if (csrfToken && (options.method === 'POST' || options.method === 'PUT' || options.method === 'DELETE')) {
-      headers.set('X-CSRFToken', csrfToken);
-    }
+    headers.set('Content-Type', 'application/json');
+    headers.set('X-Session-ID', sessionId);
 
-    const url = endpoint.startsWith('http') ? endpoint : `${this.config.baseUrl}${endpoint}`;
+    const url = endpoint.startsWith('/ws/node/api/') ? endpoint : `/ws/node/api${endpoint}`;
     
     return fetch(url, {
       ...options,
-      headers
+      headers,
+      credentials: 'same-origin'
     });
   }
 }
