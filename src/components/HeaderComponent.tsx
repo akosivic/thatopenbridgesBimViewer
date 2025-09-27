@@ -6,12 +6,15 @@ import SvgIcon from '@mui/material/SvgIcon';
 import Divider from '@mui/material/Divider';
 import { useTranslation } from 'react-i18next';
 import { useEffect } from 'react';
+import { useAuth } from './common/authentication';
+import UserMenu from './UserMenu';
 
 const HeaderComponent = () => {
   const { t, i18n } = useTranslation();
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
-    i18n.changeLanguage('ja');
+    i18n.changeLanguage('en');
   }, [i18n]);
 
   const handleLanguageChange = (event: React.ChangeEvent<{ value: unknown }>) => {
@@ -73,6 +76,7 @@ const HeaderComponent = () => {
             <MenuItem value="ja">日本語</MenuItem>
             <MenuItem value="en">English</MenuItem>
           </Select>
+          {isAuthenticated && <UserMenu />}
         </Box>
       </Toolbar>
     </AppBar>

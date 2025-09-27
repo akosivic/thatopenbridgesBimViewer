@@ -34,6 +34,8 @@ import { loadIfc } from "./components/Toolbars/Sections/Import";
 import { setGlobalCamera } from "./components/Panels/ProjectInformation";
 import { setBaseSpeed } from "./components/Toolbars/Sections/SpeedControls";
 import { InfoPanelsManager } from "./components/InfoPanelsManager";
+import ZoomOptions from "./components/UI/ZoomOptions";
+import NaviCube from "./components/UI/NaviCube";
 
 
 interface State {
@@ -58,8 +60,47 @@ export class WorldViewer extends HTMLElement {
 
   disconnectedCallback() {
     // Clean up resources when the element is removed from DOM
+    console.log('WorldViewer disconnecting - cleaning up resources...');
+    
     if (this.infoPanelsManager) {
       this.infoPanelsManager.dispose();
+    }
+    
+    // Clean up WebGL resources to prevent memory leaks
+    try {
+      const renderer = (window as any).worldRenderer;
+      if (renderer && renderer.dispose) {
+        renderer.dispose();
+        console.log('WebGL renderer disposed');
+      }
+      
+      // Clear any remaining textures or geometries
+      if ((window as any).worldScene) {
+        const scene = (window as any).worldScene;
+        scene.traverse((object: any) => {
+          if (object.geometry) {
+            object.geometry.dispose();
+          }
+          if (object.material) {
+            if (Array.isArray(object.material)) {
+              object.material.forEach((material: any) => {
+                if (material.map) material.map.dispose();
+                if (material.normalMap) material.normalMap.dispose();
+                if (material.roughnessMap) material.roughnessMap.dispose();
+                material.dispose();
+              });
+            } else {
+              if (object.material.map) object.material.map.dispose();
+              if (object.material.normalMap) object.material.normalMap.dispose();
+              if (object.material.roughnessMap) object.material.roughnessMap.dispose();
+              object.material.dispose();
+            }
+          }
+        });
+        console.log('Scene resources cleaned up');
+      }
+    } catch (error) {
+      console.warn('Error during cleanup:', error);
     }
   }
   async connectedCallback() {
@@ -116,6 +157,117 @@ export class WorldViewer extends HTMLElement {
 
     world.renderer = new PostproductionRenderer(components, viewport);
     const { postproduction } = world.renderer;
+    
+    // Store renderer and scene references for cleanup
+    (window as any).worldRenderer = world.renderer.three;
+    (window as any).worldScene = world.scene.three;
+
+    // Add WebGL context loss handling
+    const canvas = world.renderer.three.domElement;
+    
+    canvas.addEventListener('webglcontextlost', (event) => {
+      console.warn('WebGL context lost. Preventing default behavior...');
+      event.preventDefault();
+      
+      // Pause any animations or rendering loops
+      if (world.renderer) {
+        console.log('Pausing renderer due to context loss');
+      }
+      
+      // Show a user-friendly message
+      const contextLostOverlay = document.createElement('div');
+      contextLostOverlay.id = 'webgl-context-lost-overlay';
+      contextLostOverlay.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(0, 0, 0, 0.9);
+        color: white;
+        padding: 20px;
+        border-radius: 8px;
+        z-index: 100000;
+        text-align: center;
+        font-family: system-ui, sans-serif;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      `;
+      contextLostOverlay.innerHTML = `
+        <h3>Graphics Context Lost</h3>
+        <p>The 3D graphics context was lost. Attempting to restore...</p>
+        <div style="margin-top: 10px;">
+          <div style="display: inline-block; width: 20px; height: 20px; border: 2px solid #fff; border-top: 2px solid transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+        </div>
+        <style>
+          @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        </style>
+      `;
+      document.body.appendChild(contextLostOverlay);
+    }, false);
+
+    canvas.addEventListener('webglcontextrestored', () => {
+      console.log('WebGL context restored. Reinitializing renderer...');
+      
+      // Remove the overlay
+      const overlay = document.getElementById('webgl-context-lost-overlay');
+      if (overlay) {
+        overlay.remove();
+      }
+      
+      try {
+        // Reinitialize the renderer
+        if (world.renderer) {
+          world.renderer.update();
+          console.log('Renderer reinitialized successfully');
+        }
+        
+        // Reinitialize postproduction effects
+        if (postproduction) {
+          postproduction.enabled = true;
+          postproduction.setPasses({ custom: true, ao: true, gamma: true });
+          console.log('Postproduction effects restored');
+        }
+        
+        // Force a render update
+        setTimeout(() => {
+          if (world.renderer) {
+            world.renderer.update();
+          }
+        }, 100);
+        
+      } catch (error) {
+        console.error('Error reinitializing after context restore:', error);
+        
+        // Show reload suggestion if reinitialization fails
+        const reloadOverlay = document.createElement('div');
+        reloadOverlay.style.cssText = `
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background: rgba(0, 0, 0, 0.9);
+          color: white;
+          padding: 20px;
+          border-radius: 8px;
+          z-index: 100000;
+          text-align: center;
+          font-family: system-ui, sans-serif;
+        `;
+        reloadOverlay.innerHTML = `
+          <h3>Unable to Restore Graphics</h3>
+          <p>Please reload the page to restore 3D functionality.</p>
+          <button onclick="window.location.reload()" style="
+            padding: 10px 20px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+          ">Reload Page</button>
+        `;
+        document.body.appendChild(reloadOverlay);
+      }
+    }, false);
 
     world.camera = new OrthoPerspectiveCamera(components);
 
@@ -141,6 +293,40 @@ export class WorldViewer extends HTMLElement {
 
     // Set global camera reference for ProjectInformation zoom functionality
     setGlobalCamera(world.camera.three);
+
+    // WebGL optimization settings to prevent context loss
+    const renderer = world.renderer.three;
+    if (renderer.getContext()) {
+      const gl = renderer.getContext();
+      
+      // Enable context loss and restoration handling
+      const loseContext = gl.getExtension('WEBGL_lose_context');
+      if (loseContext) {
+        console.log('WebGL lose context extension available');
+        
+        // Add periodic context validation (optional)
+        setInterval(() => {
+          if (gl.isContextLost()) {
+            console.warn('WebGL context lost detected during periodic check');
+          }
+        }, 10000); // Check every 10 seconds
+      }
+      
+      // Optimize WebGL settings to reduce memory pressure
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Limit pixel ratio
+      renderer.info.autoReset = true; // Auto-reset render stats
+      
+      // Enable memory management
+      renderer.dispose = (() => {
+        const originalDispose = renderer.dispose.bind(renderer);
+        return () => {
+          console.log('Disposing WebGL renderer resources...');
+          originalDispose();
+        };
+      })();
+      
+      console.log('WebGL optimization settings applied');
+    }
 
     // Initialize pointer lock controls
     fpControls = new PointerLockControls(world.camera.three, viewport);
@@ -287,7 +473,6 @@ export class WorldViewer extends HTMLElement {
 
     // FPS-style movement controls
     let moveSpeed = 5.0; // Units per second for FPS movement (now variable)
-    const sprintMultiplier = 2.0; // Sprint speed multiplier
 
     // Set up speed control integration
     setBaseSpeed(moveSpeed);
@@ -336,51 +521,28 @@ export class WorldViewer extends HTMLElement {
 
       console.log(`Moved ${direction}, new position:`, world.camera.three.position);
     });
-    const keys: Record<string, boolean> = {
-      // Arrow keys
-      arrowup: false,
-      arrowdown: false,
-      arrowleft: false,
-      arrowright: false,
-      // Vertical movement
-      q: false, // Up
-      e: false, // Down
-      // Speed modifier
-      shift: false, // Sprint
-    };
 
-    // Movement vectors for FPS navigation
-    const direction = new THREE.Vector3();
-    const sideways = new THREE.Vector3();
-    const upVector = new THREE.Vector3(0, 1, 0);
-
-    // FPS movement update function
-    const updateFPSMovement = () => {
-      if (!fpControls) {
-        requestAnimationFrame(updateFPSMovement);
-        return;
-      }
-
-      const currentSpeed = keys.shift ? moveSpeed * sprintMultiplier : moveSpeed;
-      const deltaTime = 0.016; // Approximate 60 FPS
-      const moveDistance = currentSpeed * deltaTime;
-
-      // Always update position display in debug mode
-      if (isDebugMode && positionDisplay) {
+    // Create enhanced position display update function for debug mode
+    const updatePositionDisplay = async () => {
+      if (isDebugMode && positionDisplay && fpControls) {
         const pos = world.camera.three.position;
         const rot = world.camera.three.rotation;
         const isLocked = fpControls.isLocked;
 
         try {
+          const { getCurrentProjection } = await import('./components/Toolbars/Sections/ProjectionControls');
+          const projection = getCurrentProjection();
+          
           positionDisplay.innerHTML = `
             <div style="font-weight: bold; color: #00ff00; margin-bottom: 4px; font-size: 12px;">🎮 DEBUG</div>
             <div style="font-weight: bold; color: ${isLocked ? '#00ff00' : '#ff8800'}; font-size: 11px; margin-bottom: 4px;">
               ${isLocked ? '🔒 FPS ON' : '🔓 HOLD MOUSE'}
             </div>
+            <div style="margin-bottom: 2px;"><strong>Mode:</strong> <span style="color: #ffdd00;">${projection}</span></div>
             <div style="margin-bottom: 2px;"><strong>Pos:</strong></div>
             <div style="margin-left: 8px; margin-bottom: 4px; font-size: 10px;">
               X: ${pos.x.toFixed(2)}<br>
-              Y: ${pos.y.toFixed(2)} <span style="color: #ff0000;">(LOCKED)</span><br>
+              Y: ${pos.y.toFixed(2)}<br>
               Z: ${pos.z.toFixed(2)}
             </div>
             <div style="margin-bottom: 2px;"><strong>Rot:</strong></div>
@@ -388,10 +550,9 @@ export class WorldViewer extends HTMLElement {
               H: ${(rot.y * 180 / Math.PI).toFixed(1)}°<br>
               V: ${(90 - rot.x * 180 / Math.PI).toFixed(1)}°
             </div>
-            <div style="margin-bottom: 4px; font-size: 10px;"><strong>Speed:</strong> ${keys.shift ? 'FAST' : 'NORM'}</div>
             <div style="font-size: 9px; color: #ccc; border-top: 1px solid #333; padding-top: 4px;">
-              Arrows: Move | Shift: Sprint<br>
-              <span style="color: #00ff00;">Hold Mouse: Look</span>
+              <span style="color: #00ff00;">Enhanced Controls Active</span><br>
+              Projection-aware bindings
             </div>
           `;
 
@@ -403,89 +564,22 @@ export class WorldViewer extends HTMLElement {
           console.error('Error updating position display:', error);
         }
       }
-
-      if (keys.arrowup || keys.arrowdown || keys.arrowleft || keys.arrowright ||
-        keys.q || keys.e) {
-
-        // Get camera's current orientation
-        world.camera.three.getWorldDirection(direction);
-        sideways.crossVectors(direction, upVector).normalize();
-
-        // Forward/backward movement (Arrow Up/Down only)
-        if (keys.arrowup) {
-          world.camera.three.position.addScaledVector(direction, moveDistance);
-        }
-        if (keys.arrowdown) {
-          world.camera.three.position.addScaledVector(direction, -moveDistance);
-        }
-
-        // Left/right strafing (Arrow Left/Right only)
-        if (keys.arrowleft) {
-          world.camera.three.position.addScaledVector(sideways, -moveDistance);
-        }
-        if (keys.arrowright) {
-          world.camera.three.position.addScaledVector(sideways, moveDistance);
-        }
-
-        // Vertical movement (Q/E keys for up/down)
-        if (keys.q) {
-          world.camera.three.position.y += moveDistance;
-        }
-        if (keys.e) {
-          world.camera.three.position.y -= moveDistance;
-        }
-
-        // Only force Y position for horizontal movement (Arrow keys, not Q/E)
-        if (!keys.q && !keys.e) {
-          world.camera.three.position.y = 1.6;
-        }
-
-        // Clamp Y position to prevent going underground
-        world.camera.three.position.y = Math.max(0.1, world.camera.three.position.y);
-      }
-
-      // SAFETY: Enforce Y position constraints but allow explicit vertical movement
-      if (!keys.q && !keys.e) {
-        world.camera.three.position.y = 1.6; // Force eye level only when not using Q/E
-      }
-      world.camera.three.position.y = Math.max(0.1, world.camera.three.position.y); // Always prevent underground
-
-      requestAnimationFrame(updateFPSMovement);
+      requestAnimationFrame(updatePositionDisplay);
     };
-    // Start the FPS movement update loop
-    updateFPSMovement();
 
-    // Ensure position display is visible after a short delay (debug mode)
-    if (isDebugMode && positionDisplay) {
-      setTimeout(() => {
-        const displayElement = document.getElementById('fps-position-display');
-        if (displayElement) {
-          displayElement.style.display = 'block';
-          displayElement.style.visibility = 'visible';
-          console.log('Position display forced visible in BOTTOM RIGHT after delay');
-        } else {
-          console.error('Position display element not found in DOM after delay');
-        }
-      }, 1000);
-    } else if (isDebugMode) {
-      console.log('Debug mode is on but positionDisplay is null');
+    // Start position display update loop
+    if (isDebugMode) {
+      updatePositionDisplay();
     }
 
-    window.addEventListener('keydown', (e) => {
-      const key = e.key.toLowerCase();
-      if (key in keys) {
-        keys[key] = true;
-        e.preventDefault(); // Prevent default browser behavior for these keys
-      }
-    });
-
-    window.addEventListener('keyup', (e) => {
-      const key = e.key.toLowerCase();
-      if (key in keys) {
-        keys[key] = false;
-        e.preventDefault(); // Prevent default browser behavior for these keys
-      }
-    });
+    // Import enhanced keyboard controls
+    const { initializeKeyboardControls, setKeyboardControlsContext } = await import('./components/Toolbars/Sections/EnhancedKeyboardControls');
+    
+    // Initialize enhanced keyboard controls with projection-aware bindings
+    setKeyboardControlsContext(fpControls, world, moveSpeed);
+    initializeKeyboardControls();
+    
+    console.log('Enhanced keyboard controls initialized with projection-specific bindings');
 
     // Enable scroll wheel movement: scroll up = forward, scroll down = backward
     viewport.addEventListener('wheel', (event: WheelEvent) => {
@@ -657,53 +751,97 @@ export class WorldViewer extends HTMLElement {
     fragments.onFragmentsLoaded.add(async (model) => {
       console.log('Fragment loading started for model:', model);
 
-      if (model.hasProperties) {
-        console.log('Processing model properties...');
-        await indexer.process(model);
-        classifier.byEntity(model);
-        console.log('Model properties processed');
-      }
-
-      if (!model.isStreamed) {
-        console.log('Adding model fragments to scene...');
-        let fragmentCount = 0;
-        for (const fragment of model.items) {
-          world.meshes.add(fragment.mesh);
-          culler.add(fragment.mesh);
-
-          // Ensure fragment mesh is visible and has proper material
-          if (fragment.mesh) {
-            fragment.mesh.visible = true;
-            fragment.mesh.castShadow = true;
-            fragment.mesh.receiveShadow = true;
-
-            // Force material update
-            if (fragment.mesh.material) {
-              if (Array.isArray(fragment.mesh.material)) {
-                fragment.mesh.material.forEach(mat => {
-                  if (mat && 'needsUpdate' in mat) {
-                    (mat as THREE.Material).needsUpdate = true;
-                  }
-                });
-              } else if ('needsUpdate' in fragment.mesh.material) {
-                (fragment.mesh.material as THREE.Material).needsUpdate = true;
-              }
-            }
-
-            fragmentCount++;
-          }
+      try {
+        // Check WebGL context before proceeding
+        if (!world.renderer) {
+          console.warn('Renderer not available during fragment loading');
+          return;
         }
-        console.log(`Added ${fragmentCount} fragments to scene`);
-      }
+        
+        const gl = world.renderer.three.getContext();
+        if (gl.isContextLost()) {
+          console.warn('WebGL context lost during fragment loading, skipping...');
+          return;
+        }
 
-      // Add model to scene
-      world.scene.three.add(model);
-      console.log('Model added to Three.js scene');
+        if (model.hasProperties) {
+          console.log('Processing model properties...');
+          await indexer.process(model);
+          classifier.byEntity(model);
+          console.log('Model properties processed');
+        }
 
-      // Force renderer update
-      if (world.renderer) {
-        world.renderer.update();
-        console.log('Renderer updated');
+        if (!model.isStreamed) {
+          console.log('Adding model fragments to scene...');
+          let fragmentCount = 0;
+          for (const fragment of model.items) {
+            try {
+              // Check context again for each fragment
+              if (gl.isContextLost()) {
+                console.warn('WebGL context lost during fragment processing, stopping...');
+                break;
+              }
+
+              world.meshes.add(fragment.mesh);
+              culler.add(fragment.mesh);
+
+              // Ensure fragment mesh is visible and has proper material
+              if (fragment.mesh) {
+                fragment.mesh.visible = true;
+                fragment.mesh.castShadow = true;
+                fragment.mesh.receiveShadow = true;
+
+                // Force material update with error handling
+                if (fragment.mesh.material) {
+                  try {
+                    if (Array.isArray(fragment.mesh.material)) {
+                      fragment.mesh.material.forEach(mat => {
+                        if (mat && 'needsUpdate' in mat) {
+                          (mat as THREE.Material).needsUpdate = true;
+                        }
+                      });
+                    } else if ('needsUpdate' in fragment.mesh.material) {
+                      (fragment.mesh.material as THREE.Material).needsUpdate = true;
+                    }
+                  } catch (materialError) {
+                    console.warn('Error updating material for fragment:', materialError);
+                  }
+                }
+
+                fragmentCount++;
+                
+                // Yield control periodically to prevent blocking
+                if (fragmentCount % 50 === 0) {
+                  await new Promise(resolve => setTimeout(resolve, 1));
+                }
+              }
+            } catch (fragmentError) {
+              console.warn('Error processing fragment:', fragmentError);
+              // Continue with next fragment
+            }
+          }
+          console.log(`Added ${fragmentCount} fragments to scene`);
+        }
+
+        // Add model to scene with error handling
+        try {
+          world.scene.three.add(model);
+          console.log('Model added to Three.js scene');
+        } catch (sceneError) {
+          console.warn('Error adding model to scene:', sceneError);
+        }
+
+        // Force renderer update with error handling
+        try {
+          if (world.renderer && !gl.isContextLost()) {
+            world.renderer.update();
+            console.log('Renderer updated');
+          }
+        } catch (renderError) {
+          console.warn('Error updating renderer:', renderError);
+        }
+      } catch (overallError) {
+        console.error('Overall error in fragment loading:', overallError);
       }
 
       if (!model.isStreamed) {
@@ -793,6 +931,14 @@ export class WorldViewer extends HTMLElement {
       `;
       }
     }, dataState);
+
+    // Create the ZoomOptions component
+    const zoomOptionsComponent = ZoomOptions(world);
+    console.log('ZoomOptions component created:', zoomOptionsComponent);
+
+    // Create the NaviCube component
+    const naviCubeComponent = NaviCube(world);
+    console.log('NaviCube component created:', naviCubeComponent);
 
     // Create a function to update the panel when language changes
     const updatePanelOnLanguageChange = () => {
@@ -977,6 +1123,14 @@ export class WorldViewer extends HTMLElement {
 
     const expandButton = createExpandButton();
     app.appendChild(expandButton);
+
+    // Add the ZoomOptions component to the body instead of app
+    document.body.appendChild(zoomOptionsComponent);
+    console.log('ZoomOptions component added to DOM body:', document.getElementById('zoom-options-panel'));
+
+    // Add the NaviCube component to the body
+    document.body.appendChild(naviCubeComponent);
+    console.log('NaviCube component added to DOM body:', document.getElementById('navi-cube'));
 
     // Add event listeners after all elements are created
     setTimeout(() => {

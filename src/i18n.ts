@@ -15,6 +15,22 @@ const enTranslations = {
   project: 'Project',
   settings: 'Settings',
   help: 'Help',
+  // Authentication
+  username: 'Username',
+  password: 'Password',
+  rememberMe: 'Remember Me',
+  loginToLoytec: 'Login to Loytec System',
+  pleaseEnterCredentials: 'Please enter both username and password',
+  loginFailed: 'Login failed',
+  loginError: 'An error occurred during login',
+  loggingIn: 'Logging in...',
+  connectionSuccessful: 'Connection successful',
+  connectionFailed: 'Cannot connect to Loytec system',
+  checkingConnection: 'Checking connection...',
+  retry: 'Retry',
+  advancedSettings: 'Advanced Settings',
+  loytecServerUrl: 'Loytec Server URL',
+  serverUrlHelp: 'Configure the Loytec system base URL',
   // Selection toolbar
   selection: 'Selection',
   showAll: 'Show All',
@@ -49,6 +65,22 @@ const enTranslations = {
   doubleSpeed: 'Double Speed (x2)',
   tripleSpeed: 'Triple Speed (x3)',
   currentSpeed: 'Current: x{speed}',
+  // Projection controls
+  projection: 'Projection',
+  perspective: 'Perspective',
+  orthographic: 'Orthographic',
+  projectionMode: 'Projection Mode',
+  perspectiveMode: 'Perspective Mode',
+  orthographicMode: 'Orthographic Mode',
+  switchToPerspective: 'Switch to Perspective',
+  switchToOrthographic: 'Switch to Orthographic',
+  // Zoom controls
+  zoomOptions: 'Zoom Options',
+  zoomToExtents: 'Zoom to Extents',
+  zoomToFit: 'Zoom to Fit',
+  zoomToCenter: 'Zoom to Center',
+  zoomIn: 'Zoom In',
+  zoomOut: 'Zoom Out',
   // Measurement toolbar
   measurements: 'Measurements',
   enabled: 'Enabled',
@@ -123,6 +155,22 @@ const jaTranslations = {
   project: 'プロジェクト',
   settings: '設定',
   help: 'ヘルプ',
+  // Authentication
+  username: 'ユーザー名',
+  password: 'パスワード',
+  rememberMe: 'ユーザー名を記憶する',
+  loginToLoytec: 'Loytecシステムにログイン',
+  pleaseEnterCredentials: 'ユーザー名とパスワードの両方を入力してください',
+  loginFailed: 'ログインに失敗しました',
+  loginError: 'ログイン中にエラーが発生しました',
+  loggingIn: 'ログイン中...',
+  connectionSuccessful: '接続に成功しました',
+  connectionFailed: 'Loytecシステムに接続できません',
+  checkingConnection: '接続を確認中...',
+  retry: 'リトライ',
+  advancedSettings: '詳細設定',
+  loytecServerUrl: 'LoytecサーバーURL',
+  serverUrlHelp: 'Loytecシステムのベース URL を設定します',
   // Selection toolbar
   selection: '選択',
   showAll: 'すべて表示',
@@ -157,6 +205,22 @@ const jaTranslations = {
   doubleSpeed: '倍速 (x2)',
   tripleSpeed: '3倍速 (x3)',
   currentSpeed: '現在: x{speed}',
+  // Projection controls
+  projection: '投影',
+  perspective: '透視投影',
+  orthographic: '正投影',
+  projectionMode: '投影モード',
+  perspectiveMode: '透視投影モード',
+  orthographicMode: '正投影モード',
+  switchToPerspective: '透視投影に切替',
+  switchToOrthographic: '正投影に切替',
+  // Zoom controls
+  zoomOptions: 'ズームオプション',
+  zoomToExtents: '全体表示',
+  zoomToFit: 'フィット表示',
+  zoomToCenter: '中央表示',
+  zoomIn: 'ズームイン',
+  zoomOut: 'ズームアウト',
   // Measurement toolbar
   measurements: '測定',
   enabled: '有効',
@@ -227,8 +291,8 @@ i18n
         translation: jaTranslations
       }
     },
-    lng: 'ja',
-    fallbackLng: 'ja',
+    lng: 'en',
+    fallbackLng: 'en',
     interpolation: {
       escapeValue: false
     }
