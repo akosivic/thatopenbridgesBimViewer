@@ -238,9 +238,15 @@ app.post('/ws/node/api/auth/login', async (req, res) => {
 
     if (!response.ok) {
       console.log(`Loytec authentication failed: ${response.status} ${response.statusText}`);
+      console.log('Response details:', {
+        url: loginUrl,
+        status: response.status,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries())
+      });
       return res.status(401).json({
         success: false,
-        error: `Authentication failed: ${response.status} ${response.statusText}`
+        error: 'Invalid username or password'
       });
     }
 
@@ -250,17 +256,19 @@ app.post('/ws/node/api/auth/login', async (req, res) => {
       loytecResponse = await response.json();
     } catch (error) {
       console.error('Failed to parse Loytec response as JSON:', error);
-      return res.status(500).json({
+      console.error('Response text preview:', await response.text().catch(() => 'Unable to read response'));
+      return res.status(401).json({
         success: false,
-        error: 'Invalid response from Loytec device'
+        error: 'Authentication failed'
       });
     }
 
     // Validate Loytec response structure
     if (typeof loytecResponse.loggedIn !== 'boolean') {
-      return res.status(500).json({
+      console.error('Invalid Loytec response structure:', loytecResponse);
+      return res.status(401).json({
         success: false,
-        error: 'Invalid response format from Loytec server'
+        error: 'Authentication failed'
       });
     }
 
@@ -283,15 +291,16 @@ app.post('/ws/node/api/auth/login', async (req, res) => {
       if (!isLoggedIn) errorDetails.push(`loggedIn=${loytecResponse.loggedIn}`);
       if (!isValidUser) errorDetails.push(`sessUser="${sessUser}"`);
       
-      const errorMessage = loytecResponse.authFail?.length > 0 
+      const detailedError = loytecResponse.authFail?.length > 0 
         ? loytecResponse.authFail.join(', ')
         : `Authentication failed - Required: loggedIn=true and valid user. Got: ${errorDetails.join(', ')}`;
       
-      console.log('Loytec authentication validation failed:', errorMessage);
+      console.log('Loytec authentication validation failed:', detailedError);
+      console.log('Full Loytec response for debugging:', loytecResponse);
+      
       return res.status(401).json({
         success: false,
-        error: errorMessage,
-        loytecResponse
+        error: 'Invalid username or password'
       });
     }
 
@@ -312,20 +321,24 @@ app.post('/ws/node/api/auth/login', async (req, res) => {
 
     console.log(`Authentication successful for user: ${sessionData.username} (Session: ${sessionId.substring(0, 8)}...)`);
 
-    // Return success response
+    // Return success response (no sensitive data)
     return res.status(200).json({
       success: true,
       sessionId,
-      message: `Successfully authenticated as ${sessionData.username}`,
-      username: sessionData.username,
-      loginState: loytecResponse.loginState
+      message: 'Authentication successful',
+      username: sessionData.username
     });
 
   } catch (error) {
     console.error('Login error:', error);
-    return res.status(500).json({
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      username: req.body?.username || 'unknown'
+    });
+    return res.status(401).json({
       success: false,
-      error: error instanceof Error ? error.message : 'Internal server error'
+      error: 'Authentication failed'
     });
   }
 });
@@ -338,9 +351,10 @@ app.post('/ws/node/api/auth/validate', (req, res) => {
     const { sessionId } = req.body;
 
     if (!sessionId) {
-      return res.status(400).json({
+      console.log('Session validation failed: No session ID provided');
+      return res.status(401).json({
         success: false,
-        error: 'Session ID is required'
+        error: 'Invalid session'
       });
     }
 
@@ -348,7 +362,7 @@ app.post('/ws/node/api/auth/validate', (req, res) => {
     const now = Date.now();
 
     if (!sessionData) {
-      console.log('Session not found');
+      console.log('Session validation failed: Session not found for ID:', sessionId.substring(0, 8) + '...');
       return res.status(401).json({
         success: false,
         error: 'Invalid session'
@@ -356,11 +370,11 @@ app.post('/ws/node/api/auth/validate', (req, res) => {
     }
 
     if (now > sessionData.expiresAt) {
-      console.log('Session expired');
+      console.log('Session validation failed: Session expired for user:', sessionData.username);
       sessionStore.delete(sessionId);
       return res.status(401).json({
         success: false,
-        error: 'Session expired'
+        error: 'Invalid session'
       });
     }
 
@@ -374,9 +388,13 @@ app.post('/ws/node/api/auth/validate', (req, res) => {
 
   } catch (error) {
     console.error('Session validation error:', error);
-    return res.status(500).json({
+    console.error('Validation error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      sessionIdPrefix: req.body?.sessionId?.substring(0, 8) + '...' || 'undefined'
+    });
+    return res.status(401).json({
       success: false,
-      error: 'Internal server error'
+      error: 'Invalid session'
     });
   }
 });
@@ -389,16 +407,19 @@ app.post('/ws/node/api/auth/logout', (req, res) => {
     const { sessionId } = req.body;
 
     if (!sessionId) {
-      return res.status(400).json({
-        success: false,
-        error: 'Session ID is required'
+      console.log('Logout failed: No session ID provided');
+      return res.status(200).json({
+        success: true,
+        message: 'Logout successful'
       });
     }
 
     const sessionData = sessionStore.get(sessionId);
     if (sessionData) {
       sessionStore.delete(sessionId);
-      console.log(`Session terminated for user: ${sessionData.username}`);
+      console.log(`Session terminated for user: ${sessionData.username} (Session: ${sessionId.substring(0, 8)}...)`);
+    } else {
+      console.log(`Logout attempted for non-existent session: ${sessionId.substring(0, 8)}...`);
     }
 
     return res.status(200).json({
@@ -408,9 +429,13 @@ app.post('/ws/node/api/auth/logout', (req, res) => {
 
   } catch (error) {
     console.error('Logout error:', error);
-    return res.status(500).json({
-      success: false,
-      error: 'Internal server error'
+    console.error('Logout error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      sessionIdPrefix: req.body?.sessionId?.substring(0, 8) + '...' || 'undefined'
+    });
+    return res.status(200).json({
+      success: true,
+      message: 'Logout successful'
     });
   }
 });
@@ -442,21 +467,28 @@ app.get('/ws/node/api/auth/test-connection', async (req, res) => {
     // 401 is expected without auth, so it's a valid response
     const isConnected = response.ok || response.status === 401;
     
-    return res.status(200).json({
-      success: true,
+    console.log('Connection test result:', {
       connected: isConnected,
       status: response.status,
       statusText: response.statusText,
       url: loytecBaseUrl
     });
+    
+    return res.status(200).json({
+      success: true,
+      connected: isConnected
+    });
 
   } catch (error) {
     console.error('Connection test error:', error);
+    console.error('Connection error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      url: loytecBaseUrl
+    });
     return res.status(200).json({
       success: true,
-      connected: false,
-      error: error instanceof Error ? error.message : 'Connection failed',
-      url: process.env.LOYTEC_BASE_URL || 'https://192.168.50.69'
+      connected: false
     });
   }
 });
