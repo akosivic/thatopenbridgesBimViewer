@@ -485,7 +485,7 @@ export class WorldViewer extends HTMLElement {
     });
 
     // Listen for manual movement events from SpeedControls direction buttons
-    window.addEventListener('manualMovement', (event: any) => {
+    window.addEventListener('manualMovement', async (event: any) => {
       const { direction, speed } = event.detail;
       console.log(`Manual movement triggered: ${direction} at speed ${speed}`);
 
@@ -516,10 +516,24 @@ export class WorldViewer extends HTMLElement {
           break;
       }
 
-      // FORCE Y position to always be at eye level (1.6 meters)
-      world.camera.three.position.y = 1.6;
-
-      console.log(`Moved ${direction}, new position:`, world.camera.three.position);
+      // Get current projection mode to apply restrictions only to perspective mode
+      try {
+        const { getCurrentProjection } = await import('./components/Toolbars/Sections/ProjectionControls');
+        const currentProjection = getCurrentProjection();
+        
+        if (currentProjection === "Perspective") {
+          // FORCE Y position to always be at eye level (1.6 meters) - perspective mode only
+          world.camera.three.position.y = 1.6;
+          console.log(`Moved ${direction} (Perspective mode - Y locked at 1.6m):`, world.camera.three.position);
+        } else {
+          // Orthographic mode: No Y-axis restrictions, allow free movement
+          console.log(`Moved ${direction} (Orthographic mode - no restrictions):`, world.camera.three.position);
+        }
+      } catch (error) {
+        console.warn('Could not determine projection mode, applying default restrictions:', error);
+        world.camera.three.position.y = 1.6; // Fallback to perspective behavior
+        console.log(`Moved ${direction} (fallback behavior):`, world.camera.three.position);
+      }
     });
 
     // Create enhanced position display update function for debug mode
@@ -582,7 +596,7 @@ export class WorldViewer extends HTMLElement {
     console.log('Enhanced keyboard controls initialized with projection-specific bindings');
 
     // Enable scroll wheel movement: scroll up = forward, scroll down = backward
-    viewport.addEventListener('wheel', (event: WheelEvent) => {
+    viewport.addEventListener('wheel', async (event: WheelEvent) => {
       if (!fpControls) return;
 
       event.preventDefault(); // Prevent default scroll behavior
@@ -610,10 +624,23 @@ export class WorldViewer extends HTMLElement {
         console.log('Scroll down: Moving BACKWARD');
       }
 
-      // FORCE Y position to always be at eye level (1.6 meters)
-      world.camera.three.position.y = 1.6;
-
-      console.log('New position:', world.camera.three.position);
+      // Get current projection mode to apply restrictions only to perspective mode
+      try {
+        const { getCurrentProjection } = await import('./components/Toolbars/Sections/ProjectionControls');
+        const currentProjection = getCurrentProjection();
+        
+        if (currentProjection === "Perspective") {
+          // FORCE Y position to always be at eye level (1.6 meters) - perspective mode only
+          world.camera.three.position.y = 1.6;
+          console.log('Perspective mode: Y position locked to 1.6m');
+        } else {
+          // Orthographic mode: No Y-axis restrictions, allow free movement
+          console.log('Orthographic mode: No Y-axis restrictions applied');
+        }
+      } catch (error) {
+        console.warn('Could not determine projection mode, applying default restrictions:', error);
+        world.camera.three.position.y = 1.6; // Fallback to perspective behavior
+      }
 
       console.log('New position:', world.camera.three.position);
     });

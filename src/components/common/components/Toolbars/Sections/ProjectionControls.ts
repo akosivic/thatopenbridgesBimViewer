@@ -96,11 +96,51 @@ export default (world: OBC.World) => {
 
     const setProjectionMode = (mode: "Perspective" | "Orthographic") => {
         if (camera instanceof OBC.OrthoPerspectiveCamera && mode !== currentProjection) {
+            const previousMode = currentProjection;
             camera.projection.set(mode);
             currentProjection = mode;
+            
+            // Apply mode-specific defaults when switching to orthographic
+            if (mode === "Orthographic") {
+                console.log("=== SWITCHING TO ORTHOGRAPHIC MODE ===");
+                console.log("Applying default settings - removing all camera restrictions");
+                
+                // Reset camera to more appropriate orthographic defaults
+                const camera3js = world.camera.three;
+                
+                // Set default orthographic position (remove Y lock)
+                // Keep current X and Z, but allow Y to be freely adjustable
+                const currentPos = camera3js.position.clone();
+                console.log("Current position maintained:", currentPos);
+                
+                // Reset zoom to default for orthographic
+                if (camera.controls?.camera) {
+                    camera.controls.camera.zoom = 1.0;
+                    camera.controls.camera.updateProjectionMatrix();
+                    console.log("Zoom reset to 1.0 for orthographic mode");
+                }
+                
+                // Reset rotation to a sensible default for orthographic (optional)
+                // Uncomment the following lines if you want to reset rotation when switching to orthographic:
+                camera3js.rotation.set(0, 0, 0);
+                // console.log("Rotation reset to defaults for orthographic mode");
+                
+                console.log("Orthographic mode: All restrictions removed, default settings applied");
+            } else if (mode === "Perspective") {
+                console.log("=== SWITCHING TO PERSPECTIVE MODE ===");
+                console.log("Applying perspective restrictions and settings");
+                
+                // Apply perspective-specific settings
+                const camera3js = world.camera.three;
+                
+                // Lock Y position to eye level for perspective mode
+                camera3js.position.y = 1.6;
+                console.log("Y position locked to 1.6m (eye level) for perspective mode");
+            }
+            
             updateProjectionDisplay();
             dispatchProjectionChangeEvent();
-            console.log(`=== PROJECTION SET TO: ${mode} ===`);
+            console.log(`=== PROJECTION SET TO: ${mode} (from ${previousMode}) ===`);
         }
     };
 

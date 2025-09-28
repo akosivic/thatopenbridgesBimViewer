@@ -4,6 +4,7 @@ import * as THREE from "three";
 import { PointerLockControls } from "three/examples/jsm/Addons.js";
 import i18n from "../../../utils/i18n";
 import projectionControls from "./ProjectionControls";
+import { getCurrentProjection } from "./ProjectionControls";
 
 // Global reference to FPS controls - will be set from WorldViewer
 export let fpControls: PointerLockControls | null = null;
@@ -139,14 +140,22 @@ export default (world: OBC.World) => {
                 break;
         }
 
-        // Only clamp Y position for explicit up/down movement, not for horizontal movement
-        // This allows the WorldViewer Y lock (1.6m) to work for horizontal movement
-        if (direction === 'up' || direction === 'down') {
-            newPosition.y = Math.max(0.1, newPosition.y);
+        // Get current projection mode to determine restrictions
+        const currentProjection = getCurrentProjection();
+        const isPerspective = currentProjection === "Perspective";
+        
+        // Apply restrictions only in perspective mode
+        if (isPerspective) {
+            // Only clamp Y position for explicit up/down movement, not for horizontal movement
+            // This allows the WorldViewer Y lock (1.6m) to work for horizontal movement
+            if (direction === 'up' || direction === 'down') {
+                newPosition.y = Math.max(0.1, newPosition.y);
+            }
         }
+        // In orthographic mode: No restrictions, allow free movement in all directions
         
         camera3js.position.copy(newPosition);
-        console.log('New position:', newPosition);
+        console.log(`${currentProjection} mode - New position:`, newPosition);
     };
 
     // Rotation controls
@@ -162,6 +171,10 @@ export default (world: OBC.World) => {
         console.log(`=== FPS CAMERA ROTATION: ${direction.toUpperCase()} ===`);
 
         const euler = new THREE.Euler().setFromQuaternion(camera3js.quaternion, 'YXZ');
+        
+        // Get current projection mode to determine restrictions
+        const currentProjection = getCurrentProjection();
+        const isPerspective = currentProjection === "Perspective";
 
         switch (direction) {
             case 'left':
@@ -171,17 +184,29 @@ export default (world: OBC.World) => {
                 euler.y += rotationStep; // Rotate right (clockwise around Y)
                 break;
             case 'up':
-                euler.x = Math.max(-Math.PI / 2 + 0.1, euler.x - rotationStep); // Look up (clamp to prevent flip)
+                if (isPerspective) {
+                    // Perspective mode: Apply clamps to prevent flip
+                    euler.x = Math.max(-Math.PI / 2 + 0.1, euler.x - rotationStep);
+                } else {
+                    // Orthographic mode: No restrictions, allow full rotation
+                    euler.x -= rotationStep;
+                }
                 break;
             case 'down':
-                euler.x = Math.min(Math.PI / 2 - 0.1, euler.x + rotationStep); // Look down (clamp to prevent flip)
+                if (isPerspective) {
+                    // Perspective mode: Apply clamps to prevent flip
+                    euler.x = Math.min(Math.PI / 2 - 0.1, euler.x + rotationStep);
+                } else {
+                    // Orthographic mode: No restrictions, allow full rotation
+                    euler.x += rotationStep;
+                }
                 break;
         }
 
         // Apply rotation to camera
         camera3js.setRotationFromEuler(euler);
 
-        console.log('New rotation (degrees):', {
+        console.log(`${currentProjection} mode - New rotation (degrees):`, {
             x: euler.x * 180 / Math.PI,
             y: euler.y * 180 / Math.PI,
             z: euler.z * 180 / Math.PI

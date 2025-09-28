@@ -72,14 +72,14 @@ const updateMovement = () => {
     const moveDistance = currentSpeed * dt;
     let moved = false;
 
-    // Movement controls (same for both projection modes)
+    // Movement controls with projection-specific behavior
     if (keys.arrowup || keys.keyw) {
         if (isPerspective) {
             // Perspective: Move in camera forward direction
             camera.position.addScaledVector(forward, moveDistance);
         } else {
-            // Orthographic: Pan up (world Y direction)  
-            camera.position.addScaledVector(upVector, moveDistance);
+            // Orthographic: Move in camera forward direction (default CAD behavior)
+            camera.position.addScaledVector(forward, moveDistance);
         }
         moved = true;
     }
@@ -89,8 +89,8 @@ const updateMovement = () => {
             // Perspective: Move in camera backward direction
             camera.position.addScaledVector(forward, -moveDistance);
         } else {
-            // Orthographic: Pan down (world -Y direction)
-            camera.position.addScaledVector(upVector, -moveDistance);
+            // Orthographic: Move in camera backward direction (default CAD behavior)
+            camera.position.addScaledVector(forward, -moveDistance);
         }
         moved = true;
     }
@@ -128,14 +128,14 @@ const updateMovement = () => {
         moved = true;
     }
 
-    // Rotation controls - only for perspective mode (orthographic uses orbit)
+    // Rotation controls - projection-specific behavior
     const rotationSpeed = 0.08;
     
     if (isPerspective) {
         // In perspective mode, keyboard rotation is disabled - use mouse look instead
         // This matches FPS-style controls
     } else if (isOrthographic) {
-        // In orthographic mode, Ctrl + Arrow keys for orbit rotation
+        // In orthographic mode, Ctrl + Arrow keys for orbit rotation (no restrictions)
         if (keys.controlleft || keys.controlright) {
             const euler = new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ');
             
@@ -148,11 +148,13 @@ const updateMovement = () => {
                 moved = true;
             }
             if (keys.arrowup) {
-                euler.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, euler.x + rotationSpeed * dt));
+                // Orthographic: No restrictions, allow full rotation
+                euler.x += rotationSpeed * dt;
                 moved = true;
             }
             if (keys.arrowdown) {
-                euler.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, euler.x - rotationSpeed * dt));
+                // Orthographic: No restrictions, allow full rotation
+                euler.x -= rotationSpeed * dt;
                 moved = true;
             }
             
@@ -160,16 +162,22 @@ const updateMovement = () => {
         }
     }
 
-    // Lock Y position for perspective mode (FPS-style)
+    // Y-axis restrictions only apply to perspective mode (FPS-style)
     if (isPerspective && (keys.arrowup || keys.arrowdown || keys.keyw || keys.keys || 
                          keys.arrowleft || keys.arrowright || keys.keya || keys.keyd)) {
+        // Only lock Y in perspective mode, and only if not using Q/E for vertical movement
         if (!keys.keyq && !keys.keye) {
-            camera.position.y = 1.6; // Eye level height
+            camera.position.y = 1.6; // Eye level height lock for perspective mode only
         }
     }
+    // In orthographic mode: No Y-axis restrictions, allow free 3D movement
 
     if (moved) {
-        console.log(`${currentProjection} movement:`, camera.position);
+        if (isPerspective) {
+            console.log(`${currentProjection} movement (FPS restrictions):`, camera.position);
+        } else {
+            console.log(`${currentProjection} movement (no restrictions):`, camera.position);
+        }
     }
 
     // Continue the animation loop

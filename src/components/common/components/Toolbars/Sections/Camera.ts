@@ -189,22 +189,48 @@ export default (world: OBC.World) => {
     console.log('Zoom changed from', currentZoom, 'to', newZoom);
   };
 
-  const resetCamera = () => {
+  const resetCamera = async () => {
     if (!fpControls) {
       console.log('FPS controls not initialized');
       return;
     }
 
-    console.log('=== RESETTING FPS CAMERA TO DEFAULT ===');
+    console.log('=== RESETTING CAMERA TO DEFAULT ===');
 
     const camera3js = world.camera.three;
 
-    // Reset to initial FPS position and orientation
-    const defaultPosition = new THREE.Vector3(-1.29, 1.60, 1.14);
-    const defaultLookAt = new THREE.Vector3(0, 1, 0);
+    // Get current projection mode to apply appropriate defaults
+    try {
+      const { getCurrentProjection } = await import('./ProjectionControls');
+      const currentProjection = getCurrentProjection();
+      
+      if (currentProjection === "Perspective") {
+        console.log('Applying perspective mode defaults with restrictions');
+        // Reset to initial FPS position and orientation
+        const defaultPosition = new THREE.Vector3(-1.29, 1.60, 1.14);
+        const defaultLookAt = new THREE.Vector3(0, 1, 0);
 
-    camera3js.position.copy(defaultPosition);
-    camera3js.lookAt(defaultLookAt);
+        camera3js.position.copy(defaultPosition);
+        camera3js.lookAt(defaultLookAt);
+        console.log('Perspective reset - Position:', defaultPosition, 'LookAt:', defaultLookAt);
+      } else {
+        console.log('Applying orthographic mode defaults - no restrictions');
+        // Reset to orthographic-friendly defaults (allow free positioning)
+        const defaultPosition = new THREE.Vector3(0, 5, 5); // Higher and more orthographic-appropriate
+        const defaultLookAt = new THREE.Vector3(0, 0, 0);
+
+        camera3js.position.copy(defaultPosition);
+        camera3js.lookAt(defaultLookAt);
+        console.log('Orthographic reset - Position:', defaultPosition, 'LookAt:', defaultLookAt);
+      }
+    } catch (error) {
+      console.warn('Could not determine projection mode, applying perspective defaults:', error);
+      // Fallback to perspective defaults
+      const defaultPosition = new THREE.Vector3(-1.29, 1.60, 1.14);
+      const defaultLookAt = new THREE.Vector3(0, 1, 0);
+      camera3js.position.copy(defaultPosition);
+      camera3js.lookAt(defaultLookAt);
+    }
 
     // Reset zoom if available
     if (camera.controls?.camera) {
@@ -212,8 +238,7 @@ export default (world: OBC.World) => {
       camera.controls.camera.updateProjectionMatrix();
     }
 
-    console.log('Reset position:', defaultPosition);
-    console.log('Reset lookAt:', defaultLookAt);
+    console.log('Camera reset completed');
     console.log('=====================================');
   };
 
