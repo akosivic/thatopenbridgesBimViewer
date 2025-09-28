@@ -108,7 +108,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ open, onClose, onLoginSuccess }) 
         if (result.loytecResponse?.authFail && result.loytecResponse.authFail.length > 0) {
           errorMessage = `Authentication failed: ${result.loytecResponse.authFail.join(', ')}`;
         } else if (result.loytecResponse?.loginState !== 2 || !result.loytecResponse?.loggedIn) {
-          errorMessage = `Login failed - Required: loginState=2 and loggedIn=true. Got: loginState=${result.loytecResponse?.loginState}, loggedIn=${result.loytecResponse?.loggedIn}`;
+          errorMessage = `Login failed: Invalid login state`;
         }
         
         setError(errorMessage);

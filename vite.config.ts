@@ -11,6 +11,13 @@ export default defineConfig({
         target: 'http://localhost:8001',
         changeOrigin: true,
         secure: false,
+        configure: (proxy) => {
+          proxy.on('error', (err) => {
+            console.error('⚠️ Proxy error - make sure backend server is running on port 8001');
+            console.error('Run: npm run start:dev (to start both frontend and backend)');
+            console.error('Error details:', err.message);
+          });
+        },
       },
     },
     fs: {
