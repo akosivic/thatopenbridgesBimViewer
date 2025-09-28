@@ -2,6 +2,7 @@ import * as THREE from "three";
 import * as OBC from "@thatopen/components";
 import { PointerLockControls } from "three/examples/jsm/Addons.js";
 import { getCurrentProjection } from "./ProjectionControls";
+import { getCurrentSpeed } from "./CameraSettings";
 
 // Global references
 let fpControls: PointerLockControls | null = null;
@@ -38,6 +39,60 @@ const keys: Record<string, boolean> = {
 const upVector = new THREE.Vector3(0, 1, 0);
 
 let animationFrame: number | null = null;
+
+// Orthographic-specific functions
+const zoomOrthographicCamera = (direction: number) => {
+    if (!world?.camera || !(world.camera instanceof OBC.OrthoPerspectiveCamera)) return;
+    
+    // Get current speed multiplier from camera settings
+    const currentSpeed = getCurrentSpeed();
+    const speedMultiplier = currentSpeed / 5.0; // Normalize against base speed
+    
+    // Apply speed to zoom
+    const baseZoomSpeed = 0.1;
+    const adjustedZoomSpeed = baseZoomSpeed * speedMultiplier;
+    
+    const currentZoom = (world.camera.three as THREE.OrthographicCamera).zoom || 1;
+    const zoomDelta = direction * adjustedZoomSpeed;
+    
+    const newZoom = Math.max(0.01, Math.min(100, currentZoom + zoomDelta));
+    (world.camera.three as THREE.OrthographicCamera).zoom = newZoom;
+    world.camera.three.updateProjectionMatrix();
+    
+    console.log('Orthographic keyboard zoom (speed x' + speedMultiplier.toFixed(1) + '):', newZoom);
+};
+
+const panOrthographicCamera = (deltaX: number, deltaY: number) => {
+    if (!world?.camera?.three || !(world.camera instanceof OBC.OrthoPerspectiveCamera)) return;
+    
+    const camera = world.camera.three;
+    
+    // Get current speed multiplier from camera settings
+    const currentSpeed = getCurrentSpeed();
+    const speedMultiplier = currentSpeed / 5.0; // Normalize against base speed
+    
+    // Get camera's right and up vectors for proper panning
+    const right = new THREE.Vector3();
+    const up = new THREE.Vector3();
+    
+    camera.getWorldDirection(new THREE.Vector3()); // Update camera matrix
+    right.setFromMatrixColumn(camera.matrix, 0); // X axis
+    up.setFromMatrixColumn(camera.matrix, 1);    // Y axis
+    
+    // Calculate pan movement (scale by zoom level for consistent feel)
+    const currentZoom = (camera as THREE.OrthographicCamera).zoom || 1;
+    const basePanScale = 0.1 / currentZoom;
+    const adjustedPanScale = basePanScale * speedMultiplier;
+    
+    const panVector = new THREE.Vector3();
+    panVector.addScaledVector(right, deltaX * adjustedPanScale);
+    panVector.addScaledVector(up, deltaY * adjustedPanScale);
+    
+    // Apply pan to camera position
+    camera.position.add(panVector);
+    
+    console.log('Orthographic keyboard pan (speed x' + speedMultiplier.toFixed(1) + '):', camera.position);
+};
 
 // Enhanced movement function with projection-specific behavior
 const updateMovement = () => {
@@ -78,8 +133,14 @@ const updateMovement = () => {
             // Perspective: Move in camera forward direction
             camera.position.addScaledVector(forward, moveDistance);
         } else {
-            // Orthographic: Move in camera forward direction (default CAD behavior)
-            camera.position.addScaledVector(forward, moveDistance);
+            // Orthographic: Up arrow = zoom in (new behavior)
+            if (keys.arrowup) {
+                zoomOrthographicCamera(1); // Zoom in
+            }
+            // W key still moves forward in orthographic
+            if (keys.keyw) {
+                camera.position.addScaledVector(forward, moveDistance);
+            }
         }
         moved = true;
     }
@@ -89,8 +150,14 @@ const updateMovement = () => {
             // Perspective: Move in camera backward direction
             camera.position.addScaledVector(forward, -moveDistance);
         } else {
-            // Orthographic: Move in camera backward direction (default CAD behavior)
-            camera.position.addScaledVector(forward, -moveDistance);
+            // Orthographic: Down arrow = zoom out (new behavior)
+            if (keys.arrowdown) {
+                zoomOrthographicCamera(-1); // Zoom out
+            }
+            // S key still moves backward in orthographic
+            if (keys.keys) {
+                camera.position.addScaledVector(forward, -moveDistance);
+            }
         }
         moved = true;
     }
@@ -100,8 +167,14 @@ const updateMovement = () => {
             // Perspective: Strafe left
             camera.position.addScaledVector(right, -moveDistance);
         } else {
-            // Orthographic: Pan left 
-            camera.position.addScaledVector(right, -moveDistance);
+            // Orthographic: Left arrow = pan left (new behavior)
+            if (keys.arrowleft) {
+                panOrthographicCamera(-moveDistance, 0); // Pan left
+            }
+            // A key still moves left in orthographic
+            if (keys.keya) {
+                camera.position.addScaledVector(right, -moveDistance);
+            }
         }
         moved = true;
     }
@@ -111,8 +184,14 @@ const updateMovement = () => {
             // Perspective: Strafe right
             camera.position.addScaledVector(right, moveDistance);
         } else {
-            // Orthographic: Pan right
-            camera.position.addScaledVector(right, moveDistance);
+            // Orthographic: Right arrow = pan right (new behavior)
+            if (keys.arrowright) {
+                panOrthographicCamera(moveDistance, 0); // Pan right
+            }
+            // D key still moves right in orthographic
+            if (keys.keyd) {
+                camera.position.addScaledVector(right, moveDistance);
+            }
         }
         moved = true;
     }

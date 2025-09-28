@@ -27,6 +27,12 @@ interface KeyBindings {
     rotateDown: string[];
     zoom: string[];
     pan: string[];
+    // New orthographic-specific bindings
+    zoomIn?: string[];
+    zoomOut?: string[];
+    panLeft?: string[];
+    panRight?: string[];
+    rotate?: string[];
 }
 
 // Perspective mode: First-person style controls
@@ -45,20 +51,25 @@ const perspectiveBindings: KeyBindings = {
     pan: ["Middle Mouse Button"]
 };
 
-// Orthographic mode: CAD-style controls (similar to AutoCAD, Revit)
+// Orthographic mode: New CAD-style controls with mouse integration
 const orthographicBindings: KeyBindings = {
-    forward: ["ArrowUp", "KeyW"],
-    backward: ["ArrowDown", "KeyS"],
-    left: ["ArrowLeft", "KeyA"], 
-    right: ["ArrowRight", "KeyD"],
+    forward: ["KeyW"],
+    backward: ["KeyS"],
+    left: ["KeyA"], 
+    right: ["KeyD"],
     up: ["KeyQ"],
     down: ["KeyE"],
+    zoomIn: ["ArrowUp"],
+    zoomOut: ["ArrowDown"],
+    panLeft: ["ArrowLeft"],
+    panRight: ["ArrowRight"],
     rotateLeft: ["Ctrl + Arrow Left"],
     rotateRight: ["Ctrl + Arrow Right"],
     rotateUp: ["Ctrl + Arrow Up"],
     rotateDown: ["Ctrl + Arrow Down"],
-    zoom: ["Mouse Wheel", "Ctrl + Mouse Wheel"],
-    pan: ["Middle Mouse Button", "Shift + Mouse Drag"]
+    zoom: ["Mouse Wheel"],
+    pan: ["Middle Mouse Button"],
+    rotate: ["Left Mouse Button"]
 };
 
 export default (world: OBC.World) => {

@@ -335,6 +335,11 @@ export class WorldViewer extends HTMLElement {
     const { setFPControls } = await import('./components/Toolbars/Sections/CameraSettings');
     setFPControls(fpControls);
 
+    // Initialize orthographic mouse controls
+    const { initializeOrthographicControls } = await import('./components/Toolbars/Sections/OrthographicMouseControls');
+    initializeOrthographicControls(world, viewport);
+    console.log('Orthographic mouse controls initialized');
+
     // DISABLE the original orbit controls to prevent conflicts
     if (world.camera.controls) {
       world.camera.controls.enabled = false;
@@ -380,7 +385,7 @@ export class WorldViewer extends HTMLElement {
     // Track mousedown position to ensure consistent behavior
     let mouseDownOnToolbar = false;
 
-    viewport.addEventListener('mousedown', (e) => {
+    viewport.addEventListener('mousedown', async (e) => {
       mouseDownOnToolbar = isToolbarButton(e.target);
 
       if (mouseDownOnToolbar) {
@@ -388,14 +393,31 @@ export class WorldViewer extends HTMLElement {
         return;
       }
 
-      if (fpControls && e.button === 0) {
-        isMousePressed = true;
-        fpControls.lock();
-        console.log('Mouse pressed - FPS mode ACTIVATED');
+      // Check projection mode to determine behavior
+      try {
+        const { getCurrentProjection } = await import('./components/Toolbars/Sections/ProjectionControls');
+        const currentProjection = getCurrentProjection();
+        
+        if (currentProjection === "Perspective" && fpControls && e.button === 0) {
+          // Perspective mode: Use FPS controls (left mouse activates pointer lock)
+          isMousePressed = true;
+          fpControls.lock();
+          console.log('Mouse pressed - FPS mode ACTIVATED');
+        } else if (currentProjection === "Orthographic") {
+          // Orthographic mode: OrthographicMouseControls handles all mouse events
+          console.log('Mouse event handled by orthographic controls');
+        }
+      } catch (error) {
+        console.warn('Could not determine projection mode, defaulting to perspective behavior');
+        if (fpControls && e.button === 0) {
+          isMousePressed = true;
+          fpControls.lock();
+          console.log('Mouse pressed - FPS mode ACTIVATED (fallback)');
+        }
       }
     });
 
-    viewport.addEventListener('mouseup', (e) => {
+    viewport.addEventListener('mouseup', async (e) => {
       // Check both current target and original mousedown target
       const currentTargetIsToolbar = isToolbarButton(e.target);
 
@@ -406,10 +428,25 @@ export class WorldViewer extends HTMLElement {
         return;
       }
 
-      if (fpControls && e.button === 0 && isMousePressed) {
-        isMousePressed = false;
-        fpControls.unlock();
-        console.log('Mouse released - FPS mode DEACTIVATED');
+      // Check projection mode to determine behavior
+      try {
+        const { getCurrentProjection } = await import('./components/Toolbars/Sections/ProjectionControls');
+        const currentProjection = getCurrentProjection();
+        
+        if (currentProjection === "Perspective" && fpControls && e.button === 0 && isMousePressed) {
+          // Perspective mode: Deactivate FPS controls
+          isMousePressed = false;
+          fpControls.unlock();
+          console.log('Mouse released - FPS mode DEACTIVATED');
+        }
+        // Orthographic mode: OrthographicMouseControls handles mouse up
+      } catch (error) {
+        console.warn('Could not determine projection mode, using fallback behavior');
+        if (fpControls && e.button === 0 && isMousePressed) {
+          isMousePressed = false;
+          fpControls.unlock();
+          console.log('Mouse released - FPS mode DEACTIVATED (fallback)');
+        }
       }
 
       // Reset tracking variables
