@@ -232,16 +232,6 @@ export default (world: OBC.World) => {
                     </div>
                 </div>
 
-                <!-- Key Bindings Info -->
-                <div style="display: flex; flex-direction: column; gap: 8px; margin: 10px 0; padding: 10px; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 4px; background: rgba(0, 0, 0, 0.3);">
-                    <div style="font-size: 11px; font-weight: bold; color: #aaa; text-align: center;">Key Bindings</div>
-                    <div style="font-size: 9px; color: rgba(255, 255, 255, 0.6); line-height: 1.3;">
-                        <div><strong>Perspective:</strong> WASD/Arrows (move), Mouse (look)</div>
-                        <div><strong>Orthographic:</strong> WASD/Arrows (pan), Ctrl+Arrows (orbit)</div>
-                        <div><strong>Both:</strong> Q/E (up/down), Wheel (zoom)</div>
-                    </div>
-                </div>
-
                 <style>
                     .projection-mode-button.active {
                         background: #6528d7 !important;

@@ -67,24 +67,19 @@ export default (world: OBC.World) => {
             <div class="zoom-title">Zoom Options</div>
             <div class="zoom-buttons">
                 <button class="zoom-button zoom-extents" title="Zoom to Extents">
-                    <span class="zoom-icon">📐</span>
                     <span class="zoom-label">Zoom to Extents</span>
                 </button>
                 <button class="zoom-button zoom-fit" title="Zoom to Fit">
-                    <span class="zoom-icon">🎯</span>
                     <span class="zoom-label">Zoom to Fit</span>
                 </button>
                 <button class="zoom-button zoom-center" title="Zoom to Center">
-                    <span class="zoom-icon">🎪</span>
                     <span class="zoom-label">Zoom to Center</span>
                 </button>
                 <div class="zoom-controls">
                     <button class="zoom-button zoom-in" title="Zoom In">
-                        <span class="zoom-icon">➕</span>
                         <span class="zoom-label">Zoom In</span>
                     </button>
                     <button class="zoom-button zoom-out" title="Zoom Out">
-                        <span class="zoom-icon">➖</span>
                         <span class="zoom-label">Zoom Out</span>
                     </button>
                 </div>
@@ -110,18 +105,17 @@ export default (world: OBC.World) => {
     style.textContent = `
         .zoom-options-panel {
             position: fixed;
-            top: 50%;
+            top: 200px;
             right: 20px;
-            transform: translateY(-50%);
             background: rgba(0, 0, 0, 0.9);
             backdrop-filter: blur(10px);
-            border: 3px solid rgba(255, 255, 255, 0.8);
-            border-radius: 12px;
-            padding: 16px;
-            z-index: 100000;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-            min-width: 140px;
-            max-width: 200px;
+            border: 2px solid rgba(255, 255, 255, 0.6);
+            border-radius: 8px;
+            padding: 10px;
+            z-index: 99998;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+            min-width: 100px;
+            max-width: 140px;
             display: block !important;
             visibility: visible !important;
             opacity: 1 !important;
@@ -131,22 +125,22 @@ export default (world: OBC.World) => {
         .zoom-panel-content {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 6px;
         }
 
         .zoom-title {
-            font-size: 14px;
+            font-size: 11px;
             font-weight: 600;
             color: #ffffff;
             text-align: center;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
             opacity: 0.9;
         }
 
         .zoom-buttons {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 4px;
         }
 
         .zoom-controls {
@@ -158,17 +152,17 @@ export default (world: OBC.World) => {
         .zoom-button {
             display: flex;
             align-items: center;
-            gap: 8px;
-            padding: 10px 12px;
+            justify-content: center;
+            padding: 6px 8px;
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 8px;
+            border-radius: 4px;
             color: white;
             cursor: pointer;
             transition: all 0.2s ease;
-            font-size: 12px;
+            font-size: 10px;
             font-weight: 500;
-            min-height: 40px;
+            min-height: 28px;
             white-space: nowrap;
         }
 
@@ -184,14 +178,15 @@ export default (world: OBC.World) => {
             background: rgba(255, 255, 255, 0.25);
         }
 
-        .zoom-icon {
-            font-size: 16px;
-            flex-shrink: 0;
-        }
-
         .zoom-label {
             flex: 1;
-            text-align: left;
+            text-align: center;
+        }
+
+        .zoom-controls {
+            display: flex;
+            flex-direction: row;
+            gap: 2px;
         }
 
         .zoom-controls .zoom-button {
@@ -199,9 +194,7 @@ export default (world: OBC.World) => {
             justify-content: center;
         }
 
-        .zoom-controls .zoom-label {
-            text-align: center;
-        }
+
     `;
 
     document.head.appendChild(style);
