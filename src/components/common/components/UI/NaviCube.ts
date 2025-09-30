@@ -44,11 +44,231 @@ export default (world: OBC.World) => {
         console.log(`NaviCube: Set view to ${viewName}`, { position: newPosition, target: view.target });
     };
 
-    // Cube rotation variables for animation (no user interaction)
+    // Interactive rotation variables
+    let isMouseDown = false;
+    let isDragging = false;
+    let lastMouseX = 0;
+    let lastMouseY = 0;
     let cubeRotationX = -20; // Initial rotation to match CSS
     let cubeRotationY = 30;  // Initial rotation to match CSS
 
-    // No drag handlers - cube animation only responds to view changes
+    // Function to update camera based on cube rotation
+    const updateCameraFromCubeRotation = () => {
+        if (!world.camera.three) return;
+
+        const camera3js = world.camera.three;
+        const target = new THREE.Vector3(0, 0, 0); // Look at origin
+        
+        // Calculate current distance to maintain zoom
+        const currentDistance = camera3js.position.distanceTo(target);
+        
+        // Convert cube rotation to camera position
+        const spherical = new THREE.Spherical();
+        spherical.radius = currentDistance;
+        spherical.phi = THREE.MathUtils.degToRad(90 + cubeRotationX); // Convert to spherical coordinates
+        spherical.theta = THREE.MathUtils.degToRad(cubeRotationY);
+        
+        // Calculate new position
+        const newPosition = new THREE.Vector3();
+        newPosition.setFromSpherical(spherical);
+        
+        // Directly update camera position for smooth real-time dragging
+        camera3js.position.copy(newPosition);
+        camera3js.lookAt(target);
+        
+        console.log('NaviCube: Camera updated to:', newPosition, 'Rotation:', { x: cubeRotationX, y: cubeRotationY });
+    };
+
+    // Mouse event handlers for cube rotation
+    const handleMouseDown = (event: MouseEvent) => {
+        console.log('NaviCube: Mouse down detected', event.target);
+        
+        const target = event.target as HTMLElement;
+        
+        // Allow dragging anywhere on the NaviCube (including faces/black boxes)
+        const isOnNaviCube = target.closest('.navi-cube') === element;
+        
+        if (!isOnNaviCube) {
+            console.log('NaviCube: Not on NaviCube, skipping drag');
+            return;
+        }
+        
+        console.log('NaviCube: Starting potential drag');
+        isMouseDown = true;
+        isDragging = false;
+        lastMouseX = event.clientX;
+        lastMouseY = event.clientY;
+        
+        // Change cursor to indicate dragging is possible
+        const cube = element.querySelector('.cube') as HTMLElement;
+        if (cube) {
+            cube.style.cursor = 'grabbing';
+        }
+        
+        // Add visual feedback
+        element.style.opacity = '0.9';
+        
+        // Prevent any other handlers from interfering with NaviCube dragging
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+    };
+
+    const handleMouseMove = (event: MouseEvent) => {
+        if (!isMouseDown) return;
+
+        const deltaX = event.clientX - lastMouseX;
+        const deltaY = event.clientY - lastMouseY;
+        
+        // Check if we've moved enough to consider this a drag
+        const dragThreshold = 2; // Reduced threshold for more responsive dragging
+        const totalMovement = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+        
+        if (totalMovement > dragThreshold && !isDragging) {
+            isDragging = true;
+            element.classList.add('dragging');
+            console.log('NaviCube: Drag started - rotating camera');
+        }
+        
+        if (!isDragging) return;
+
+        // Rotation sensitivity - make it more responsive
+        const sensitivity = 1.0; // Increased sensitivity
+        
+        // Update cube rotation
+        cubeRotationY += deltaX * sensitivity;
+        cubeRotationX -= deltaY * sensitivity; // Negative for intuitive up/down
+        
+        // Clamp X rotation to prevent flipping
+        cubeRotationX = Math.max(-89, Math.min(89, cubeRotationX)); // Slightly less restrictive
+        
+        // Update cube visual rotation
+        const cube = element.querySelector('.cube') as HTMLElement;
+        if (cube) {
+            cube.style.transform = `rotateX(${cubeRotationX}deg) rotateY(${cubeRotationY}deg)`;
+        }
+        
+        // Update camera position to match cube orientation
+        updateCameraFromCubeRotation();
+
+        lastMouseX = event.clientX;
+        lastMouseY = event.clientY;
+        
+        // Prevent any other mouse move handlers from interfering
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+    };
+
+    const handleMouseUp = () => {
+        console.log('NaviCube: Mouse up, was dragging:', isDragging, 'isMouseDown:', isMouseDown);
+        
+        if (isMouseDown) {
+            // Reset cursor
+            const cube = element.querySelector('.cube') as HTMLElement;
+            if (cube) {
+                cube.style.cursor = 'grab';
+            }
+            
+            // Reset visual feedback
+            element.style.opacity = '1';
+            element.classList.remove('dragging');
+        }
+        
+        isMouseDown = false;
+        lastMouseX = 0;
+        lastMouseY = 0;
+        
+        // Keep isDragging state for the click handler to prevent accidental clicks
+        if (isDragging) {
+            setTimeout(() => {
+                isDragging = false;
+                console.log('NaviCube: Drag state reset');
+            }, 100);
+        }
+    };
+
+    // Touch event handlers for mobile support
+    const handleTouchStart = (event: TouchEvent) => {
+        if (event.touches.length === 1) {
+            const target = event.target as HTMLElement;
+            
+            // Allow dragging on the NaviCube container, cube, or faces
+            const isOnNaviCube = target.closest('.navi-cube') === element;
+            
+            if (!isOnNaviCube) {
+                console.log('NaviCube: Not on NaviCube, skipping touch drag');
+                return;
+            }
+            
+            console.log('NaviCube: Starting touch potential drag');
+            isMouseDown = true;
+            isDragging = false;
+            lastMouseX = event.touches[0].clientX;
+            lastMouseY = event.touches[0].clientY;
+            
+            // Add visual feedback
+            element.style.opacity = '0.9';
+            
+            event.preventDefault();
+        }
+    };
+
+    const handleTouchMove = (event: TouchEvent) => {
+        if (event.touches.length !== 1 || !isMouseDown) return;
+
+        const deltaX = event.touches[0].clientX - lastMouseX;
+        const deltaY = event.touches[0].clientY - lastMouseY;
+        
+        const dragThreshold = 2; // Reduced threshold for more responsive dragging
+        const totalMovement = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+        
+        if (totalMovement > dragThreshold && !isDragging) {
+            isDragging = true;
+            element.classList.add('dragging');
+            console.log('NaviCube: Touch drag started - rotating camera');
+        }
+        
+        if (!isDragging) return;
+
+        const sensitivity = 1.0; // Increased sensitivity
+        
+        cubeRotationY += deltaX * sensitivity;
+        cubeRotationX -= deltaY * sensitivity;
+        
+        cubeRotationX = Math.max(-89, Math.min(89, cubeRotationX));
+        
+        const cube = element.querySelector('.cube') as HTMLElement;
+        if (cube) {
+            cube.style.transform = `rotateX(${cubeRotationX}deg) rotateY(${cubeRotationY}deg)`;
+        }
+        
+        updateCameraFromCubeRotation();
+
+        lastMouseX = event.touches[0].clientX;
+        lastMouseY = event.touches[0].clientY;
+        
+        event.preventDefault();
+    };
+
+    const handleTouchEnd = () => {
+        if (isMouseDown) {
+            // Reset visual feedback
+            element.style.opacity = '1';
+            element.classList.remove('dragging');
+        }
+        
+        isMouseDown = false;
+        lastMouseX = 0;
+        lastMouseY = 0;
+        
+        // Keep isDragging state for the click handler to prevent accidental clicks
+        if (isDragging) {
+            setTimeout(() => {
+                isDragging = false;
+            }, 100);
+        }
+    };
 
     // Smooth camera animation function
     const animateCamera = (camera: THREE.Camera, targetPosition: THREE.Vector3, targetLookAt: THREE.Vector3, duration = 500) => {
@@ -83,7 +303,7 @@ export default (world: OBC.World) => {
     element.innerHTML = `
         <div class="navi-cube-container">
             <!-- Cube Faces -->
-            <div class="cube">
+            <div class="cube draggable-cube">
                 <div class="face front" data-view="front">
                     <span>FRONT</span>
                 </div>
@@ -123,15 +343,42 @@ export default (world: OBC.World) => {
             
             <!-- Interaction hint -->
             <div class="interaction-hint">
-                Click faces or corners for views
+                Click faces for preset views • Drag background to rotate freely
+            </div>
+            
+            <!-- Drag instruction when dragging is active -->
+            <div class="drag-instruction">
+                Dragging to rotate view...
             </div>
         </div>
     `;
 
-    // No drag event listeners - only click interactions
+    // Add mouse event listeners for dragging
+    // Listen for mousedown on the cube container to start dragging
+    element.addEventListener('mousedown', handleMouseDown);
+    // Listen for mousemove and mouseup globally to handle dragging outside the element
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
 
-    // Add click event listeners to faces and corners
+    // Add touch event listeners for mobile
+    element.addEventListener('touchstart', handleTouchStart, { passive: false });
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+    document.addEventListener('touchend', handleTouchEnd);
+
+    // Add click event listeners to faces and corners (but allow dragging too)
     element.addEventListener('click', (event) => {
+        console.log('NaviCube: Click detected, was dragging:', isDragging);
+        
+        // If we were dragging, don't handle as a click
+        if (isDragging) {
+            // Reset dragging state after a brief delay to allow for next interaction
+            setTimeout(() => {
+                isDragging = false;
+            }, 100);
+            return;
+        }
+        
+        // Handle preset view clicks only if we didn't drag
         const target = event.target as HTMLElement;
         const clickedElement = target.closest('[data-view]') as HTMLElement;
         
@@ -139,7 +386,7 @@ export default (world: OBC.World) => {
             const viewName = clickedElement.dataset.view as keyof typeof viewPositions;
             setView(viewName);
             
-            // Animate cube to match the selected view
+            // Update cube rotation to match the selected view
             setTimeout(() => {
                 if (!world.camera.three) return;
                 const camera3js = world.camera.three;
@@ -155,6 +402,11 @@ export default (world: OBC.World) => {
                 }
             }, 500); // Wait for camera animation to complete
         }
+        
+        // Reset dragging state
+        setTimeout(() => {
+            isDragging = false;
+        }, 100);
     });
 
     // Add styles
@@ -188,7 +440,50 @@ export default (world: OBC.World) => {
             left: 20px;
             transform-style: preserve-3d;
             transform: rotateX(-20deg) rotateY(30deg);
-            transition: transform 0.3s ease;
+            transition: transform 0.1s ease;
+            cursor: grab;
+        }
+
+        .cube:active {
+            cursor: grabbing;
+        }
+
+        .cube.draggable-cube:hover {
+            transform: rotateX(-20deg) rotateY(30deg) scale(1.02);
+        }
+
+        /* Make the cube container area larger for easier dragging */
+        .navi-cube-container {
+            width: 100px;
+            height: 100px;
+            position: relative;
+            transform-style: preserve-3d;
+            perspective: 300px;
+            cursor: grab;
+            transition: all 0.2s ease;
+            border-radius: 8px;
+        }
+
+        .navi-cube-container:active {
+            cursor: grabbing;
+        }
+        
+        .navi-cube-container:hover {
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+        }
+        
+        /* Add a subtle border to indicate draggable area */
+        .navi-cube-container:hover::after {
+            content: '';
+            position: absolute;
+            top: -3px;
+            left: -3px;
+            right: -3px;
+            bottom: -3px;
+            border: 2px dashed rgba(255, 255, 255, 0.5);
+            border-radius: 12px;
+            pointer-events: none;
         }
 
         .face {
@@ -206,6 +501,7 @@ export default (world: OBC.World) => {
             cursor: pointer;
             transition: all 0.2s ease;
             backdrop-filter: blur(4px);
+            pointer-events: auto;
         }
 
         .face:hover {
@@ -250,17 +546,17 @@ export default (world: OBC.World) => {
             position: absolute;
             width: 12px;
             height: 12px;
-            background: rgba(255, 215, 0, 0.8);
-            border: 1px solid rgba(255, 255, 255, 0.5);
+            background: transparent;
+            border: 1px solid transparent;
             border-radius: 2px;
             cursor: pointer;
             transition: all 0.2s ease;
         }
 
         .corner:hover {
-            background: rgba(255, 215, 0, 1);
+            background: rgba(70, 130, 180, 0.8);
             transform: scale(1.2);
-            border-color: rgba(255, 255, 255, 1);
+            border-color: rgba(255, 255, 255, 0.8);
         }
 
         /* Corner positions */
@@ -318,6 +614,43 @@ export default (world: OBC.World) => {
 
         .navi-cube:hover .interaction-hint {
             opacity: 1;
+        }
+        
+        .drag-instruction {
+            position: absolute;
+            bottom: -45px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 8px;
+            color: rgba(255, 215, 0, 0.9);
+            white-space: nowrap;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 3px 8px;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+            font-weight: bold;
+        }
+        
+        .navi-cube.dragging .drag-instruction {
+            opacity: 1;
+        }
+        
+        .navi-cube.dragging .interaction-hint {
+            opacity: 0;
+        }
+        
+        /* Enhanced dragging state */
+        .navi-cube.dragging {
+            transform: scale(1.05);
+        }
+        
+        .navi-cube.dragging .navi-cube-container {
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
         }
 
         /* Responsive adjustments */
@@ -380,6 +713,12 @@ export default (world: OBC.World) => {
 
     // Add cleanup function to the element for proper removal
     (element as any).cleanup = () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+        document.removeEventListener('touchmove', handleTouchMove);
+        document.removeEventListener('touchend', handleTouchEnd);
+        isMouseDown = false;
+        isDragging = false;
         if (style.parentNode) {
             style.parentNode.removeChild(style);
         }
