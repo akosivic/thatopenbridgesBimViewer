@@ -6,6 +6,7 @@ import groupings from "./Sections/Groupings";
 import { Highlighter } from "@thatopen/components-front";
 import { FragmentsGroup } from "@thatopen/fragments";
 import i18n from "../../utils/i18n";
+import { getCurrentProjection } from "../Toolbars/Sections/ProjectionControls";
 
 interface DataPointState {
   keys: string[];
@@ -176,26 +177,44 @@ export default async (components: OBC.Components, isDebug: boolean, highlighter:
                       console.log('Global camera fallback:', !!globalCamera);
 
                       if (camera) {
-                        // Calculate optimal distance based on object size
-                        const maxDim = Math.max(size.x, size.y, size.z);
-                        const distance = Math.max(maxDim * 2, 5); // Minimum 5 units away
+                        // Get current projection mode to determine camera behavior
+                        const currentProjection = getCurrentProjection();
+                        const isOrthographic = currentProjection === "Orthographic";
+                        const isPerspective = currentProjection === "Perspective";
+                        
+                        if (isOrthographic) {
+                          // ORTHOGRAPHIC MODE: No camera changes at all - just highlight the element
+                          console.log(`💡 Light ${key} - Orthographic mode: No camera movement or angle changes`);
+                          console.log(`Orthographic mode - Camera position and angle remain unchanged`);
+                          console.log(`Orthographic mode - Element highlighted only`);
+                        } else if (isPerspective) {
+                          // PERSPECTIVE MODE: Original behavior - move camera to angled position
+                          console.log(`💡 Light ${key} - Perspective mode: Moving camera to angled position`);
+                          
+                          // Calculate optimal distance based on object size
+                          const maxDim = Math.max(size.x, size.y, size.z);
+                          const distance = Math.max(maxDim * 2, 5); // Minimum 5 units away
 
-                        // Calculate direction from center to camera position
-                        const direction = camera.position.clone().sub(center).normalize();
+                          // Calculate direction from center to camera position
+                          const direction = camera.position.clone().sub(center).normalize();
 
-                        // Position camera at optimal distance from the center
-                        const newPosition = center.clone().add(direction.multiplyScalar(distance));
+                          // Position camera at optimal distance from the center
+                          const newPosition = center.clone().add(direction.multiplyScalar(distance));
 
-                        // Keep Y locked to eye level (1.6m)
-                        newPosition.y = 1.6;
+                          // Keep Y locked to eye level (1.6m) for perspective mode
+                          newPosition.y = 1.6;
 
-                        // Smoothly move camera to new position
-                        camera.position.copy(newPosition);
+                          // Move camera to new angled position
+                          camera.position.copy(newPosition);
 
-                        // Look at the center of the selected object
-                        camera.lookAt(center);
+                          // Look at the center of the selected object
+                          camera.lookAt(center);
 
-                        console.log(`FPS Camera moved to view selected element at:`, center);
+                          console.log(`Perspective mode - Camera moved to angled position:`, newPosition);
+                          console.log(`Perspective mode - Now looking at:`, center);
+                        }
+                        
+                        console.log(`Light button ${key} activated in ${currentProjection} mode`);
                       } else {
                         console.warn('Camera not found - zoom functionality unavailable');
                       }
