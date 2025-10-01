@@ -5,7 +5,7 @@ import i18n from "../../../utils/i18n";
 
 // Global reference to FPS controls and current projection mode
 export let fpControls: PointerLockControls | null = null;
-export let currentProjection: "Perspective" | "Orthographic" = "Perspective";
+export let currentProjection: "Perspective" | "Orthographic" = "Orthographic";
 
 export const setFPControls = (controls: PointerLockControls | null) => {
     fpControls = controls;

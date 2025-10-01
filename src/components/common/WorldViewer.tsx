@@ -36,6 +36,7 @@ import { setBaseSpeed } from "./components/Toolbars/Sections/SpeedControls";
 import { InfoPanelsManager } from "./components/InfoPanelsManager";
 import ZoomOptions from "./components/UI/ZoomOptions";
 import NaviCube from "./components/UI/NaviCube";
+import { getCurrentProjection } from "./components/Toolbars/Sections/ProjectionControls";
 
 
 interface State {
@@ -270,6 +271,15 @@ export class WorldViewer extends HTMLElement {
     }, false);
 
     world.camera = new OrthoPerspectiveCamera(components);
+
+    // Initialize camera projection to match the default setting (Orthographic)
+    setTimeout(() => {
+      console.log('Setting initial projection to Orthographic...');
+      if (world.camera instanceof OrthoPerspectiveCamera) {
+        world.camera.projection.set("Orthographic");
+        console.log('Camera projection initialized to Orthographic mode');
+      }
+    }, 100);
 
     // First-Person Camera Setup (FPS-style controls)
     // Set initial camera position at eye level (1.6m height) - LOCKED
@@ -1188,9 +1198,32 @@ export class WorldViewer extends HTMLElement {
     const expandButton = createExpandButton();
     app.appendChild(expandButton);
 
-    // Add the ZoomOptions component to the body instead of app
-    document.body.appendChild(zoomOptionsComponent);
-    console.log('ZoomOptions component added to DOM body:', document.getElementById('zoom-options-panel'));
+    // Add the ZoomOptions component to the body only if in orthographic mode
+    const updateZoomOptionsVisibility = () => {
+      const currentMode = getCurrentProjection();
+      const existingZoomPanel = document.getElementById('zoom-options-panel');
+      
+      if (currentMode === 'Orthographic') {
+        if (!existingZoomPanel) {
+          document.body.appendChild(zoomOptionsComponent);
+          console.log('ZoomOptions component added to DOM body for orthographic mode');
+        }
+      } else {
+        if (existingZoomPanel) {
+          document.body.removeChild(existingZoomPanel);
+          console.log('ZoomOptions component removed from DOM body for perspective mode');
+        }
+      }
+    };
+    
+    // Initial setup - check current projection
+    updateZoomOptionsVisibility();
+    
+    // Listen for projection changes and update zoom options visibility
+    window.addEventListener('projectionChanged', (event: any) => {
+      console.log('Projection changed event received:', event.detail.mode);
+      updateZoomOptionsVisibility();
+    });
 
     // Add the NaviCube component to the body
     document.body.appendChild(naviCubeComponent);

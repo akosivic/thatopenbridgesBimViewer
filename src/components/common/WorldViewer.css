@@ -130,7 +130,7 @@ bim-grid.left-panel-minimized {
   transition: none !important;
   opacity: 0.8;
   visibility: visible;
-  width: 26rem;
+  width: 20rem;
   position: fixed !important;
   left: 0 !important;
   top: 32px !important; /* Position below header */
