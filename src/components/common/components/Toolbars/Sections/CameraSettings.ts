@@ -94,6 +94,28 @@ export default (world: OBC.World) => {
     // Store cleanup function for potential future use
     (window as any).cleanupCameraControls = cleanup;
 
+    // Helper function copied from EnhancedKeyboardControls.ts
+    const zoomOrthographicCamera = (direction: number) => {
+        if (!world?.camera || !(world.camera instanceof OBC.OrthoPerspectiveCamera)) return;
+        
+        // Get current speed multiplier from camera settings
+        const currentSpeed = getCurrentSpeed();
+        const speedMultiplier = currentSpeed / baseSpeed; // Normalize against base speed
+        
+        // Apply speed to zoom
+        const baseZoomSpeed = 0.1;
+        const adjustedZoomSpeed = baseZoomSpeed * speedMultiplier;
+        
+        const currentZoom = (world.camera.three as THREE.OrthographicCamera).zoom || 1;
+        const zoomDelta = direction * adjustedZoomSpeed;
+        
+        const newZoom = Math.max(0.01, Math.min(100, currentZoom + zoomDelta));
+        (world.camera.three as THREE.OrthographicCamera).zoom = newZoom;
+        world.camera.three.updateProjectionMatrix();
+        
+        console.log('Orthographic UI zoom (speed x' + speedMultiplier.toFixed(1) + '):', newZoom);
+    };
+
     const moveCamera = (direction: 'forward' | 'backward' | 'left' | 'right' | 'up' | 'down') => {
         if (!fpControls) {
             console.log('FPS controls not initialized');
@@ -103,9 +125,35 @@ export default (world: OBC.World) => {
         const camera3js = world.camera.three;
         const currentPos = camera3js.position.clone();
 
-        console.log(`=== FPS CAMERA MOVEMENT: ${direction.toUpperCase()} ===`);
+        console.log(`=== UI CAMERA MOVEMENT: ${direction.toUpperCase()} ===`);
         console.log('Current position:', currentPos);
 
+        // Get current projection mode to determine movement behavior
+        const currentProjection = getCurrentProjection();
+        const isPerspective = currentProjection === "Perspective";
+        const isOrthographic = currentProjection === "Orthographic";
+
+        let newPosition = currentPos.clone();
+
+        // For up/down movement in orthographic mode, use zoom behavior like arrow keys
+        if (isOrthographic && (direction === 'up' || direction === 'down')) {
+            // Copy exact implementation from EnhancedKeyboardControls.ts arrow key behavior
+            // In orthographic mode: Up arrow = zoom in, Down arrow = zoom out
+            
+            if (direction === 'up') {
+                // Exact copy: zoomOrthographicCamera(1); // Zoom in
+                zoomOrthographicCamera(1);
+                console.log('Orthographic UP button - Zoom IN (like up arrow)');
+            } else {
+                // Exact copy: zoomOrthographicCamera(-1); // Zoom out  
+                zoomOrthographicCamera(-1);
+                console.log('Orthographic DOWN button - Zoom OUT (like down arrow)');
+            }
+            
+            return; // Exit early for orthographic up/down
+        }
+
+        // For all other movements, use the existing logic
         const forward = new THREE.Vector3();
         const right = new THREE.Vector3();
         const up = new THREE.Vector3(0, 1, 0);
@@ -113,8 +161,6 @@ export default (world: OBC.World) => {
         camera3js.getWorldDirection(forward);
         forward.normalize();
         right.crossVectors(forward, up).normalize();
-
-        let newPosition = currentPos.clone();
 
         // Calculate movement amount to match keyboard movement speed
         const movementAmount = getMovementStep();
@@ -139,10 +185,6 @@ export default (world: OBC.World) => {
                 newPosition.y -= movementAmount;
                 break;
         }
-
-        // Get current projection mode to determine restrictions
-        const currentProjection = getCurrentProjection();
-        const isPerspective = currentProjection === "Perspective";
         
         // Apply restrictions only in perspective mode
         if (isPerspective) {
