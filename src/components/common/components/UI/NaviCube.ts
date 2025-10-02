@@ -99,8 +99,8 @@ export default (world: OBC.World) => {
     let isDragging = false;
     let lastMouseX = 0;
     let lastMouseY = 0;
-    let cubeRotationX = -20; // Initial rotation to match CSS
-    let cubeRotationY = 30;  // Initial rotation to match CSS
+    let cubeRotationX = -90; // Initial rotation for TOP view
+    let cubeRotationY = 0;   // Initial rotation for TOP view
 
     // Function to update camera based on cube rotation
     const updateCameraFromCubeRotation = () => {
@@ -474,7 +474,7 @@ export default (world: OBC.World) => {
             top: 20px;
             left: 20px;
             transform-style: preserve-3d;
-            transform: rotateX(-20deg) rotateY(30deg);
+            transform: rotateX(-90deg) rotateY(0deg);
             transition: transform 0.1s ease;
             cursor: grab;
         }
@@ -484,7 +484,7 @@ export default (world: OBC.World) => {
         }
 
         .cube.draggable-cube:hover {
-            transform: rotateX(-20deg) rotateY(30deg) scale(1.02);
+            transform: rotateX(-90deg) rotateY(0deg) scale(1.02);
         }
 
         /* Make the cube container area larger for easier dragging */
@@ -745,6 +745,69 @@ export default (world: OBC.World) => {
     `;
 
     document.head.appendChild(style);
+
+    // Initialize to TOP view on load
+    const initializeTopView = () => {
+        if (!world.camera.three) {
+            console.log('NaviCube: Camera not ready, retrying in 100ms...');
+            setTimeout(initializeTopView, 100);
+            return;
+        }
+        
+        console.log('NaviCube: Initializing to TOP view...');
+        console.log('Current camera position before TOP view:', world.camera.three.position);
+        
+        // IMPORTANT: For orthographic mode, set position directly without scaling
+        // to avoid the white screen issue - use exact orthographic position
+        const camera3js = world.camera.three;
+        const orthographicPosition = new THREE.Vector3(0, 10, 0);
+        const orthographicTarget = new THREE.Vector3(0, 0, 0);
+        
+        // Set position directly without animation or scaling to avoid white screen
+        camera3js.position.copy(orthographicPosition);
+        camera3js.lookAt(orthographicTarget);
+        
+        // Ensure orthographic camera has proper frustum - critical for rendering
+        if (camera3js.type === 'OrthographicCamera') {
+            const orthoCam = camera3js as THREE.OrthographicCamera;
+            const size = 10;
+            const aspect = window.innerWidth / window.innerHeight;
+            
+            orthoCam.left = -size * aspect;
+            orthoCam.right = size * aspect;
+            orthoCam.top = size;
+            orthoCam.bottom = -size;
+            orthoCam.near = 0.1;
+            orthoCam.far = 1000;
+            orthoCam.zoom = 0.5;
+            orthoCam.updateProjectionMatrix();
+            
+            console.log('NaviCube: Orthographic camera frustum configured');
+        }
+        
+        // Update camera matrix for all camera types
+        if ('updateProjectionMatrix' in camera3js) {
+            (camera3js as any).updateProjectionMatrix();
+        }
+        
+        // Set cube rotation to show TOP face prominently
+        const topRotation = cubeRotationsForViews.top;
+        if (topRotation) {
+            cubeRotationX = topRotation.x;
+            cubeRotationY = topRotation.y;
+            
+            const cube = element.querySelector('.cube') as HTMLElement;
+            if (cube) {
+                cube.style.transform = `rotateX(${cubeRotationX}deg) rotateY(${cubeRotationY}deg)`;
+            }
+            
+            console.log('NaviCube: Initialized to TOP view with cube rotation:', topRotation);
+            console.log('Camera position after TOP view:', camera3js.position);
+        }
+    };
+    
+    // Start initialization with shorter delay since WorldViewer sets proper orthographic position at 100ms
+    setTimeout(initializeTopView, 200);
 
     // Add cleanup function to the element for proper removal
     (element as any).cleanup = () => {

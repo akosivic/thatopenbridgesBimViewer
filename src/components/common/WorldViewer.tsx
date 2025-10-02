@@ -277,7 +277,48 @@ export class WorldViewer extends HTMLElement {
       console.log('Setting initial projection to Orthographic...');
       if (world.camera instanceof OrthoPerspectiveCamera) {
         world.camera.projection.set("Orthographic");
+        
+        // IMPORTANT: Set proper orthographic position immediately to avoid white screen
+        // Don't wait for NaviCube initialization - fix the white screen issue
+        const orthographicPosition = new THREE.Vector3(0, 10, 0);
+        const orthographicTarget = new THREE.Vector3(0, 0, 0);
+        
+        world.camera.three.position.copy(orthographicPosition);
+        world.camera.three.lookAt(orthographicTarget);
+        
+        // CRITICAL: Set proper orthographic camera parameters to prevent white screen
+        const orthoCam = world.camera.three as THREE.OrthographicCamera;
+        if (orthoCam.type === 'OrthographicCamera') {
+          // Set proper frustum size for orthographic camera
+          const size = 10; // Viewing area size
+          const aspect = window.innerWidth / window.innerHeight;
+          
+          orthoCam.left = -size * aspect;
+          orthoCam.right = size * aspect;
+          orthoCam.top = size;
+          orthoCam.bottom = -size;
+          orthoCam.near = 0.1;
+          orthoCam.far = 1000;
+          orthoCam.zoom = 0.5; // Start with wider view
+          orthoCam.updateProjectionMatrix();
+          
+          console.log('Orthographic camera frustum configured:', {
+            left: orthoCam.left,
+            right: orthoCam.right,
+            top: orthoCam.top,
+            bottom: orthoCam.bottom,
+            zoom: orthoCam.zoom
+          });
+        }
+        
+        // Also set via controls if available
+        if (world.camera.controls?.camera) {
+          world.camera.controls.camera.zoom = 0.5;
+          world.camera.controls.camera.updateProjectionMatrix();
+        }
+        
         console.log('Camera projection initialized to Orthographic mode');
+        console.log('Camera position set to proper orthographic view:', orthographicPosition);
       }
     }, 100);
 

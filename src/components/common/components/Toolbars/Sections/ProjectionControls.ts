@@ -1,5 +1,6 @@
 import * as OBC from "@thatopen/components";
 import * as BUI from "@thatopen/ui";
+import * as THREE from "three";
 import { PointerLockControls } from "three/examples/jsm/Addons.js";
 import i18n from "../../../utils/i18n";
 
@@ -111,18 +112,21 @@ export default (world: OBC.World) => {
             camera.projection.set(mode);
             currentProjection = mode;
             
-            // Apply mode-specific defaults when switching to orthographic
+            // Get camera reference
+            const camera3js = world.camera.three;
+            
+            // Define consistent TOP view position (no scaling, always the same)
+            const consistentTopPosition = new THREE.Vector3(0, 10, 0);
+            const consistentTopTarget = new THREE.Vector3(0, 0, 0);
+            
+            // Apply mode-specific defaults when switching
             if (mode === "Orthographic") {
                 console.log("=== SWITCHING TO ORTHOGRAPHIC MODE ===");
-                console.log("Applying default settings - removing all camera restrictions");
+                console.log("Resetting to consistent TOP view position");
                 
-                // Reset camera to more appropriate orthographic defaults
-                const camera3js = world.camera.three;
-                
-                // Set default orthographic position (remove Y lock)
-                // Keep current X and Z, but allow Y to be freely adjustable
-                const currentPos = camera3js.position.clone();
-                console.log("Current position maintained:", currentPos);
+                // Set exact TOP view position (no scaling)
+                camera3js.position.copy(consistentTopPosition);
+                camera3js.lookAt(consistentTopTarget);
                 
                 // Reset zoom to default for orthographic
                 if (camera.controls?.camera) {
@@ -131,22 +135,42 @@ export default (world: OBC.World) => {
                     console.log("Zoom reset to 1.0 for orthographic mode");
                 }
                 
-                // Reset rotation to a sensible default for orthographic (optional)
-                // Uncomment the following lines if you want to reset rotation when switching to orthographic:
-                camera3js.rotation.set(0, 0, 0);
-                // console.log("Rotation reset to defaults for orthographic mode");
+                // Manually sync NaviCube visual state (without triggering setView scaling)
+                setTimeout(() => {
+                    const naviCube = document.getElementById('navi-cube');
+                    if (naviCube) {
+                        const cube = naviCube.querySelector('.cube') as HTMLElement;
+                        if (cube) {
+                            // Set cube rotation to show TOP face prominently (x: -90, y: 0)
+                            cube.style.transform = 'rotateX(-90deg) rotateY(0deg)';
+                            console.log("NaviCube visual state synced to TOP view for orthographic mode");
+                        }
+                    }
+                }, 100);
                 
-                console.log("Orthographic mode: All restrictions removed, default settings applied");
+                console.log("Orthographic mode: Set to consistent TOP view position", consistentTopPosition);
             } else if (mode === "Perspective") {
                 console.log("=== SWITCHING TO PERSPECTIVE MODE ===");
-                console.log("Applying perspective restrictions and settings");
+                console.log("Resetting to consistent TOP view position");
                 
-                // Apply perspective-specific settings
-                const camera3js = world.camera.three;
+                // Set exact TOP view position (no scaling)
+                camera3js.position.copy(consistentTopPosition);
+                camera3js.lookAt(consistentTopTarget);
                 
-                // Lock Y position to eye level for perspective mode
-                camera3js.position.y = 1.6;
-                console.log("Y position locked to 1.6m (eye level) for perspective mode");
+                // Manually sync NaviCube visual state (without triggering setView scaling)
+                setTimeout(() => {
+                    const naviCube = document.getElementById('navi-cube');
+                    if (naviCube) {
+                        const cube = naviCube.querySelector('.cube') as HTMLElement;
+                        if (cube) {
+                            // Set cube rotation to show TOP face prominently (x: -90, y: 0)
+                            cube.style.transform = 'rotateX(-90deg) rotateY(0deg)';
+                            console.log("NaviCube visual state synced to TOP view for perspective mode");
+                        }
+                    }
+                }, 100);
+                
+                console.log("Perspective mode: Set to consistent TOP view position", consistentTopPosition);
             }
             
             updateProjectionDisplay();
