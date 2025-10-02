@@ -178,7 +178,7 @@ export default (world: OBC.World) => {
         const t = (key: string) => i18n.t(key);
         
         return BUI.html`
-            <bim-toolbar-section label="${t('projectionMode')}" icon="material-symbols:3d-rotation" style="pointer-events: auto">
+            <bim-toolbar-section  style="pointer-events: auto">
                 <!-- Current Mode Display -->
                 <div style="display: flex; flex-direction: column; gap: 8px; margin: 10px 0; padding: 12px; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 4px; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px);">
                     <div style="font-size: 12px; font-weight: bold; color: #ccc; text-align: center;">${t('projection')}</div>

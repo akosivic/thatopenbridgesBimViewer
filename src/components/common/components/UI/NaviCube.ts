@@ -23,6 +23,25 @@ export default (world: OBC.World) => {
         backBottomLeft: { position: new THREE.Vector3(-7, -7, -7), target: new THREE.Vector3(0, 0, 0) }
     };
 
+    // Predefined cube rotations to show each face prominently
+    const cubeRotationsForViews = {
+        front: { x: 0, y: 0 },
+        back: { x: 0, y: 180 },
+        left: { x: 0, y: 90 },    // Rotate cube 90° clockwise to bring left face to front
+        right: { x: 0, y: -90 },  // Rotate cube 90° counter-clockwise to bring right face to front
+        top: { x: -90, y: 0 },
+        bottom: { x: 90, y: 0 },
+        // Isometric corners - show the corner prominently
+        frontTopRight: { x: -30, y: 45 },
+        frontTopLeft: { x: -30, y: -45 },
+        frontBottomRight: { x: 30, y: 45 },
+        frontBottomLeft: { x: 30, y: -45 },
+        backTopRight: { x: -30, y: 135 },
+        backTopLeft: { x: -30, y: -135 },
+        backBottomRight: { x: 30, y: 135 },
+        backBottomLeft: { x: 30, y: -135 }
+    };
+
     // Function to set camera view with smooth transition
     const setView = (viewName: keyof typeof viewPositions) => {
         if (!world.camera.three) return;
@@ -42,6 +61,37 @@ export default (world: OBC.World) => {
         animateCamera(camera3js, newPosition, view.target);
 
         console.log(`NaviCube: Set view to ${viewName}`, { position: newPosition, target: view.target });
+    };
+
+    // Function to smoothly animate cube rotation to show the clicked face
+    const animateCubeRotation = (targetRotation: { x: number, y: number }, duration = 500) => {
+        const cube = element.querySelector('.cube') as HTMLElement;
+        if (!cube) return;
+
+        const startRotationX = cubeRotationX;
+        const startRotationY = cubeRotationY;
+        const startTime = Date.now();
+
+        const animate = () => {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            
+            // Smooth easing function
+            const easeProgress = 1 - Math.pow(1 - progress, 3);
+
+            // Interpolate rotation
+            cubeRotationX = startRotationX + (targetRotation.x - startRotationX) * easeProgress;
+            cubeRotationY = startRotationY + (targetRotation.y - startRotationY) * easeProgress;
+            
+            // Apply rotation to cube
+            cube.style.transform = `rotateX(${cubeRotationX}deg) rotateY(${cubeRotationY}deg)`;
+
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            }
+        };
+
+        animate();
     };
 
     // Interactive rotation variables
@@ -336,20 +386,12 @@ export default (world: OBC.World) => {
                 <div class="corner corner-back-bottom-right" data-view="backBottomRight"></div>
             </div>
 
-            <!-- Home button in the center -->
-            <div class="home-button" data-view="frontTopRight" title="Home View">
-                <span>🏠</span>
-            </div>
             
             <!-- Interaction hint -->
             <div class="interaction-hint">
                 Click faces for preset views • Drag background to rotate freely
             </div>
             
-            <!-- Drag instruction when dragging is active -->
-            <div class="drag-instruction">
-                Dragging to rotate view...
-            </div>
         </div>
     `;
 
@@ -384,23 +426,16 @@ export default (world: OBC.World) => {
         
         if (clickedElement && clickedElement.dataset.view) {
             const viewName = clickedElement.dataset.view as keyof typeof viewPositions;
+            
+            // Set camera view
             setView(viewName);
             
-            // Update cube rotation to match the selected view
-            setTimeout(() => {
-                if (!world.camera.three) return;
-                const camera3js = world.camera.three;
-                
-                // Calculate cube rotation from camera position
-                const direction = camera3js.position.clone().normalize();
-                cubeRotationX = Math.asin(direction.y) * 180 / Math.PI;
-                cubeRotationY = Math.atan2(direction.x, direction.z) * 180 / Math.PI;
-                
-                const cube = element.querySelector('.cube') as HTMLElement;
-                if (cube) {
-                    cube.style.transform = `rotateX(${cubeRotationX}deg) rotateY(${cubeRotationY}deg)`;
-                }
-            }, 500); // Wait for camera animation to complete
+            // Animate cube rotation to show the clicked face prominently
+            const targetRotation = cubeRotationsForViews[viewName];
+            if (targetRotation) {
+                animateCubeRotation(targetRotation);
+                console.log(`NaviCube: Rotating cube to show ${viewName} face`, targetRotation);
+            }
         }
         
         // Reset dragging state
