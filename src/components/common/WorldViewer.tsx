@@ -50,6 +50,7 @@ const dataState: State = {
 };
 export class WorldViewer extends HTMLElement {
   private infoPanelsManager?: InfoPanelsManager;
+  private hasTriggeredInitialView = false; // Track if initial view has been set
 
   constructor() {
     super();
@@ -278,14 +279,6 @@ export class WorldViewer extends HTMLElement {
       if (world.camera instanceof OrthoPerspectiveCamera) {
         world.camera.projection.set("Orthographic");
         
-        // IMPORTANT: Set proper orthographic position immediately to avoid white screen
-        // Don't wait for NaviCube initialization - fix the white screen issue
-        const orthographicPosition = new THREE.Vector3(0, 10, 0);
-        const orthographicTarget = new THREE.Vector3(0, 0, 0);
-        
-        world.camera.three.position.copy(orthographicPosition);
-        world.camera.three.lookAt(orthographicTarget);
-        
         // CRITICAL: Set proper orthographic camera parameters to prevent white screen
         const orthoCam = world.camera.three as THREE.OrthographicCamera;
         if (orthoCam.type === 'OrthographicCamera') {
@@ -318,7 +311,7 @@ export class WorldViewer extends HTMLElement {
         }
         
         console.log('Camera projection initialized to Orthographic mode');
-        console.log('Camera position set to proper orthographic view:', orthographicPosition);
+        console.log('Camera ready for model-triggered view positioning');
       }
     }, 100);
 
@@ -960,46 +953,8 @@ export class WorldViewer extends HTMLElement {
       }
 
       if (!model.isStreamed) {
-        setTimeout(async () => {
-          console.log('Model loaded - positioning FPS camera to view model');
-
-          // Get the model's bounding box to position camera appropriately
-          const bbox = new THREE.Box3();
-          world.meshes.forEach(mesh => {
-            bbox.expandByObject(mesh);
-          });
-
-          if (!bbox.isEmpty()) {
-            const center = bbox.getCenter(new THREE.Vector3());
-            const size = bbox.getSize(new THREE.Vector3());
-
-            console.log('Model center:', center);
-            console.log('Model size:', size);
-
-            // Position FPS camera to look at the model center
-            // Keep Y locked to 1.6m (eye level), only orient the look direction
-            world.camera.three.position.y = 1.6; // FORCE eye level before lookAt
-            world.camera.three.lookAt(center);
-
-            console.log('FPS camera oriented toward model center');
-          }
-
-          // Force another renderer update
-          if (world.renderer) {
-            world.renderer.update();
-          }
-
-          console.log('FPS Camera Position:', world.camera.three.position);
-          console.log('FPS Camera Rotation:', world.camera.three.rotation);
-
-          // Log scene statistics
-          console.log('=== SCENE STATISTICS ===');
-          console.log('Total scene children:', world.scene.three.children.length);
-          console.log('Total meshes in world.meshes:', world.meshes.size);
-          console.log('Visible meshes:', Array.from(world.meshes).filter(mesh => mesh.visible).length);
-          console.log('========================');
-
-        }, 500); // Increased delay to ensure everything is loaded
+        // FPS camera positioning removed - NaviCube handles initial view
+        console.log('Model fragments loaded - letting NaviCube handle camera positioning');
       }
     });
 
@@ -1383,20 +1338,40 @@ export class WorldViewer extends HTMLElement {
     // Position camera to see the model if it exists
     if (model && fragments.list.size > 0) {
       try {
-        // Get the first fragment and its bounding box
-        const firstFragment = Array.from(fragments.list.values())[0];
-        if (firstFragment && firstFragment.mesh) {
-          // Enforce initial orientation after bounding box positioning
-          world.camera.three.rotation.y = -3.7 * Math.PI / 180;
-          world.camera.three.rotation.x = -1.6 * Math.PI / 180;
-          world.camera.three.rotation.z = 0;
-          world.camera.three.updateMatrixWorld();
+        // IMPORTANT: Trigger NaviCube view change ONCE after model loads
+        if (!this.hasTriggeredInitialView) {
+          this.hasTriggeredInitialView = true;
+          
+          console.log('Model loaded - triggering NaviCube TOP view initialization...');
+          
+          // Wait a moment for all fragments to be fully processed
+          setTimeout(() => {
+            // Find and trigger NaviCube initialization to TOP view
+            const naviCubeElement = document.getElementById('navi-cube');
+            if (naviCubeElement && (naviCubeElement as any).triggerTopView) {
+              console.log('Triggering NaviCube TOP view via exposed method');
+              (naviCubeElement as any).triggerTopView();
+            } else {
+              // Fallback: Dispatch custom event for NaviCube to handle
+              console.log('Dispatching modelLoaded event for NaviCube');
+              window.dispatchEvent(new CustomEvent('modelLoaded', {
+                detail: { 
+                  modelBounds: {
+                    fragments: fragments.list.size,
+                    meshCount: world.meshes.size
+                  }
+                }
+              }));
+            }
+          }, 300); // Small delay to ensure fragments are fully processed
+        } else {
+          console.log('Initial view already triggered - skipping NaviCube view change');
         }
       } catch (error) {
-        console.error('Error positioning camera:', error);
+        console.error('Error triggering NaviCube view change:', error);
       }
     } else {
-      console.warn('No model or fragments loaded');
+      console.warn('No model or fragments loaded - cannot trigger NaviCube view change');
     }
 
     // Speed controls are now handled by the SpeedControls component

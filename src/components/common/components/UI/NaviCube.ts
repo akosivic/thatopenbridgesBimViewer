@@ -806,8 +806,27 @@ export default (world: OBC.World) => {
         }
     };
     
-    // Start initialization with shorter delay since WorldViewer sets proper orthographic position at 100ms
-    setTimeout(initializeTopView, 200);
+    // Add exposed method for external triggering
+    (element as any).triggerTopView = () => {
+        console.log('NaviCube: triggerTopView called externally');
+        initializeTopView();
+    };
+    
+    // Listen for model loaded event to trigger initial view
+    const handleModelLoaded = (event: CustomEvent) => {
+        console.log('NaviCube: Received modelLoaded event:', event.detail);
+        console.log('NaviCube: Setting TOP view after model load...');
+        
+        // Small delay to ensure model is fully rendered
+        setTimeout(() => {
+            initializeTopView();
+        }, 100);
+    };
+    
+    // Add event listeners
+    window.addEventListener('modelLoaded', handleModelLoaded as EventListener);
+    
+    console.log('NaviCube: Ready to respond to model load events');
 
     // Add cleanup function to the element for proper removal
     (element as any).cleanup = () => {
@@ -815,11 +834,13 @@ export default (world: OBC.World) => {
         document.removeEventListener('mouseup', handleMouseUp);
         document.removeEventListener('touchmove', handleTouchMove);
         document.removeEventListener('touchend', handleTouchEnd);
+        window.removeEventListener('modelLoaded', handleModelLoaded as EventListener);
         isMouseDown = false;
         isDragging = false;
         if (style.parentNode) {
             style.parentNode.removeChild(style);
         }
+        console.log('NaviCube: Event listeners cleaned up');
     };
 
     console.log('NaviCube component created:', element);
