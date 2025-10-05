@@ -378,7 +378,7 @@ bim-panel-section[icon="solar:lamp-bold"] bim-button {
 }
 
 bim-panel-section[icon="solar:lamp-bold"] bim-button:hover {
-  background-color:  #969606!important;
+  background-color: #2196F3 !important; /* blue hover instead of confusing yellow */
 }
 
 /* Datapoint button states - green when ON, red when OFF */
@@ -392,10 +392,10 @@ bim-panel-section[icon="solar:lamp-bold"] bim-button:hover {
   color: white !important;
 }
 .datapoint-button:not(.active):hover {
-  background: #4CAF50 !important; /* hover green if OFF */
+  background: #2196F3 !important; /* blue hover for OFF buttons */
 }
 .datapoint-button.active:hover {
-  background: #f44336 !important; /* hover red if ON */
+  background: #2196F3 !important; /* blue hover for ON buttons */
 }
 
 /* Debug Compass Styles */

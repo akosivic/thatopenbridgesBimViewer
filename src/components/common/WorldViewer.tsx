@@ -31,7 +31,6 @@ import selection from "./components/Toolbars/Sections/Selection";
 import cameraSettings from "./components/Toolbars/Sections/CameraSettings";
 import { AppManager } from "./components/bim-components";
 import { loadIfc } from "./components/Toolbars/Sections/Import";
-import { setGlobalCamera } from "./components/Panels/ProjectInformation";
 import { setBaseSpeed } from "./components/Toolbars/Sections/SpeedControls";
 import { InfoPanelsManager } from "./components/InfoPanelsManager";
 import ZoomOptions from "./components/UI/ZoomOptions";
@@ -334,9 +333,6 @@ export class WorldViewer extends HTMLElement {
     world.camera.three.rotation.x = -1.6 * Math.PI / 180;
     world.camera.three.rotation.z = 0;
     world.camera.three.updateMatrixWorld();
-
-    // Set global camera reference for ProjectInformation zoom functionality
-    setGlobalCamera(world.camera.three);
 
     // WebGL optimization settings to prevent context loss
     const renderer = world.renderer.three;
@@ -1329,6 +1325,18 @@ export class WorldViewer extends HTMLElement {
     console.log('Model loaded:', model);
     if (model) {
       setModel(model);
+      
+      // Trigger initial light highlighting based on Loytec device state
+      setTimeout(() => {
+        const projectInfoPanel = document.querySelector('[data-panel="project"]');
+        if (projectInfoPanel && (projectInfoPanel as any).triggerInitialHighlighting) {
+          console.log('🔥 Triggering initial light highlighting after model load...');
+          (projectInfoPanel as any).triggerInitialHighlighting();
+        } else {
+          // Fallback: Dispatch custom event
+          window.dispatchEvent(new CustomEvent('modelLoadedForLighting'));
+        }
+      }, 500); // Small delay to ensure model is fully processed
     }
 
     // Debug: Check if fragments were added

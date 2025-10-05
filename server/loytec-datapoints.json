@@ -1,0 +1,627 @@
+{
+  "M1": [
+    {
+      "id": "727413",
+      "name": "Favorites.Light.Lounge.01.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:54:55.239Z",
+      "type": "digital",
+      "description": "Lounge Area 01 Light Status"
+    },
+    {
+      "id": "727441",
+      "name": "Favorites.Light.Lounge.02.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:54:55.239Z",
+      "type": "digital",
+      "description": "Lounge Area 02 Light Status"
+    },
+    {
+      "id": "727469",
+      "name": "Favorites.Light.TestRM.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:54:55.239Z",
+      "type": "digital",
+      "description": "Test Room Light Status"
+    },
+    {
+      "id": "727495",
+      "name": "Favorites.Light.StockRM.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:54:55.239Z",
+      "type": "digital",
+      "description": "Stock Room Light Status"
+    },
+    {
+      "id": "727761",
+      "name": "Favorites.Light.Office.01.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:54:55.239Z",
+      "type": "digital",
+      "description": "Office 01 Light Status"
+    },
+    {
+      "id": "727787",
+      "name": "Favorites.Light.ConfRM.01.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:54:55.239Z",
+      "type": "digital",
+      "description": "Conference Room 01 Light Status"
+    },
+    {
+      "id": "727813",
+      "name": "Favorites.Light.ConfRM.02.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:54:55.239Z",
+      "type": "digital",
+      "description": "Conference Room 02 Light Status"
+    }
+  ],
+  "M2": [
+    {
+      "id": "723420",
+      "name": "Favorites.Light.Lounge.01.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:54:56.639Z",
+      "type": "digital",
+      "description": "Lounge Area 01 Light Status"
+    },
+    {
+      "id": "727329",
+      "name": "Favorites.Light.Lounge.02.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:54:56.639Z",
+      "type": "digital",
+      "description": "Lounge Area 02 Light Status"
+    },
+    {
+      "id": "727598",
+      "name": "Favorites.Light.TestRM.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:54:56.639Z",
+      "type": "digital",
+      "description": "Test Room Light Status"
+    },
+    {
+      "id": "727624",
+      "name": "Favorites.Light.StockRM.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:54:56.639Z",
+      "type": "digital",
+      "description": "Stock Room Light Status"
+    },
+    {
+      "id": "728049",
+      "name": "Favorites.Light.Office.01.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:54:56.639Z",
+      "type": "digital",
+      "description": "Office 01 Light Status"
+    }
+  ],
+  "M3": [
+    {
+      "id": "728121",
+      "name": "Favorites.Light.Lounge.01.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:54:57.919Z",
+      "type": "digital",
+      "description": "Lounge Area 01 Light Status"
+    },
+    {
+      "id": "728556",
+      "name": "Favorites.Light.Lounge.02.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:54:57.919Z",
+      "type": "digital",
+      "description": "Lounge Area 02 Light Status"
+    },
+    {
+      "id": "728819",
+      "name": "Favorites.Light.TestRM.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:54:57.919Z",
+      "type": "digital",
+      "description": "Test Room Light Status"
+    },
+    {
+      "id": "728830",
+      "name": "Favorites.Light.StockRM.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:54:57.919Z",
+      "type": "digital",
+      "description": "Stock Room Light Status"
+    }
+  ],
+  "M4": [
+    {
+      "id": "728123",
+      "name": "Favorites.Light.Lounge.01.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:54:59.877Z",
+      "type": "digital",
+      "description": "Lounge Area 01 Light Status"
+    },
+    {
+      "id": "728124",
+      "name": "Favorites.Light.Lounge.02.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:54:59.877Z",
+      "type": "digital",
+      "description": "Lounge Area 02 Light Status"
+    },
+    {
+      "id": "728125",
+      "name": "Favorites.Light.TestRM.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:54:59.877Z",
+      "type": "digital",
+      "description": "Test Room Light Status"
+    },
+    {
+      "id": "728820",
+      "name": "Favorites.Light.StockRM.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:54:59.877Z",
+      "type": "digital",
+      "description": "Stock Room Light Status"
+    },
+    {
+      "id": "728821",
+      "name": "Favorites.Light.Office.01.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:54:59.877Z",
+      "type": "digital",
+      "description": "Office 01 Light Status"
+    },
+    {
+      "id": "728822",
+      "name": "Favorites.Light.ConfRM.01.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:54:59.877Z",
+      "type": "digital",
+      "description": "Conference Room 01 Light Status"
+    }
+  ],
+  "L1": [
+    {
+      "id": "728869",
+      "name": "Favorites.Light.Lounge.01.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:55:01.790Z",
+      "type": "digital",
+      "description": "Lounge Area 01 Light Status"
+    },
+    {
+      "id": "728873",
+      "name": "Favorites.Light.Lounge.02.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:55:01.790Z",
+      "type": "digital",
+      "description": "Lounge Area 02 Light Status"
+    },
+    {
+      "id": "729112",
+      "name": "Favorites.Light.TestRM.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:55:01.790Z",
+      "type": "digital",
+      "description": "Test Room Light Status"
+    },
+    {
+      "id": "729116",
+      "name": "Favorites.Light.StockRM.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:55:01.790Z",
+      "type": "digital",
+      "description": "Stock Room Light Status"
+    },
+    {
+      "id": "729117",
+      "name": "Favorites.Light.Office.01.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:55:01.790Z",
+      "type": "digital",
+      "description": "Office 01 Light Status"
+    },
+    {
+      "id": "3363628",
+      "name": "Favorites.Light.ConfRM.01.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:55:01.790Z",
+      "type": "digital",
+      "description": "Conference Room 01 Light Status"
+    }
+  ],
+  "O1": [
+    {
+      "id": "729149",
+      "name": "Favorites.Light.Lounge.01.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:55:02.777Z",
+      "type": "digital",
+      "description": "Lounge Area 01 Light Status"
+    },
+    {
+      "id": "729153",
+      "name": "Favorites.Light.Lounge.02.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:55:02.777Z",
+      "type": "digital",
+      "description": "Lounge Area 02 Light Status"
+    },
+    {
+      "id": "729154",
+      "name": "Favorites.Light.TestRM.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:55:02.777Z",
+      "type": "digital",
+      "description": "Test Room Light Status"
+    },
+    {
+      "id": "729180",
+      "name": "Favorites.Light.StockRM.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:55:02.777Z",
+      "type": "digital",
+      "description": "Stock Room Light Status"
+    },
+    {
+      "id": "729184",
+      "name": "Favorites.Light.Office.01.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:55:02.777Z",
+      "type": "digital",
+      "description": "Office 01 Light Status"
+    },
+    {
+      "id": "729185",
+      "name": "Favorites.Light.ConfRM.01.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:55:02.777Z",
+      "type": "digital",
+      "description": "Conference Room 01 Light Status"
+    }
+  ],
+  "O2": [
+    {
+      "id": "729150",
+      "name": "Favorites.Light.Lounge.01.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:25:48.602Z",
+      "type": "digital",
+      "description": "Lounge Area 01 Light Status"
+    },
+    {
+      "id": "729151",
+      "name": "Favorites.Light.Lounge.02.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:25:48.602Z",
+      "type": "digital",
+      "description": "Lounge Area 02 Light Status"
+    },
+    {
+      "id": "729152",
+      "name": "Favorites.Light.TestRM.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:25:48.602Z",
+      "type": "digital",
+      "description": "Test Room Light Status"
+    },
+    {
+      "id": "729181",
+      "name": "Favorites.Light.StockRM.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:25:48.602Z",
+      "type": "digital",
+      "description": "Stock Room Light Status"
+    },
+    {
+      "id": "729182",
+      "name": "Favorites.Light.Office.01.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:25:48.602Z",
+      "type": "digital",
+      "description": "Office 01 Light Status"
+    },
+    {
+      "id": "729183",
+      "name": "Favorites.Light.ConfRM.01.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:25:48.602Z",
+      "type": "digital",
+      "description": "Conference Room 01 Light Status"
+    }
+  ],
+  "O3": [
+    {
+      "id": "729211",
+      "name": "Favorites.Light.Lounge.01.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:25:49.227Z",
+      "type": "digital",
+      "description": "Lounge Area 01 Light Status"
+    },
+    {
+      "id": "729215",
+      "name": "Favorites.Light.Lounge.02.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:25:49.227Z",
+      "type": "digital",
+      "description": "Lounge Area 02 Light Status"
+    },
+    {
+      "id": "729216",
+      "name": "Favorites.Light.TestRM.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:25:49.227Z",
+      "type": "digital",
+      "description": "Test Room Light Status"
+    },
+    {
+      "id": "729246",
+      "name": "Favorites.Light.StockRM.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:25:49.227Z",
+      "type": "digital",
+      "description": "Stock Room Light Status"
+    },
+    {
+      "id": "729250",
+      "name": "Favorites.Light.Office.01.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:25:49.227Z",
+      "type": "digital",
+      "description": "Office 01 Light Status"
+    },
+    {
+      "id": "729251",
+      "name": "Favorites.Light.ConfRM.01.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:25:49.227Z",
+      "type": "digital",
+      "description": "Conference Room 01 Light Status"
+    }
+  ],
+  "O4": [
+    {
+      "id": "729212",
+      "name": "Favorites.Light.Lounge.01.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:55:04.508Z",
+      "type": "digital",
+      "description": "Lounge Area 01 Light Status"
+    },
+    {
+      "id": "729213",
+      "name": "Favorites.Light.Lounge.02.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:55:04.508Z",
+      "type": "digital",
+      "description": "Lounge Area 02 Light Status"
+    },
+    {
+      "id": "729214",
+      "name": "Favorites.Light.TestRM.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:55:04.508Z",
+      "type": "digital",
+      "description": "Test Room Light Status"
+    },
+    {
+      "id": "729427",
+      "name": "Favorites.Light.StockRM.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:55:04.508Z",
+      "type": "digital",
+      "description": "Stock Room Light Status"
+    },
+    {
+      "id": "729248",
+      "name": "Favorites.Light.Office.01.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:55:04.508Z",
+      "type": "digital",
+      "description": "Office 01 Light Status"
+    },
+    {
+      "id": "729249",
+      "name": "Favorites.Light.ConfRM.01.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:55:04.508Z",
+      "type": "digital",
+      "description": "Conference Room 01 Light Status"
+    },
+    {
+      "id": "729247",
+      "name": "Favorites.Light.ConfRM.01.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:55:04.508Z",
+      "type": "digital",
+      "description": "Conference Room 01 Light Status (Alt)"
+    }
+  ],
+  "ER": [
+    {
+      "id": "729279",
+      "name": "Favorites.Light.Lounge.01.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:55:05.455Z",
+      "type": "digital",
+      "description": "Lounge Area 01 Light Status"
+    },
+    {
+      "id": "729283",
+      "name": "Favorites.Light.Lounge.02.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:55:05.455Z",
+      "type": "digital",
+      "description": "Lounge Area 02 Light Status"
+    },
+    {
+      "id": "729284",
+      "name": "Favorites.Light.TestRM.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:55:05.455Z",
+      "type": "digital",
+      "description": "Test Room Light Status"
+    },
+    {
+      "id": "729312",
+      "name": "Favorites.Light.StockRM.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:55:05.455Z",
+      "type": "digital",
+      "description": "Stock Room Light Status"
+    },
+    {
+      "id": "729316",
+      "name": "Favorites.Light.Office.01.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:55:05.455Z",
+      "type": "digital",
+      "description": "Office 01 Light Status"
+    },
+    {
+      "id": "729317",
+      "name": "Favorites.Light.ConfRM.01.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:55:05.455Z",
+      "type": "digital",
+      "description": "Conference Room 01 Light Status"
+    }
+  ],
+  "ST": [
+    {
+      "id": "729280",
+      "name": "Favorites.Light.Lounge.01.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:55:09.007Z",
+      "type": "digital",
+      "description": "Lounge Area 01 Light Status"
+    },
+    {
+      "id": "729281",
+      "name": "Favorites.Light.Lounge.02.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:55:09.007Z",
+      "type": "digital",
+      "description": "Lounge Area 02 Light Status"
+    },
+    {
+      "id": "729282",
+      "name": "Favorites.Light.TestRM.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:55:09.007Z",
+      "type": "digital",
+      "description": "Test Room Light Status"
+    },
+    {
+      "id": "729313",
+      "name": "Favorites.Light.StockRM.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:55:09.007Z",
+      "type": "digital",
+      "description": "Stock Room Light Status"
+    },
+    {
+      "id": "729314",
+      "name": "Favorites.Light.Office.01.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:55:09.007Z",
+      "type": "digital",
+      "description": "Office 01 Light Status"
+    },
+    {
+      "id": "729315",
+      "name": "Favorites.Light.ConfRM.01.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:55:09.007Z",
+      "type": "digital",
+      "description": "Conference Room 01 Light Status"
+    },
+    {
+      "id": "729445",
+      "name": "Favorites.Light.Office.01.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:55:09.007Z",
+      "type": "digital",
+      "description": "Office 01 Light Status (Alt)"
+    },
+    {
+      "id": "729446",
+      "name": "Favorites.Light.ConfRM.01.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-05T15:55:09.007Z",
+      "type": "digital",
+      "description": "Conference Room 01 Light Status (Alt)"
+    }
+  ]
+}

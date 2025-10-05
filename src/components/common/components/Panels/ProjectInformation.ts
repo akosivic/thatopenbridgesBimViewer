@@ -52,200 +52,175 @@ export default async (components: OBC.Components, isDebug: boolean, highlighter:
     buttons: []
   };
 
-  // Fetch all datapoint keys (memoized, refreshable)
+  // Fetch all datapoint keys with debugging
   let keysFetched = false;
   const getAllDataPointKeys = async (forceRefresh = false): Promise<string[]> => {
     if (keysFetched && !forceRefresh) return dataPointState.keys;
     try {
+      console.log("🔍 Fetching datapoint keys from server...");
       const response = await fetch("/ws/node/api/GetDpsMapKeys");
-      if (!response.ok) throw new Error("Failed to fetch datapoint keys");
+      console.log("📡 API Response status:", response.status);
+      if (!response.ok) throw new Error(`Failed to fetch datapoint keys: ${response.status}`);
       const data: DataPointKeysResponse = await response.json();
+      console.log("📊 Raw API data:", data);
       const keys = Object.keys(data);
-      if (keys) {
+      console.log("🔑 Extracted keys:", keys);
+      if (keys && keys.length > 0) {
         dataPointState.keys = keys;
-        dataPointState.buttonStates = {};
-        keys.forEach((key) => {
-          dataPointState.buttonStates[key] = false;
-        });
+        
+        // Initialize button states from backend instead of defaulting to false
+        console.log("🔄 Fetching initial button states from loytec-datapoints.json...");
+        try {
+          const statesResponse = await fetch("/ws/node/api/getInitialButtonStates");
+          if (statesResponse.ok) {
+            const buttonStates = await statesResponse.json();
+            console.log("📊 Backend button states from JSON:", buttonStates);
+            dataPointState.buttonStates = buttonStates;
+            console.log("✅ Button states synchronized with loytec-datapoints.json");
+          } else {
+            console.warn("⚠️ Failed to fetch button states, using defaults");
+            dataPointState.buttonStates = {};
+            keys.forEach((key) => {
+              dataPointState.buttonStates[key] = false;
+            });
+          }
+        } catch (stateError) {
+          console.error("❌ Error fetching button states:", stateError);
+          dataPointState.buttonStates = {};
+          keys.forEach((key) => {
+            dataPointState.buttonStates[key] = false;
+          });
+        }
+        
         keysFetched = true;
+        console.log("✅ Successfully loaded", keys.length, "light groups:", keys);
+        console.log("🎯 Final button states:", dataPointState.buttonStates);
         return dataPointState.keys;
+      } else {
+        console.warn("⚠️ No keys found in API response");
       }
     } catch (error) {
-      console.error("Error fetching datapoint keys:", error);
+      console.error("❌ Error fetching datapoint keys:", error);
     }
     return [];
   };
 
-  // // Update datapoint by key
+  // Update datapoint by key - writes to loytec-datapoints.json
   const updateDataPoint = async (key: string) => {
     try {
+      console.log(`🔄 Toggling light group: ${key}`);
+      
+      // REVERTED: Clear all highlights immediately (causes flicker but original behavior)
       highlighter.clear();
-      dataPointState.buttonStates[key] = !dataPointState.buttonStates[key];
-      if (!dataPointState.buttonStates[key]) {
-        console.log(`Turning off datapoint for key: ${key}`);
-      } else {
-        console.log(`Turning on datapoint for key: ${key}`);
-        const response = await fetch(`/ws/node/api/getDataPoint?key=${key}`);
-        if (!response.ok) throw new Error(`Failed to update datapoint for key: ${key}`);
+      
+      // Call the backend to actually toggle the light group and update JSON file
+      const response = await fetch('/ws/node/api/toggleLightGroup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ lightGroup: key })
+      });
 
-        // Zoom to the selected key
-        const data: [{ key: string; name: string }] = await response.json();
-
-        data.forEach(element => {
-          const targetKey = Object.keys(element)[0];
-          getByQuery(targetKey);
-          // attributesTable.queryString = targetKey;
-          relationsTree.requestUpdate();
-          relationsTree.updateComplete.then(async () => {
-            relationsTree.expanded = true;
-            console.log(`Zooming to key: ${targetKey}`);
-
-            // Recursive function to find items in the tree with matching name
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const findItemsByName = (items: any[], name: string): any[] => {
-              if (!items || !Array.isArray(items)) return [];
-
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              let results: any[] = [];
-
-              for (const item of items) {
-                if (!item || !item.data) continue;
-                if ((item.data.Tag === name) || (item.data?.Name && typeof item.data.Name === 'string' && item.data.Name.includes(name))) {
-                  results.push(item);
-                }
-
-                if (item.children) {
-                  // Handle children recursively whether they're an array or just a boolean flag
-                  if (Array.isArray(item.children)) {
-                    results = [...results, ...findItemsByName(item.children, name)];
-                  }
-                }
-              }
-              return results;
-            };
-
-            const foundItems = findItemsByName(relationsTree.data, targetKey);
-            if (foundItems.length > 0) {
-              console.log(`Found ${foundItems.length} items for key ${targetKey}:`, foundItems);
-              if (model) {
-                const fragmentIdMap = model.getFragmentMap([foundItems[0].data.expressID]);
-
-                // Highlight the fragment
-                highlighter.highlightByID("select", fragmentIdMap, false, false, undefined, undefined, false);
-
-                // Custom FPS zoom: Move camera to look at the selected element
-                try {
-                  // Get the bounding box of the selected fragment
-                  const fragmentMeshes = [];
-                  // Iterate over the fragment map entries
-                  for (const fragmentId of Object.keys(fragmentIdMap)) {
-                    const fragment = model.items.find(f => f.id === fragmentId);
-                    if (fragment && fragment.mesh) {
-                      fragmentMeshes.push(fragment.mesh);
-                    }
-                  }
-
-                  if (fragmentMeshes.length > 0) {
-                    // Calculate bounding box of selected elements
-                    const bbox = new THREE.Box3();
-                    fragmentMeshes.forEach(mesh => bbox.expandByObject(mesh));
-
-                    if (!bbox.isEmpty()) {
-                      const center = bbox.getCenter(new THREE.Vector3());
-                      const size = bbox.getSize(new THREE.Vector3());
-
-                      // Get current camera from the components or highlighter
-                      const worlds = components.get(OBC.Worlds);
-                      const worldsList = Array.from(worlds.list.values());
-                      const mainWorld = worldsList[0]; // Get the first world (should be "Main")
-                      let camera = mainWorld?.camera?.three;
-
-                      // Alternative: try to get camera from highlighter config
-                      if (!camera && highlighter.config && highlighter.config.world) {
-                        camera = highlighter.config.world.camera?.three;
-                      }
-
-                      // Fallback: use global camera reference
-                      if (!camera && globalCamera) {
-                        camera = globalCamera;
-                      }
-
-                      console.log('Worlds list:', worlds.list.size);
-                      console.log('Main world found:', !!mainWorld);
-                      console.log('Camera found:', !!camera);
-                      console.log('Highlighter config world:', !!highlighter.config?.world);
-                      console.log('Global camera fallback:', !!globalCamera);
-
-                      if (camera) {
-                        // Get current projection mode to determine camera behavior
-                        const currentProjection = getCurrentProjection();
-                        const isOrthographic = currentProjection === "Orthographic";
-                        const isPerspective = currentProjection === "Perspective";
-                        
-                        if (isOrthographic) {
-                          // ORTHOGRAPHIC MODE: No camera changes at all - just highlight the element
-                          console.log(`💡 Light ${key} - Orthographic mode: No camera movement or angle changes`);
-                          console.log(`Orthographic mode - Camera position and angle remain unchanged`);
-                          console.log(`Orthographic mode - Element highlighted only`);
-                        } else if (isPerspective) {
-                          // PERSPECTIVE MODE: Original behavior - move camera to angled position
-                          console.log(`💡 Light ${key} - Perspective mode: Moving camera to angled position`);
-                          
-                          // Calculate optimal distance based on object size
-                          const maxDim = Math.max(size.x, size.y, size.z);
-                          const distance = Math.max(maxDim * 2, 5); // Minimum 5 units away
-
-                          // Calculate direction from center to camera position
-                          const direction = camera.position.clone().sub(center).normalize();
-
-                          // Position camera at optimal distance from the center
-                          const newPosition = center.clone().add(direction.multiplyScalar(distance));
-
-                          // Keep Y locked to eye level (1.6m) for perspective mode
-                          newPosition.y = 1.6;
-
-                          // Move camera to new angled position
-                          camera.position.copy(newPosition);
-
-                          // Look at the center of the selected object
-                          camera.lookAt(center);
-
-                          console.log(`Perspective mode - Camera moved to angled position:`, newPosition);
-                          console.log(`Perspective mode - Now looking at:`, center);
-                        }
-                        
-                        console.log(`Light button ${key} activated in ${currentProjection} mode`);
-                      } else {
-                        console.warn('Camera not found - zoom functionality unavailable');
-                      }
-                    }
-                  }
-                } catch (zoomError) {
-                  console.error('Error during FPS zoom:', zoomError);
-                }
-              }
-            } else {
-              console.log(`No items found for key ${targetKey} in relations tree`);
-            }
-          });
-        });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`Failed to toggle light group ${key}: ${errorData.error || response.statusText}`);
       }
-      console.log('relationsTree.data:', relationsTree.data);
+
+      const result = await response.json();
+      console.log(`✅ Light group ${key} toggled successfully in loytec-datapoints.json:`, result);
+
+      // Update local button state based on the backend response
+      const newState = result.newState === 'ON';
+      dataPointState.buttonStates[key] = newState;
+      
+      // Re-fetch button states to ensure perfect sync with JSON file
+      console.log("🔄 Re-syncing all button states from loytec-datapoints.json...");
+      try {
+        const statesResponse = await fetch("/ws/node/api/getInitialButtonStates");
+        if (statesResponse.ok) {
+          const buttonStates = await statesResponse.json();
+          console.log("📊 Updated backend button states from JSON:", buttonStates);
+          Object.assign(dataPointState.buttonStates, buttonStates);
+          console.log("✅ All button states re-synchronized with JSON file");
+        }
+      } catch (syncError) {
+        console.warn("⚠️ Failed to re-sync button states:", syncError);
+      }
+      
+      if (!newState) {
+        console.log(`💡 Light group ${key} turned OFF`);
+      } else {
+        console.log(`💡 Light group ${key} turned ON - adding highlights`);
+        
+        // Get the individual lights to highlight them
+        const lightDataResponse = await fetch(`/ws/node/api/getDataPoint?key=${key}`);
+        if (lightDataResponse.ok) {
+          const lightData: [{ key: string; name: string }] = await lightDataResponse.json();
+          
+          lightData.forEach(element => {
+            const targetKey = Object.keys(element)[0];
+            getByQuery(targetKey);
+            relationsTree.requestUpdate();
+            relationsTree.updateComplete.then(async () => {
+              relationsTree.expanded = true;
+              console.log(`Highlighting key: ${targetKey}`);
+
+              // Recursive function to find items in the tree with matching name
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const findItemsByName = (items: any[], name: string): any[] => {
+                if (!items || !Array.isArray(items)) return [];
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                let results: any[] = [];
+                for (const item of items) {
+                  if (!item || !item.data) continue;
+                  if ((item.data.Tag === name) || (item.data?.Name && typeof item.data.Name === 'string' && item.data.Name.includes(name))) {
+                    results.push(item);
+                  }
+                  if (item.children) {
+                    if (Array.isArray(item.children)) {
+                      results = [...results, ...findItemsByName(item.children, name)];
+                    }
+                  }
+                }
+                return results;
+              };
+
+              const foundItems = findItemsByName(relationsTree.data, targetKey);
+              if (foundItems.length > 0) {
+                console.log(`Found ${foundItems.length} items for key ${targetKey}`);
+                if (model) {
+                  const fragmentIdMap = model.getFragmentMap([foundItems[0].data.expressID]);
+                  highlighter.highlightByID("select", fragmentIdMap, false, false, undefined, undefined, false);
+                  console.log(`Highlighted elements for ${targetKey}`);
+                }
+              } else {
+                console.log(`No items found for key ${targetKey} in relations tree`);
+              }
+            });
+          });
+        }
+      }
+      
       await renderDataPointButtons();
       updateState({ ...dataPointState });
       console.log(`Updated datapoint for key: ${key}`);
     } catch (error) {
       console.error(`Error updating datapoint for key: ${key}:`, error);
-      dataPointState.buttonStates[key] = !dataPointState.buttonStates[key]; // Revert state
+      // Don't revert state since we're syncing with backend
     }
   };
 
-  // Render datapoint buttons
+  // Render datapoint buttons with proper JSON state sync
   const renderDataPointButtons = async () => {
+    console.log("🎨 Starting renderDataPointButtons...");
     await getAllDataPointKeys();
-    // await getDpsValues();
+    console.log("🔢 Number of keys to render:", dataPointState.keys.length);
+    console.log("🎛️ Current button states from JSON:", dataPointState.buttonStates);
+    
     dataPointState.buttons = dataPointState.keys.map((key) => {
       const isActive = dataPointState.buttonStates[key] || false;
+      console.log(`🎯 Creating button for key: ${key}, active: ${isActive}, style: ${isActive ? 'GREEN' : 'RED'}`);
       return BUI.html`
         <bim-button
           class="datapoint-button${isActive ? ' active' : ''}"
@@ -255,6 +230,7 @@ export default async (components: OBC.Components, isDebug: boolean, highlighter:
         </bim-button>
       `;
     });
+    console.log("✨ Buttons created:", dataPointState.buttons.length);
   };
 
   await renderDataPointButtons();

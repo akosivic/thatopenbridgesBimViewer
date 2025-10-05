@@ -86,7 +86,54 @@ app.use((req, res, next) => {
   next();
 });
 
-// In-memory map of string keys to datapoints
+// Helper function to convert Loytec datapoints to original format
+function convertLoytecToOriginalFormat(loytecDataPoints) {
+  const converted = {};
+  
+  for (const [groupKey, dataPoints] of Object.entries(loytecDataPoints)) {
+    converted[groupKey] = dataPoints.map(dp => {
+      // Convert from { id: "727413", name: "Favorites.Light.Lounge.01.ST", ... }
+      // to { "727413": "Favorites.Light.Lounge.01.ST" }
+      return { [dp.id]: dp.name };
+    });
+  }
+  
+  return converted;
+}
+
+// Helper function to load Loytec datapoints from JSON file
+function loadLoytecDataPoints() {
+  try {
+    const dataPath = path.join(__dirname, 'loytec-datapoints.json');
+    const rawData = fs.readFileSync(dataPath, 'utf8');
+    return JSON.parse(rawData);
+  } catch (error) {
+    console.error('Error loading Loytec datapoints:', error);
+    return {};
+  }
+}
+
+// Function to get available datapoint keys
+function getAvailableDataPointKeys() {
+  const dataPoints = loadLoytecDataPoints();
+  return Object.keys(dataPoints);
+}
+
+// Helper function to save Loytec datapoints to JSON file
+function saveLoytecDataPoints(dataPoints) {
+  try {
+    const dataPath = path.join(__dirname, 'loytec-datapoints.json');
+    const jsonData = JSON.stringify(dataPoints, null, 2);
+    fs.writeFileSync(dataPath, jsonData, 'utf8');
+    return true;
+  } catch (error) {
+    console.error('Error saving Loytec datapoints:', error);
+    return false;
+  }
+}
+
+// Legacy in-memory map (commented out - now using JSON file)
+/*
 const dataPointMap = {
   "M1": [
     { "727413": "Favorites.Light.Lounge.01.ST" },
@@ -186,6 +233,7 @@ const dataPointMap = {
     { "729446": "Favorites.Light.ConfRM.01.ST" }
   ]
 };
+*/
 
 // API Routes
 
@@ -495,7 +543,7 @@ app.get('/ws/node/api/auth/test-connection', async (req, res) => {
 
 // Data Point Routes
 
-// Get data point by key (compatible with Azure Functions endpoint)
+// Get data point by key (Loytec mock - compatible with Azure Functions endpoint)
 app.get('/ws/node/api/getDataPoint', (req, res) => {
   console.log('getDataPoint function started');
 
@@ -506,25 +554,42 @@ app.get('/ws/node/api/getDataPoint', (req, res) => {
       return res.status(400).json({ error: 'Missing key parameter' });
     }
 
-    // Check if the key exists in the map
-    if (dataPointMap.hasOwnProperty(key)) {
-      const dataPoint = dataPointMap[key];
-      console.log(`Data point found for key: ${key}`, dataPoint);
+    // Load Loytec datapoints from JSON file
+    const loytecDataPoints = loadLoytecDataPoints();
 
-      return res.status(200).json(dataPoint);
+    // Check if the key exists in the Loytec datapoints
+    if (loytecDataPoints.hasOwnProperty(key)) {
+      const dataPoint = loytecDataPoints[key];
+      console.log(`Loytec data point found for key: ${key}`, dataPoint);
+
+      // Convert to original format for client compatibility, but include status
+      const convertedDataPoint = dataPoint.map(dp => ({ 
+        [dp.id]: {
+          name: dp.name,
+          status: dp.status,
+          value: dp.value,
+          type: dp.type,
+          description: dp.description
+        }
+      }));
+      
+      // Log the enhanced Loytec information
+      console.log(`Loytec status summary for ${key}: ${dataPoint.filter(dp => dp.status === 'ON').length} ON, ${dataPoint.filter(dp => dp.status === 'OFF').length} OFF`);
+      
+      return res.status(200).json(convertedDataPoint);
     } else {
-      console.log(`No data point found for key: ${key}`);
+      console.log(`No Loytec data point found for key: ${key}`);
 
       return res.status(404).json({ 
         error: `No data point found for key: ${key}`,
-        availableKeys: Object.keys(dataPointMap)
+        availableKeys: getAvailableDataPointKeys()
       });
     }
   } catch (error) {
     console.error(`Error processing getDataPoint request:`, error);
 
     return res.status(500).json({ 
-      error: `Error processing request: ${error.message}` 
+      error: `Error processing request: ${error.message}`
     });
   }
 });
@@ -534,7 +599,7 @@ app.get('/ws/node/api/getAllDataPointKeys', (req, res) => {
   console.log('getAllDataPointKeys function started');
 
   try {
-    const keys = Object.keys(dataPointMap);
+    const keys = getAvailableDataPointKeys();
 
     return res.status(200).json({ keys });
   } catch (error) {
@@ -546,12 +611,42 @@ app.get('/ws/node/api/getAllDataPointKeys', (req, res) => {
   }
 });
 
+// Get initial button states (determines which group buttons should be ON/OFF based on datapoint statuses)
+app.get('/ws/node/api/getInitialButtonStates', (req, res) => {
+  console.log('getInitialButtonStates function started');
+
+  try {
+    const loytecDataPoints = loadLoytecDataPoints();
+    const buttonStates = {};
+
+    // For each group, determine if the button should be ON
+    // A group button is ON if ANY of its datapoints are ON
+    for (const [groupKey, dataPoints] of Object.entries(loytecDataPoints)) {
+      const hasAnyOn = dataPoints.some(dp => dp.status === 'ON');
+      buttonStates[groupKey] = hasAnyOn;
+      console.log(`Group ${groupKey}: ${hasAnyOn ? 'ON' : 'OFF'} (${dataPoints.filter(dp => dp.status === 'ON').length}/${dataPoints.length} datapoints ON)`);
+    }
+
+    console.log('Initial button states calculated:', buttonStates);
+    return res.status(200).json(buttonStates);
+  } catch (error) {
+    console.error(`Error getting initial button states:`, error);
+    return res.status(500).json({ 
+      error: `Error getting initial button states: ${error.message}` 
+    });
+  }
+});
+
 // Get all datapoints
 app.get('/ws/node/api/getAllDatapoints', (req, res) => {
   console.log('getAllDatapoints function started');
 
   try {
-    return res.status(200).json(dataPointMap);
+    const loytecDataPoints = loadLoytecDataPoints();
+    const convertedDataPoints = convertLoytecToOriginalFormat(loytecDataPoints);
+    
+    // Return converted datapoints structure for backward compatibility
+    return res.status(200).json(convertedDataPoints);
   } catch (error) {
     console.error(`Error getting all datapoints:`, error);
 
@@ -561,17 +656,244 @@ app.get('/ws/node/api/getAllDatapoints', (req, res) => {
   }
 });
 
-// Get DPS Map Keys (compatible with the old endpoint)
+// Get DPS Map Keys (compatible with the old endpoint - now using Loytec mock)
 app.get('/ws/node/api/GetDpsMapKeys', (req, res) => {
   console.log('GetDpsMapKeys function started');
 
   try {
-    return res.status(200).json(dataPointMap);
+    const loytecDataPoints = loadLoytecDataPoints();
+    const convertedDataPoints = convertLoytecToOriginalFormat(loytecDataPoints);
+    
+    // Return converted datapoints structure for backward compatibility
+    return res.status(200).json(convertedDataPoints);
   } catch (error) {
     console.error(`Error getting datapoints via GetDpsMapKeys:`, error);
 
     return res.status(500).json({ 
       error: `Error getting datapoints: ${error.message}` 
+    });
+  }
+});
+
+// Enhanced Loytec datapoint endpoint with status information
+app.get('/ws/node/api/getLoytecDataPoint', (req, res) => {
+  console.log('getLoytecDataPoint function started');
+
+  try {
+    const key = req.query.key;
+
+    if (!key) {
+      return res.status(400).json({ error: 'Missing key parameter' });
+    }
+
+    // Load Loytec datapoints from JSON file
+    const loytecDataPoints = loadLoytecDataPoints();
+
+    // Check if the key exists in the Loytec datapoints
+    if (loytecDataPoints.hasOwnProperty(key)) {
+      const dataPoint = loytecDataPoints[key];
+      console.log(`Enhanced Loytec data point found for key: ${key}`);
+
+      // Return enhanced format with Loytec status information
+      const response = {
+        key: key,
+        timestamp: new Date().toISOString(),
+        source: 'loytec-mock',
+        dataPoints: dataPoint,
+        summary: {
+          total: dataPoint.length,
+          onCount: dataPoint.filter(dp => dp.status === 'ON').length,
+          offCount: dataPoint.filter(dp => dp.status === 'OFF').length,
+          devices: dataPoint.map(dp => ({
+            id: dp.id,
+            name: dp.name,
+            status: dp.status,
+            value: dp.value
+          }))
+        }
+      };
+
+      return res.status(200).json(response);
+    } else {
+      console.log(`No Loytec data point found for key: ${key}`);
+
+      return res.status(404).json({ 
+        error: `No data point found for key: ${key}`,
+        availableKeys: getAvailableDataPointKeys()
+      });
+    }
+  } catch (error) {
+    console.error(`Error processing getLoytecDataPoint request:`, error);
+
+    return res.status(500).json({ 
+      error: `Error processing request: ${error.message}`
+    });
+  }
+});
+
+// Toggle individual light status (Loytec-style behavior)
+app.post('/ws/node/api/toggleLight', (req, res) => {
+  console.log('toggleLight function started');
+
+  try {
+    const { groupKey, lightId } = req.body;
+
+    if (!groupKey || !lightId) {
+      return res.status(400).json({ 
+        error: 'Missing groupKey or lightId parameter',
+        required: { groupKey: 'string', lightId: 'string' }
+      });
+    }
+
+    // Load current datapoints
+    const loytecDataPoints = loadLoytecDataPoints();
+
+    // Check if group exists
+    if (!loytecDataPoints.hasOwnProperty(groupKey)) {
+      return res.status(404).json({ 
+        error: `Group ${groupKey} not found`,
+        availableGroups: Object.keys(loytecDataPoints)
+      });
+    }
+
+    // Find the specific light in the group
+    const groupLights = loytecDataPoints[groupKey];
+    const lightIndex = groupLights.findIndex(light => light.id === lightId);
+
+    if (lightIndex === -1) {
+      return res.status(404).json({ 
+        error: `Light ${lightId} not found in group ${groupKey}`,
+        availableLights: groupLights.map(l => ({ id: l.id, name: l.name }))
+      });
+    }
+
+    // Toggle the light status (Loytec behavior - only this light changes)
+    const currentLight = groupLights[lightIndex];
+    const newStatus = currentLight.status === 'ON' ? 'OFF' : 'ON';
+    const newValue = newStatus === 'ON' ? 1 : 0;
+
+    // Update the light
+    loytecDataPoints[groupKey][lightIndex] = {
+      ...currentLight,
+      status: newStatus,
+      value: newValue,
+      timestamp: new Date().toISOString()
+    };
+
+    // Save the updated datapoints
+    const saveSuccess = saveLoytecDataPoints(loytecDataPoints);
+
+    if (!saveSuccess) {
+      return res.status(500).json({ 
+        error: 'Failed to save light status change'
+      });
+    }
+
+    console.log(`Light toggled: ${groupKey}.${lightId} -> ${newStatus}`);
+
+    // Return the updated light info
+    const updatedLight = loytecDataPoints[groupKey][lightIndex];
+    const groupSummary = {
+      total: groupLights.length,
+      onCount: groupLights.filter(l => l.status === 'ON').length,
+      offCount: groupLights.filter(l => l.status === 'OFF').length
+    };
+
+    return res.status(200).json({
+      success: true,
+      light: updatedLight,
+      groupSummary: groupSummary,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error(`Error toggling light:`, error);
+
+    return res.status(500).json({ 
+      error: `Error toggling light: ${error.message}`
+    });
+  }
+});
+
+// Toggle entire light group (like pressing M1, M2, etc. button)
+app.post('/ws/node/api/toggleLightGroup', (req, res) => {
+  console.log('toggleLightGroup function started');
+
+  try {
+    const { lightGroup } = req.body;
+
+    if (!lightGroup) {
+      return res.status(400).json({ 
+        error: 'Missing lightGroup parameter',
+        required: { lightGroup: 'string (e.g., M1, M2, L1, etc.)' }
+      });
+    }
+
+    // Load current datapoints
+    const loytecDataPoints = loadLoytecDataPoints();
+
+    // Check if group exists
+    if (!loytecDataPoints.hasOwnProperty(lightGroup)) {
+      return res.status(404).json({ 
+        error: `Light group ${lightGroup} not found`,
+        availableGroups: Object.keys(loytecDataPoints)
+      });
+    }
+
+    const groupLights = loytecDataPoints[lightGroup];
+    
+    // Determine current group state (majority rule)
+    const onCount = groupLights.filter(light => light.status === 'ON').length;
+    const totalCount = groupLights.length;
+    const majorityOn = onCount > (totalCount / 2);
+    
+    // Toggle the group: if majority ON -> turn all OFF, otherwise turn all ON
+    const newState = majorityOn ? 'OFF' : 'ON';
+    const newValue = newState === 'ON' ? 1 : 0;
+    
+    console.log(`Group ${lightGroup}: ${onCount}/${totalCount} ON -> Setting all to ${newState}`);
+
+    // Update all lights in the group
+    loytecDataPoints[lightGroup] = groupLights.map(light => ({
+      ...light,
+      status: newState,
+      value: newValue,
+      timestamp: new Date().toISOString()
+    }));
+
+    // Save the updated datapoints
+    const saveSuccess = saveLoytecDataPoints(loytecDataPoints);
+
+    if (!saveSuccess) {
+      return res.status(500).json({ 
+        error: 'Failed to save light group status change'
+      });
+    }
+
+    console.log(`Light group toggled: ${lightGroup} -> All ${newState}`);
+
+    // Return the group summary
+    const groupSummary = {
+      group: lightGroup,
+      newState: newState,
+      total: totalCount,
+      onCount: newState === 'ON' ? totalCount : 0,
+      offCount: newState === 'OFF' ? totalCount : 0,
+      lights: loytecDataPoints[lightGroup].map(l => ({ id: l.id, name: l.name, status: l.status }))
+    };
+
+    return res.status(200).json({
+      success: true,
+      groupSummary: groupSummary,
+      newState: newState,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error(`Error toggling light group:`, error);
+
+    return res.status(500).json({ 
+      error: `Error toggling light group: ${error.message}`
     });
   }
 });
@@ -782,6 +1104,8 @@ app.listen(PORT, () => {
   console.log(`  - GET  http://localhost:${PORT}/ws/node/api/auth/test-connection`);
   console.log(`Data API endpoints available at:`);
   console.log(`  - http://localhost:${PORT}/ws/node/api/getDataPoint?key=M1`);
+  console.log(`  - http://localhost:${PORT}/ws/node/api/getLoytecDataPoint?key=M1 (enhanced with ON/OFF status)`);
+  console.log(`  - POST http://localhost:${PORT}/ws/node/api/toggleLight (toggle individual light ON/OFF)`);
   console.log(`  - http://localhost:${PORT}/ws/node/api/getAllDataPointKeys`);
   console.log(`  - http://localhost:${PORT}/ws/node/api/getAllDatapoints`);
   console.log(`  - http://localhost:${PORT}/ws/node/api/GetDpsMapKeys`);
