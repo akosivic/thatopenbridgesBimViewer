@@ -7,12 +7,11 @@ import { getCurrentSpeed } from "./CameraSettings";
 // Global references
 let fpControls: PointerLockControls | null = null;
 let world: OBC.World | null = null;
-let moveSpeed = 5.0;
 
-export const setKeyboardControlsContext = (controls: PointerLockControls | null, worldContext: OBC.World, speed: number) => {
+export const setKeyboardControlsContext = (controls: PointerLockControls | null, worldContext: OBC.World, _speed?: number) => {
     fpControls = controls;
     world = worldContext;
-    moveSpeed = speed;
+    // Note: speed parameter kept for compatibility but we now use getCurrentSpeed() directly
 };
 
 // Key state tracking
@@ -117,7 +116,10 @@ const updateMovement = () => {
 
     // Base movement distance (same for both modes)
     const dt = 0.016; // ~60fps
-    let currentSpeed = moveSpeed;
+    
+    // Get current effective speed from UI controls
+    const currentEffectiveSpeed = getCurrentSpeed();
+    let currentSpeed = currentEffectiveSpeed;
     
     // Sprint modifier
     if (keys.shiftleft) {

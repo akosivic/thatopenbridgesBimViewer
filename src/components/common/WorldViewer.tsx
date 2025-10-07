@@ -629,6 +629,7 @@ export class WorldViewer extends HTMLElement {
 
     // FPS-style movement controls
     let moveSpeed = 5.0; // Units per second for FPS movement (now variable)
+    let keyboardControlsUpdate: ((speed: number) => void) | null = null;
 
     // Set up speed control integration
     setBaseSpeed(moveSpeed);
@@ -637,6 +638,15 @@ export class WorldViewer extends HTMLElement {
     window.addEventListener('moveSpeedChange', (event: any) => {
       const { effectiveSpeed } = event.detail;
       moveSpeed = effectiveSpeed;
+      
+      // Update keyboard controls with new speed if available
+      if (keyboardControlsUpdate) {
+        keyboardControlsUpdate(moveSpeed);
+        if (isDebugMode) {
+          console.log(`🎯 Updated keyboard controls context with new moveSpeed: ${moveSpeed}`);
+        }
+      }
+      
       if (isDebugMode) {
           console.log(`WorldViewer moveSpeed updated to: ${moveSpeed}`);
       }
@@ -762,6 +772,11 @@ export class WorldViewer extends HTMLElement {
     // Initialize enhanced keyboard controls with projection-aware bindings
     setKeyboardControlsContext(fpControls, world, moveSpeed);
     initializeKeyboardControls();
+    
+    // Set up the update function for speed changes
+    keyboardControlsUpdate = (newSpeed: number) => {
+      setKeyboardControlsContext(fpControls, world, newSpeed);
+    };
     
     if (isDebugMode) {
         console.log('Enhanced keyboard controls initialized with projection-specific bindings');
