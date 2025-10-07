@@ -29,11 +29,114 @@ export default (world: OBC.World) => {
             });
             
             if (!bbox.isEmpty()) {
+                // Calculate model center and size
                 const center = bbox.getCenter(new THREE.Vector3());
-                world.camera.three.lookAt(center);
-                console.log('Camera centered on model');
+                const size = bbox.getSize(new THREE.Vector3());
+                const maxDimension = Math.max(size.x, size.y, size.z);
+                
+                // Get current camera and determine projection mode
+                const camera3js = world.camera.three;
+                const isOrthographic = camera3js.type === 'OrthographicCamera';
+                
+                if (isOrthographic) {
+                    // Orthographic mode: Adobe-style behavior
+                    // 1. Position camera above/in front of model center at optimal distance
+                    const optimalDistance = maxDimension * 1.5;
+                    
+                    // Get current camera direction or use default top-front view
+                    const currentDirection = new THREE.Vector3();
+                    camera3js.getWorldDirection(currentDirection);
+                    
+                    // If camera is too close to horizontal, use top-front view
+                    if (Math.abs(currentDirection.y) < 0.3) {
+                        currentDirection.set(0.3, -0.7, 0.3).normalize(); // Top-front-right view
+                    }
+                    
+                    // Position camera at optimal distance in opposite direction of view
+                    const newPosition = center.clone().sub(currentDirection.clone().multiplyScalar(optimalDistance));
+                    
+                    // Animate camera to new position
+                    animateCameraTransition(camera3js, newPosition, center, () => {
+                        // Set appropriate zoom level for orthographic
+                        if (world.camera instanceof OBC.OrthoPerspectiveCamera) {
+                            const orthoCam = world.camera.three as THREE.OrthographicCamera;
+                            const optimalZoom = Math.min(2.0, Math.max(0.5, 10 / maxDimension));
+                            orthoCam.zoom = optimalZoom;
+                            orthoCam.updateProjectionMatrix();
+                            console.log('Orthographic zoom set to:', optimalZoom);
+                        }
+                    });
+                    
+                } else {
+                    // Perspective mode: Adobe-style behavior
+                    // Position camera at optimal distance to view entire model
+                    const optimalDistance = maxDimension * 2.0; // Larger distance for perspective
+                    
+                    // Get current viewing direction or use default
+                    let viewDirection = new THREE.Vector3();
+                    camera3js.getWorldDirection(viewDirection);
+                    viewDirection.negate(); // Direction from center to camera
+                    
+                    // If no clear direction, use default front-top view
+                    if (viewDirection.length() < 0.1) {
+                        viewDirection.set(1, 0.5, 1).normalize();
+                    }
+                    
+                    // Calculate new camera position
+                    const newPosition = center.clone().add(viewDirection.multiplyScalar(optimalDistance));
+                    
+                    // Animate camera to new position and orientation
+                    animateCameraTransition(camera3js, newPosition, center);
+                }
+                
+                console.log('Adobe-style zoom to center completed');
             }
         }
+    };
+
+    // Helper function for smooth camera animation (Adobe-style)
+    const animateCameraTransition = (
+        camera: THREE.Camera, 
+        targetPosition: THREE.Vector3, 
+        targetLookAt: THREE.Vector3,
+        onComplete?: () => void
+    ) => {
+        const startPosition = camera.position.clone();
+        const startQuaternion = camera.quaternion.clone();
+        
+        // Create temporary camera to calculate target orientation
+        const tempCamera = camera.clone();
+        tempCamera.position.copy(targetPosition);
+        tempCamera.lookAt(targetLookAt);
+        const targetQuaternion = tempCamera.quaternion;
+        
+        const duration = 800; // ms
+        const startTime = Date.now();
+        
+        const animate = () => {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            
+            // Use smooth easing function (Adobe-style)
+            const easeProgress = 1 - Math.pow(1 - progress, 3); // Ease-out cubic
+            
+            // Interpolate position
+            camera.position.lerpVectors(startPosition, targetPosition, easeProgress);
+            
+            // Interpolate rotation
+            camera.quaternion.slerpQuaternions(startQuaternion, targetQuaternion, easeProgress);
+            
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            } else {
+                // Ensure exact final position
+                camera.position.copy(targetPosition);
+                camera.lookAt(targetLookAt);
+                if (onComplete) onComplete();
+            }
+        };
+        
+        animate();
     };
 
     const zoomIn = () => {
