@@ -98,13 +98,79 @@ export default async (components: OBC.Components, isDebug: boolean, highlighter:
     return [];
   };
 
+  // Helper function to re-highlight all currently ON groups
+  const reHighlightAllOnGroups = async () => {
+    try {
+      // Get current button states
+      const statesResponse = await fetch("/ws/node/api/getInitialButtonStates");
+      if (!statesResponse.ok) return;
+      
+      const buttonStates = await statesResponse.json();
+      
+      // Highlight each group that is ON
+      for (const [groupKey, isOn] of Object.entries(buttonStates)) {
+        if (isOn) {
+          console.log(`� Re-highlighting ON group: ${groupKey}`);
+          await highlightGroup(groupKey);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error re-highlighting groups:', error);
+    }
+  };
+
+  // Helper function to highlight a specific group
+  const highlightGroup = async (groupKey: string) => {
+    try {
+      const lightDataResponse = await fetch(`/ws/node/api/getDataPoint?key=${groupKey}`);
+      if (lightDataResponse.ok) {
+        const lightData: [{ key: string; name: string }] = await lightDataResponse.json();
+        
+        for (const element of lightData) {
+          const targetKey = Object.keys(element)[0];
+          getByQuery(targetKey);
+          await relationsTree.requestUpdate();
+          await relationsTree.updateComplete;
+          
+          relationsTree.expanded = true;
+          
+          // Recursive function to find items in the tree with matching name
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const findItemsByName = (items: any[], name: string): any[] => {
+            if (!items || !Array.isArray(items)) return [];
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            let results: any[] = [];
+            for (const item of items) {
+              if (!item || !item.data) continue;
+              if ((item.data.Tag === name) || (item.data?.Name && typeof item.data.Name === 'string' && item.data.Name.includes(name))) {
+                results.push(item);
+              }
+              if (item.children) {
+                if (Array.isArray(item.children)) {
+                  results = [...results, ...findItemsByName(item.children, name)];
+                }
+              }
+            }
+            return results;
+          };
+
+          const foundItems = findItemsByName(relationsTree.data, targetKey);
+          if (foundItems.length > 0 && model) {
+            const fragmentIdMap = model.getFragmentMap([foundItems[0].data.expressID]);
+            highlighter.highlightByID("select", fragmentIdMap, false, false, undefined, undefined, false);
+            console.log(`🎨 Highlighted elements for ${targetKey}`);
+          }
+        }
+      }
+    } catch (error) {
+      console.error(`❌ Error highlighting group ${groupKey}:`, error);
+    }
+  };
+
   // Update datapoint by key - writes to loytec-datapoints.json
   const updateDataPoint = async (key: string) => {
     try {
       console.log(`🔄 Toggling light group: ${key}`);
-      
-      // REVERTED: Clear all highlights immediately (causes flicker but original behavior)
-      highlighter.clear();
       
       // Call the backend to actually toggle the light group and update JSON file
       const response = await fetch('/ws/node/api/toggleLightGroup', {
@@ -127,6 +193,18 @@ export default async (components: OBC.Components, isDebug: boolean, highlighter:
       const newState = result.newState === 'ON';
       dataPointState.buttonStates[key] = newState;
       
+      // Handle highlighting based on new state - selective approach
+      if (!newState) {
+        console.log(`� Light group ${key} turned OFF - removing only its highlights`);
+        // Clear all highlights and re-highlight only the groups that should remain ON
+        highlighter.clear();
+        await reHighlightAllOnGroups();
+      } else {
+        console.log(`💡 Light group ${key} turned ON - adding its highlights`);
+        // Just add highlights for this group (other groups remain highlighted)
+        await highlightGroup(key);
+      }
+      
       // Re-fetch button states to ensure perfect sync with JSON file
       console.log("🔄 Re-syncing all button states from loytec-datapoints.json...");
       try {
@@ -139,60 +217,6 @@ export default async (components: OBC.Components, isDebug: boolean, highlighter:
         }
       } catch (syncError) {
         console.warn("⚠️ Failed to re-sync button states:", syncError);
-      }
-      
-      if (!newState) {
-        console.log(`💡 Light group ${key} turned OFF`);
-      } else {
-        console.log(`💡 Light group ${key} turned ON - adding highlights`);
-        
-        // Get the individual lights to highlight them
-        const lightDataResponse = await fetch(`/ws/node/api/getDataPoint?key=${key}`);
-        if (lightDataResponse.ok) {
-          const lightData: [{ key: string; name: string }] = await lightDataResponse.json();
-          
-          lightData.forEach(element => {
-            const targetKey = Object.keys(element)[0];
-            getByQuery(targetKey);
-            relationsTree.requestUpdate();
-            relationsTree.updateComplete.then(async () => {
-              relationsTree.expanded = true;
-              console.log(`Highlighting key: ${targetKey}`);
-
-              // Recursive function to find items in the tree with matching name
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              const findItemsByName = (items: any[], name: string): any[] => {
-                if (!items || !Array.isArray(items)) return [];
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                let results: any[] = [];
-                for (const item of items) {
-                  if (!item || !item.data) continue;
-                  if ((item.data.Tag === name) || (item.data?.Name && typeof item.data.Name === 'string' && item.data.Name.includes(name))) {
-                    results.push(item);
-                  }
-                  if (item.children) {
-                    if (Array.isArray(item.children)) {
-                      results = [...results, ...findItemsByName(item.children, name)];
-                    }
-                  }
-                }
-                return results;
-              };
-
-              const foundItems = findItemsByName(relationsTree.data, targetKey);
-              if (foundItems.length > 0) {
-                console.log(`Found ${foundItems.length} items for key ${targetKey}`);
-                if (model) {
-                  const fragmentIdMap = model.getFragmentMap([foundItems[0].data.expressID]);
-                  highlighter.highlightByID("select", fragmentIdMap, false, false, undefined, undefined, false);
-                  console.log(`Highlighted elements for ${targetKey}`);
-                }
-              } else {
-                console.log(`No items found for key ${targetKey} in relations tree`);
-              }
-            });
-          });
-        }
       }
       
       await renderDataPointButtons();
@@ -260,6 +284,110 @@ export default async (components: OBC.Components, isDebug: boolean, highlighter:
         </bim-panel>
       `;
   }, dataPointState);
+
+  // Add triggerInitialHighlighting function to the panel for WorldViewer to call
+  (panel as any).triggerInitialHighlighting = async () => {
+    console.log('🔥 Starting initial highlighting based on Loytec datapoint states...');
+    
+    if (!model) {
+      console.log('⚠️ Model not available yet for initial highlighting');
+      return;
+    }
+
+    // Clear any existing highlights first
+    highlighter.clear();
+    
+    // Get current button states from the server
+    try {
+      const statesResponse = await fetch("/ws/node/api/getInitialButtonStates");
+      if (!statesResponse.ok) {
+        console.error('❌ Failed to fetch initial button states for highlighting');
+        return;
+      }
+      
+      const buttonStates = await statesResponse.json();
+      console.log('📊 Button states for initial highlighting:', buttonStates);
+      
+      // For each group that is ON, highlight its lights
+      for (const [groupKey, isOn] of Object.entries(buttonStates)) {
+        if (isOn) {
+          console.log(`💡 Group ${groupKey} is ON - highlighting its lights...`);
+          
+          try {
+            // Get the individual lights for this group
+            const lightDataResponse = await fetch(`/ws/node/api/getDataPoint?key=${groupKey}`);
+            if (lightDataResponse.ok) {
+              const lightData: [{ key: string; name: string }] = await lightDataResponse.json();
+              
+              // Highlight each light in the group
+              for (const element of lightData) {
+                const targetKey = Object.keys(element)[0];
+                
+                // Use the search functionality to find and highlight the element
+                getByQuery(targetKey);
+                await relationsTree.requestUpdate();
+                await relationsTree.updateComplete;
+                
+                relationsTree.expanded = true;
+                console.log(`🎯 Searching for element with key: ${targetKey}`);
+
+                // Recursive function to find items in the tree with matching name
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const findItemsByName = (items: any[], name: string): any[] => {
+                  if (!items || !Array.isArray(items)) return [];
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  let results: any[] = [];
+                  for (const item of items) {
+                    if (!item || !item.data) continue;
+                    if ((item.data.Tag === name) || (item.data?.Name && typeof item.data.Name === 'string' && item.data.Name.includes(name))) {
+                      results.push(item);
+                    }
+                    if (item.children) {
+                      if (Array.isArray(item.children)) {
+                        results = [...results, ...findItemsByName(item.children, name)];
+                      }
+                    }
+                  }
+                  return results;
+                };
+
+                const foundItems = findItemsByName(relationsTree.data, targetKey);
+                if (foundItems.length > 0) {
+                  console.log(`✅ Found ${foundItems.length} items for key ${targetKey} - highlighting...`);
+                  const fragmentIdMap = model.getFragmentMap([foundItems[0].data.expressID]);
+                  highlighter.highlightByID("select", fragmentIdMap, false, false, undefined, undefined, false);
+                  console.log(`🎨 Highlighted elements for ${targetKey}`);
+                } else {
+                  console.log(`⚠️ No items found for key ${targetKey} in relations tree`);
+                }
+              }
+            } else {
+              console.error(`❌ Failed to fetch light data for group ${groupKey}`);
+            }
+          } catch (error) {
+            console.error(`❌ Error highlighting group ${groupKey}:`, error);
+          }
+        } else {
+          console.log(`💡 Group ${groupKey} is OFF - skipping highlighting`);
+        }
+      }
+      
+      console.log('✅ Initial highlighting complete based on Loytec datapoint states');
+      
+    } catch (error) {
+      console.error('❌ Error during initial highlighting:', error);
+    }
+  };
+
+  // Listen for the modelLoadedForLighting event as a fallback
+  const handleModelLoadedForLighting = () => {
+    console.log('📡 Received modelLoadedForLighting event');
+    if ((panel as any).triggerInitialHighlighting) {
+      (panel as any).triggerInitialHighlighting();
+    }
+  };
+  
+  window.addEventListener('modelLoadedForLighting', handleModelLoadedForLighting);
 
   return panel;
 };
