@@ -1,12 +1,10 @@
 import * as BUI from "@thatopen/ui";
 import * as OBC from "@thatopen/components";
 import * as CUI from "@thatopen/ui-obc";
-import * as THREE from "three";
 import groupings from "./Sections/Groupings";
 import { Highlighter } from "@thatopen/components-front";
 import { FragmentsGroup } from "@thatopen/fragments";
 import i18n from "../../utils/i18n";
-import { getCurrentProjection } from "../Toolbars/Sections/ProjectionControls";
 
 interface DataPointState {
   keys: string[];
@@ -19,11 +17,6 @@ interface DataPointKeysResponse {
 }
 
 let model: FragmentsGroup | undefined;
-let globalCamera: THREE.Camera | undefined;
-
-export const setGlobalCamera = (camera: THREE.Camera | undefined) => {
-  globalCamera = camera;
-};
 
 export default async (components: OBC.Components, isDebug: boolean, highlighter: Highlighter) => {
 

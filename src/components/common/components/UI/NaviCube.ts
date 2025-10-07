@@ -2,7 +2,12 @@ import * as OBC from "@thatopen/components";
 import * as THREE from "three";
 
 export default (world: OBC.World) => {
-    console.log('NaviCube component being created...');
+    // Check if debug mode is enabled
+    const isDebugMode = window.location.search.toLowerCase().includes('debug');
+    
+    if (isDebugMode) {
+        console.log('NaviCube component being created...');
+    }
 
     // Predefined view positions for standard views
     const viewPositions = {
@@ -46,6 +51,9 @@ export default (world: OBC.World) => {
     const setView = (viewName: keyof typeof viewPositions) => {
         if (!world.camera.three) return;
 
+        // Temporarily stop camera monitoring during view change
+        stopCameraMonitoring();
+
         const view = viewPositions[viewName];
         const camera3js = world.camera.three;
 
@@ -59,6 +67,11 @@ export default (world: OBC.World) => {
 
         // Animate to the new position
         animateCamera(camera3js, newPosition, view.target);
+
+        // Restart camera monitoring after animation completes
+        setTimeout(() => {
+            startCameraMonitoring();
+        }, 600); // Wait a bit longer than animation duration
 
         console.log(`NaviCube: Set view to ${viewName}`, { position: newPosition, target: view.target });
     };
@@ -94,17 +107,80 @@ export default (world: OBC.World) => {
         animate();
     };
 
+    // Add camera movement detection
+    let lastCameraPosition = new THREE.Vector3();
+    let lastCameraQuaternion = new THREE.Quaternion();
+    let cameraUpdateInterval: NodeJS.Timeout | null = null;
+
     // Interactive rotation variables
     let isMouseDown = false;
     let isDragging = false;
     let lastMouseX = 0;
     let lastMouseY = 0;
+
+    const startCameraMonitoring = () => {
+        if (cameraUpdateInterval) return; // Already monitoring
+        
+        cameraUpdateInterval = setInterval(() => {
+            if (!world.camera.three) return;
+            
+            const camera3js = world.camera.three;
+            const currentPosition = camera3js.position.clone();
+            const currentQuaternion = camera3js.quaternion.clone();
+            
+            // Check if camera position or rotation has changed significantly
+            const positionThreshold = 0.01;
+            
+            if (currentPosition.distanceTo(lastCameraPosition) > positionThreshold ||
+                !currentQuaternion.equals(lastCameraQuaternion)) {
+                
+                // Camera has moved, update NaviCube
+                isUpdatingFromCamera = true;
+                updateNaviCubeFromCamera();
+                isUpdatingFromCamera = false;
+                
+                // Update tracking variables
+                lastCameraPosition.copy(currentPosition);
+                lastCameraQuaternion.copy(currentQuaternion);
+            }
+        }, 50); // Check every 50ms for smooth updates
+        
+        if (isDebugMode) {
+            console.log('NaviCube: Camera monitoring started');
+        }
+    };
+
+    const stopCameraMonitoring = () => {
+        if (cameraUpdateInterval) {
+            clearInterval(cameraUpdateInterval);
+            cameraUpdateInterval = null;
+            if (isDebugMode) {
+                console.log('NaviCube: Camera monitoring stopped');
+            }
+        }
+    };
+
+    // Start monitoring when the camera is available
+    const initializeCameraMonitoring = () => {
+        if (world.camera.three) {
+            lastCameraPosition.copy(world.camera.three.position);
+            lastCameraQuaternion.copy(world.camera.three.quaternion);
+            startCameraMonitoring();
+        } else {
+            // Retry until camera is available
+            setTimeout(initializeCameraMonitoring, 100);
+        }
+    };
+
+    // Initialize camera monitoring
+    initializeCameraMonitoring();
     let cubeRotationX = -90; // Initial rotation for TOP view
     let cubeRotationY = 0;   // Initial rotation for TOP view
+    let isUpdatingFromCamera = false; // Flag to prevent infinite loops
 
     // Function to update camera based on cube rotation
     const updateCameraFromCubeRotation = () => {
-        if (!world.camera.three) return;
+        if (!world.camera.three || isUpdatingFromCamera) return;
 
         const camera3js = world.camera.three;
         const target = new THREE.Vector3(0, 0, 0); // Look at origin
@@ -126,12 +202,57 @@ export default (world: OBC.World) => {
         camera3js.position.copy(newPosition);
         camera3js.lookAt(target);
         
-        console.log('NaviCube: Camera updated to:', newPosition, 'Rotation:', { x: cubeRotationX, y: cubeRotationY });
+        if (isDebugMode) {
+            console.log('NaviCube: Camera updated to:', newPosition, 'Rotation:', { x: cubeRotationX, y: cubeRotationY });
+        }
+    };
+
+    // Function to update NaviCube rotation based on camera position
+    const updateNaviCubeFromCamera = () => {
+        if (!world.camera.three || isUpdatingFromCamera) return;
+
+        const camera3js = world.camera.three;
+        const target = new THREE.Vector3(0, 0, 0); // Look at origin
+        
+        // Calculate the direction vector from target to camera
+        const direction = camera3js.position.clone().sub(target).normalize();
+        
+        // Convert to spherical coordinates
+        const spherical = new THREE.Spherical();
+        spherical.setFromVector3(direction);
+        
+        // Convert spherical coordinates to cube rotation angles
+        const newCubeRotationX = THREE.MathUtils.radToDeg(spherical.phi) - 90;
+        const newCubeRotationY = THREE.MathUtils.radToDeg(spherical.theta);
+        
+        // Only update if the change is significant (to avoid jitter)
+        const threshold = 0.5; // degrees
+        if (Math.abs(newCubeRotationX - cubeRotationX) > threshold || 
+            Math.abs(newCubeRotationY - cubeRotationY) > threshold) {
+            
+            cubeRotationX = newCubeRotationX;
+            cubeRotationY = newCubeRotationY;
+            
+            // Clamp X rotation to prevent flipping
+            cubeRotationX = Math.max(-89, Math.min(89, cubeRotationX));
+            
+            // Update the visual cube rotation
+            const cube = element.querySelector('.cube') as HTMLElement;
+            if (cube) {
+                cube.style.transform = `rotateX(${cubeRotationX}deg) rotateY(${cubeRotationY}deg)`;
+            }
+            
+            if (isDebugMode) {
+                console.log('NaviCube: Updated from camera position:', { x: cubeRotationX, y: cubeRotationY });
+            }
+        }
     };
 
     // Mouse event handlers for cube rotation
     const handleMouseDown = (event: MouseEvent) => {
-        console.log('NaviCube: Mouse down detected', event.target);
+        if (isDebugMode) {
+            console.log('NaviCube: Mouse down detected', event.target);
+        }
         
         const target = event.target as HTMLElement;
         
@@ -139,15 +260,22 @@ export default (world: OBC.World) => {
         const isOnNaviCube = target.closest('.navi-cube') === element;
         
         if (!isOnNaviCube) {
-            console.log('NaviCube: Not on NaviCube, skipping drag');
+            if (isDebugMode) {
+                console.log('NaviCube: Not on NaviCube, skipping drag');
+            }
             return;
         }
         
-        console.log('NaviCube: Starting potential drag');
+        if (isDebugMode) {
+            console.log('NaviCube: Starting potential drag');
+        }
         isMouseDown = true;
         isDragging = false;
         lastMouseX = event.clientX;
         lastMouseY = event.clientY;
+        
+        // Temporarily stop camera monitoring during NaviCube interaction
+        stopCameraMonitoring();
         
         // Change cursor to indicate dragging is possible
         const cube = element.querySelector('.cube') as HTMLElement;
@@ -177,7 +305,9 @@ export default (world: OBC.World) => {
         if (totalMovement > dragThreshold && !isDragging) {
             isDragging = true;
             element.classList.add('dragging');
-            console.log('NaviCube: Drag started - rotating camera');
+            if (isDebugMode) {
+                console.log('NaviCube: Drag started - rotating camera');
+            }
         }
         
         if (!isDragging) return;
@@ -199,7 +329,9 @@ export default (world: OBC.World) => {
         }
         
         // Update camera position to match cube orientation
-        updateCameraFromCubeRotation();
+        if (!isUpdatingFromCamera) {
+            updateCameraFromCubeRotation();
+        }
 
         lastMouseX = event.clientX;
         lastMouseY = event.clientY;
@@ -211,7 +343,9 @@ export default (world: OBC.World) => {
     };
 
     const handleMouseUp = () => {
-        console.log('NaviCube: Mouse up, was dragging:', isDragging, 'isMouseDown:', isMouseDown);
+        if (isDebugMode) {
+            console.log('NaviCube: Mouse up, was dragging:', isDragging, 'isMouseDown:', isMouseDown);
+        }
         
         if (isMouseDown) {
             // Reset cursor
@@ -229,11 +363,18 @@ export default (world: OBC.World) => {
         lastMouseX = 0;
         lastMouseY = 0;
         
+        // Restart camera monitoring after interaction
+        setTimeout(() => {
+            startCameraMonitoring();
+        }, 100);
+        
         // Keep isDragging state for the click handler to prevent accidental clicks
         if (isDragging) {
             setTimeout(() => {
                 isDragging = false;
-                console.log('NaviCube: Drag state reset');
+                if (isDebugMode) {
+                    console.log('NaviCube: Drag state reset');
+                }
             }, 100);
         }
     };
@@ -247,15 +388,22 @@ export default (world: OBC.World) => {
             const isOnNaviCube = target.closest('.navi-cube') === element;
             
             if (!isOnNaviCube) {
-                console.log('NaviCube: Not on NaviCube, skipping touch drag');
+                if (isDebugMode) {
+                    console.log('NaviCube: Not on NaviCube, skipping touch drag');
+                }
                 return;
             }
             
-            console.log('NaviCube: Starting touch potential drag');
+            if (isDebugMode) {
+                console.log('NaviCube: Starting touch potential drag');
+            }
             isMouseDown = true;
             isDragging = false;
             lastMouseX = event.touches[0].clientX;
             lastMouseY = event.touches[0].clientY;
+            
+            // Temporarily stop camera monitoring during touch interaction
+            stopCameraMonitoring();
             
             // Add visual feedback
             element.style.opacity = '0.9';
@@ -276,7 +424,9 @@ export default (world: OBC.World) => {
         if (totalMovement > dragThreshold && !isDragging) {
             isDragging = true;
             element.classList.add('dragging');
-            console.log('NaviCube: Touch drag started - rotating camera');
+            if (isDebugMode) {
+                console.log('NaviCube: Touch drag started - rotating camera');
+            }
         }
         
         if (!isDragging) return;
@@ -293,7 +443,9 @@ export default (world: OBC.World) => {
             cube.style.transform = `rotateX(${cubeRotationX}deg) rotateY(${cubeRotationY}deg)`;
         }
         
-        updateCameraFromCubeRotation();
+        if (!isUpdatingFromCamera) {
+            updateCameraFromCubeRotation();
+        }
 
         lastMouseX = event.touches[0].clientX;
         lastMouseY = event.touches[0].clientY;
@@ -311,6 +463,11 @@ export default (world: OBC.World) => {
         isMouseDown = false;
         lastMouseX = 0;
         lastMouseY = 0;
+        
+        // Restart camera monitoring after touch interaction
+        setTimeout(() => {
+            startCameraMonitoring();
+        }, 100);
         
         // Keep isDragging state for the click handler to prevent accidental clicks
         if (isDragging) {
@@ -835,12 +992,13 @@ export default (world: OBC.World) => {
         document.removeEventListener('touchmove', handleTouchMove);
         document.removeEventListener('touchend', handleTouchEnd);
         window.removeEventListener('modelLoaded', handleModelLoaded as EventListener);
+        stopCameraMonitoring(); // Stop camera monitoring
         isMouseDown = false;
         isDragging = false;
         if (style.parentNode) {
             style.parentNode.removeChild(style);
         }
-        console.log('NaviCube: Event listeners cleaned up');
+        console.log('NaviCube: Event listeners and camera monitoring cleaned up');
     };
 
     console.log('NaviCube component created:', element);

@@ -61,7 +61,10 @@ export class WorldViewer extends HTMLElement {
 
   disconnectedCallback() {
     // Clean up resources when the element is removed from DOM
-    console.log('WorldViewer disconnecting - cleaning up resources...');
+    const isDebugMode = new URLSearchParams(window.location.search).has('debug');
+    if (isDebugMode) {
+        console.log('WorldViewer disconnecting - cleaning up resources...');
+    }
     
     if (this.infoPanelsManager) {
       this.infoPanelsManager.dispose();
@@ -72,7 +75,9 @@ export class WorldViewer extends HTMLElement {
       const renderer = (window as any).worldRenderer;
       if (renderer && renderer.dispose) {
         renderer.dispose();
-        console.log('WebGL renderer disposed');
+        if (isDebugMode) {
+            console.log('WebGL renderer disposed');
+        }
       }
       
       // Clear any remaining textures or geometries
@@ -98,29 +103,44 @@ export class WorldViewer extends HTMLElement {
             }
           }
         });
-        console.log('Scene resources cleaned up');
+        if (isDebugMode) {
+            console.log('Scene resources cleaned up');
+        }
       }
     } catch (error) {
-      console.warn('Error during cleanup:', error);
+      if (isDebugMode) {
+          console.warn('Error during cleanup:', error);
+      }
     }
   }
   async connectedCallback() {
+    // Check if debug mode is enabled via URL parameter
+    const isDebugMode = window.location.search.toLowerCase().includes('debug');
+    
     try {
       // Initialize WASM modules first
-      console.log('Pre-loading WebAssembly modules...');
+      if (isDebugMode) {
+          console.log('Pre-loading WebAssembly modules...');
+      }
 
       // Pre-initialize web-ifc WASM module
       try {
         await import('web-ifc');
-        console.log('web-ifc WASM module loaded successfully');
+        if (isDebugMode) {
+            console.log('web-ifc WASM module loaded successfully');
+        }
       } catch (wasmError) {
-        console.warn('Failed to pre-load web-ifc WASM module:', wasmError);
+        if (isDebugMode) {
+            console.warn('Failed to pre-load web-ifc WASM module:', wasmError);
+        }
         // Continue with initialization even if pre-loading fails
       }
 
       await this.initializeWorldViewer();
     } catch (error) {
-      console.error('Failed to initialize WorldViewer:', error);
+      if (isDebugMode) {
+          console.error('Failed to initialize WorldViewer:', error);
+      }
     }
   }
 
@@ -130,7 +150,9 @@ export class WorldViewer extends HTMLElement {
 
     // Check if debug mode is enabled via URL parameter
     const isDebugMode = window.location.search.toLowerCase().includes('debug');
-    console.log('Debug mode detected:', isDebugMode, 'URL:', window.location.search);
+    if (isDebugMode) {
+      console.log('Debug mode detected:', isDebugMode, 'URL:', window.location.search);
+    }
 
     Manager.init();
 
@@ -167,12 +189,16 @@ export class WorldViewer extends HTMLElement {
     const canvas = world.renderer.three.domElement;
     
     canvas.addEventListener('webglcontextlost', (event) => {
-      console.warn('WebGL context lost. Preventing default behavior...');
+      if (isDebugMode) {
+        console.warn('WebGL context lost. Preventing default behavior...');
+      }
       event.preventDefault();
       
       // Pause any animations or rendering loops
       if (world.renderer) {
-        console.log('Pausing renderer due to context loss');
+        if (isDebugMode) {
+            console.log('Pausing renderer due to context loss');
+        }
       }
       
       // Show a user-friendly message
@@ -206,7 +232,9 @@ export class WorldViewer extends HTMLElement {
     }, false);
 
     canvas.addEventListener('webglcontextrestored', () => {
-      console.log('WebGL context restored. Reinitializing renderer...');
+      if (isDebugMode) {
+        console.log('WebGL context restored. Reinitializing renderer...');
+      }
       
       // Remove the overlay
       const overlay = document.getElementById('webgl-context-lost-overlay');
@@ -218,14 +246,18 @@ export class WorldViewer extends HTMLElement {
         // Reinitialize the renderer
         if (world.renderer) {
           world.renderer.update();
-          console.log('Renderer reinitialized successfully');
+          if (isDebugMode) {
+            console.log('Renderer reinitialized successfully');
+          }
         }
         
         // Reinitialize postproduction effects
         if (postproduction) {
           postproduction.enabled = true;
           postproduction.setPasses({ custom: true, ao: true, gamma: true });
-          console.log('Postproduction effects restored');
+          if (isDebugMode) {
+            console.log('Postproduction effects restored');
+          }
         }
         
         // Force a render update
@@ -236,7 +268,9 @@ export class WorldViewer extends HTMLElement {
         }, 100);
         
       } catch (error) {
-        console.error('Error reinitializing after context restore:', error);
+        if (isDebugMode) {
+            console.error('Error reinitializing after context restore:', error);
+        }
         
         // Show reload suggestion if reinitialization fails
         const reloadOverlay = document.createElement('div');
@@ -274,7 +308,9 @@ export class WorldViewer extends HTMLElement {
 
     // Initialize camera projection to match the default setting (Orthographic)
     setTimeout(() => {
-      console.log('Setting initial projection to Orthographic...');
+      if (isDebugMode) {
+        console.log('Setting initial projection to Orthographic...');
+      }
       if (world.camera instanceof OrthoPerspectiveCamera) {
         world.camera.projection.set("Orthographic");
         
@@ -294,13 +330,15 @@ export class WorldViewer extends HTMLElement {
           orthoCam.zoom = 0.5; // Start with wider view
           orthoCam.updateProjectionMatrix();
           
-          console.log('Orthographic camera frustum configured:', {
-            left: orthoCam.left,
-            right: orthoCam.right,
-            top: orthoCam.top,
-            bottom: orthoCam.bottom,
-            zoom: orthoCam.zoom
-          });
+          if (isDebugMode) {
+            console.log('Orthographic camera frustum configured:', {
+              left: orthoCam.left,
+              right: orthoCam.right,
+              top: orthoCam.top,
+              bottom: orthoCam.bottom,
+              zoom: orthoCam.zoom
+            });
+          }
         }
         
         // Also set via controls if available
@@ -309,8 +347,10 @@ export class WorldViewer extends HTMLElement {
           world.camera.controls.camera.updateProjectionMatrix();
         }
         
-        console.log('Camera projection initialized to Orthographic mode');
-        console.log('Camera ready for model-triggered view positioning');
+        if (isDebugMode) {
+          console.log('Camera projection initialized to Orthographic mode');
+          console.log('Camera ready for model-triggered view positioning');
+        }
       }
     }, 100);
 
@@ -342,12 +382,16 @@ export class WorldViewer extends HTMLElement {
       // Enable context loss and restoration handling
       const loseContext = gl.getExtension('WEBGL_lose_context');
       if (loseContext) {
-        console.log('WebGL lose context extension available');
+        if (isDebugMode) {
+            console.log('WebGL lose context extension available');
+        }
         
         // Add periodic context validation (optional)
         setInterval(() => {
           if (gl.isContextLost()) {
-            console.warn('WebGL context lost detected during periodic check');
+            if (isDebugMode) {
+                console.warn('WebGL context lost detected during periodic check');
+            }
           }
         }, 10000); // Check every 10 seconds
       }
@@ -360,12 +404,16 @@ export class WorldViewer extends HTMLElement {
       renderer.dispose = (() => {
         const originalDispose = renderer.dispose.bind(renderer);
         return () => {
-          console.log('Disposing WebGL renderer resources...');
+          if (isDebugMode) {
+              console.log('Disposing WebGL renderer resources...');
+          }
           originalDispose();
         };
       })();
       
-      console.log('WebGL optimization settings applied');
+      if (isDebugMode) {
+          console.log('WebGL optimization settings applied');
+      }
     }
 
     // Initialize pointer lock controls
@@ -378,12 +426,16 @@ export class WorldViewer extends HTMLElement {
     // Initialize orthographic mouse controls
     const { initializeOrthographicControls } = await import('./components/Toolbars/Sections/OrthographicMouseControls');
     initializeOrthographicControls(world, viewport);
-    console.log('Orthographic mouse controls initialized');
+    if (isDebugMode) {
+        console.log('Orthographic mouse controls initialized');
+    }
 
     // DISABLE the original orbit controls to prevent conflicts
     if (world.camera.controls) {
       world.camera.controls.enabled = false;
-      console.log('Original orbit controls disabled');
+      if (isDebugMode) {
+          console.log('Original orbit controls disabled');
+      }
     }
 
     // Override the original camera controls with first-person controls
@@ -429,7 +481,9 @@ export class WorldViewer extends HTMLElement {
       mouseDownOnToolbar = isToolbarButton(e.target);
 
       if (mouseDownOnToolbar) {
-        console.log('Mouse down on toolbar element, FPS blocked');
+        if (isDebugMode) {
+            console.log('Mouse down on toolbar element, FPS blocked');
+        }
         return;
       }
 
@@ -442,17 +496,25 @@ export class WorldViewer extends HTMLElement {
           // Perspective mode: Use FPS controls (left mouse activates pointer lock)
           isMousePressed = true;
           fpControls.lock();
-          console.log('Mouse pressed - FPS mode ACTIVATED');
+          if (isDebugMode) {
+              console.log('Mouse pressed - FPS mode ACTIVATED');
+          }
         } else if (currentProjection === "Orthographic") {
           // Orthographic mode: OrthographicMouseControls handles all mouse events
-          console.log('Mouse event handled by orthographic controls');
+          if (isDebugMode) {
+              console.log('Mouse event handled by orthographic controls');
+          }
         }
       } catch (error) {
-        console.warn('Could not determine projection mode, defaulting to perspective behavior');
+        if (isDebugMode) {
+            console.warn('Could not determine projection mode, defaulting to perspective behavior');
+        }
         if (fpControls && e.button === 0) {
           isMousePressed = true;
           fpControls.lock();
-          console.log('Mouse pressed - FPS mode ACTIVATED (fallback)');
+          if (isDebugMode) {
+              console.log('Mouse pressed - FPS mode ACTIVATED (fallback)');
+          }
         }
       }
     });
@@ -464,7 +526,9 @@ export class WorldViewer extends HTMLElement {
       if (mouseDownOnToolbar || currentTargetIsToolbar) {
         // Reset tracking variables
         mouseDownOnToolbar = false;
-        console.log('Mouse up on/from toolbar element, FPS remains blocked');
+        if (isDebugMode) {
+            console.log('Mouse up on/from toolbar element, FPS remains blocked');
+        }
         return;
       }
 
@@ -477,15 +541,21 @@ export class WorldViewer extends HTMLElement {
           // Perspective mode: Deactivate FPS controls
           isMousePressed = false;
           fpControls.unlock();
-          console.log('Mouse released - FPS mode DEACTIVATED');
+          if (isDebugMode) {
+              console.log('Mouse released - FPS mode DEACTIVATED');
+          }
         }
         // Orthographic mode: OrthographicMouseControls handles mouse up
       } catch (error) {
-        console.warn('Could not determine projection mode, using fallback behavior');
+        if (isDebugMode) {
+            console.warn('Could not determine projection mode, using fallback behavior');
+        }
         if (fpControls && e.button === 0 && isMousePressed) {
           isMousePressed = false;
           fpControls.unlock();
-          console.log('Mouse released - FPS mode DEACTIVATED (fallback)');
+          if (isDebugMode) {
+              console.log('Mouse released - FPS mode DEACTIVATED (fallback)');
+          }
         }
       }
 
@@ -498,17 +568,23 @@ export class WorldViewer extends HTMLElement {
       if (fpControls && isMousePressed) {
         isMousePressed = false;
         fpControls.unlock();
-        console.log('Mouse left viewport - FPS mode DEACTIVATED');
+        if (isDebugMode) {
+            console.log('Mouse left viewport - FPS mode DEACTIVATED');
+        }
       }
     });
 
     // Handle pointer lock events
     fpControls.addEventListener('lock', () => {
-      console.log('First-person controls locked - mouse look active');
+      if (isDebugMode) {
+          console.log('First-person controls locked - mouse look active');
+      }
     });
 
     fpControls.addEventListener('unlock', () => {
-      console.log('First-person controls unlocked - mouse look inactive');
+      if (isDebugMode) {
+          console.log('First-person controls unlocked - mouse look inactive');
+      }
     });
 
     // Set default camera properties
@@ -517,9 +593,10 @@ export class WorldViewer extends HTMLElement {
       world.camera.controls.camera.updateProjectionMatrix();
     }
 
-    console.log('First-person camera initialized at position:', world.camera.three.position);
-
-    // Create camera position display only in debug mode
+    
+    if (isDebugMode) {
+        console.log('First-person camera initialized at position:', world.camera.three.position);
+    }    // Create camera position display only in debug mode
     let positionDisplay: HTMLElement | null = null;
     if (isDebugMode) {
       positionDisplay = document.createElement('div');
@@ -545,7 +622,9 @@ export class WorldViewer extends HTMLElement {
       `;
       positionDisplay.innerHTML = `<div style="font-weight: bold; color: #00ff00;">🎮 DEBUG</div><div>Initializing...</div>`;
       document.body.appendChild(positionDisplay);
-      console.log('Position display created and added to BOTTOM RIGHT');
+      if (isDebugMode) {
+          console.log('Position display created and added to BOTTOM RIGHT');
+      }
     }
 
     // FPS-style movement controls
@@ -558,13 +637,17 @@ export class WorldViewer extends HTMLElement {
     window.addEventListener('moveSpeedChange', (event: any) => {
       const { effectiveSpeed } = event.detail;
       moveSpeed = effectiveSpeed;
-      console.log(`WorldViewer moveSpeed updated to: ${moveSpeed}`);
+      if (isDebugMode) {
+          console.log(`WorldViewer moveSpeed updated to: ${moveSpeed}`);
+      }
     });
 
     // Listen for manual movement events from SpeedControls direction buttons
     window.addEventListener('manualMovement', async (event: any) => {
       const { direction, speed } = event.detail;
-      console.log(`Manual movement triggered: ${direction} at speed ${speed}`);
+      if (isDebugMode) {
+          console.log(`Manual movement triggered: ${direction} at speed ${speed}`);
+      }
 
       if (!fpControls) return;
 
@@ -601,15 +684,23 @@ export class WorldViewer extends HTMLElement {
         if (currentProjection === "Perspective") {
           // FORCE Y position to always be at eye level (1.6 meters) - perspective mode only
           world.camera.three.position.y = 1.6;
-          console.log(`Moved ${direction} (Perspective mode - Y locked at 1.6m):`, world.camera.three.position);
+          if (isDebugMode) {
+              console.log(`Moved ${direction} (Perspective mode - Y locked at 1.6m):`, world.camera.three.position);
+          }
         } else {
           // Orthographic mode: No Y-axis restrictions, allow free movement
-          console.log(`Moved ${direction} (Orthographic mode - no restrictions):`, world.camera.three.position);
+          if (isDebugMode) {
+              console.log(`Moved ${direction} (Orthographic mode - no restrictions):`, world.camera.three.position);
+          }
         }
       } catch (error) {
-        console.warn('Could not determine projection mode, applying default restrictions:', error);
+        if (isDebugMode) {
+            console.warn('Could not determine projection mode, applying default restrictions:', error);
+        }
         world.camera.three.position.y = 1.6; // Fallback to perspective behavior
-        console.log(`Moved ${direction} (fallback behavior):`, world.camera.three.position);
+        if (isDebugMode) {
+            console.log(`Moved ${direction} (fallback behavior):`, world.camera.three.position);
+        }
       }
     });
 
@@ -652,7 +743,9 @@ export class WorldViewer extends HTMLElement {
           positionDisplay.style.visibility = 'visible';
 
         } catch (error) {
-          console.error('Error updating position display:', error);
+          if (isDebugMode) {
+              console.error('Error updating position display:', error);
+          }
         }
       }
       requestAnimationFrame(updatePositionDisplay);
@@ -670,7 +763,9 @@ export class WorldViewer extends HTMLElement {
     setKeyboardControlsContext(fpControls, world, moveSpeed);
     initializeKeyboardControls();
     
-    console.log('Enhanced keyboard controls initialized with projection-specific bindings');
+    if (isDebugMode) {
+        console.log('Enhanced keyboard controls initialized with projection-specific bindings');
+    }
 
     // Enable scroll wheel movement: scroll up = forward, scroll down = backward
     viewport.addEventListener('wheel', async (event: WheelEvent) => {
@@ -678,8 +773,10 @@ export class WorldViewer extends HTMLElement {
 
       event.preventDefault(); // Prevent default scroll behavior
 
-      console.log('=== MOUSEWHEEL MOVEMENT ===');
-      console.log('Delta:', event.deltaY);
+      if (isDebugMode) {
+          console.log('=== MOUSEWHEEL MOVEMENT ===');
+          console.log('Delta:', event.deltaY);
+      }
 
       // Calculate movement distance based on scroll
       const scrollMovementSpeed = 2.0; // Adjust this value to control scroll sensitivity
@@ -698,7 +795,9 @@ export class WorldViewer extends HTMLElement {
       } else if (event.deltaY > 0) {
         // Scroll down = move backward
         world.camera.three.position.addScaledVector(direction, -moveDistance);
-        console.log('Scroll down: Moving BACKWARD');
+        if (isDebugMode) {
+            console.log('Scroll down: Moving BACKWARD');
+        }
       }
 
       // Get current projection mode to apply restrictions only to perspective mode
@@ -709,17 +808,25 @@ export class WorldViewer extends HTMLElement {
         if (currentProjection === "Perspective") {
           // FORCE Y position to always be at eye level (1.6 meters) - perspective mode only
           world.camera.three.position.y = 1.6;
-          console.log('Perspective mode: Y position locked to 1.6m');
+          if (isDebugMode) {
+              console.log('Perspective mode: Y position locked to 1.6m');
+          }
         } else {
           // Orthographic mode: No Y-axis restrictions, allow free movement
-          console.log('Orthographic mode: No Y-axis restrictions applied');
+          if (isDebugMode) {
+              console.log('Orthographic mode: No Y-axis restrictions applied');
+          }
         }
       } catch (error) {
-        console.warn('Could not determine projection mode, applying default restrictions:', error);
+        if (isDebugMode) {
+            console.warn('Could not determine projection mode, applying default restrictions:', error);
+        }
         world.camera.three.position.y = 1.6; // Fallback to perspective behavior
       }
 
-      console.log('New position:', world.camera.three.position);
+      if (isDebugMode) {
+          console.log('New position:', world.camera.three.position);
+      }
     });
 
     const worldGrid = components.get(Grids).create(world);
@@ -742,27 +849,37 @@ export class WorldViewer extends HTMLElement {
     postproduction.customEffects.lineColor = 0x17191c;
 
     // Initialize InfoPanelsManager for 3D information panels
-    console.log('🔧 Initializing InfoPanelsManager...');
+    if (isDebugMode) {
+        console.log('🔧 Initializing InfoPanelsManager...');
+    }
     this.infoPanelsManager = new InfoPanelsManager(
       world.scene.three,
       world.camera.three,
       world.renderer.three,
       (config) => {
-        console.log('Info panels configuration updated:', config);
+        if (isDebugMode) {
+            console.log('Info panels configuration updated:', config);
+        }
       }
     );
 
     // Load info panels configuration
-    console.log('📁 Loading info panels configuration...');
+    if (isDebugMode) {
+        console.log('📁 Loading info panels configuration...');
+    }
     const configLoaded = await this.infoPanelsManager.loadConfig();
-    console.log('Config loading result:', configLoaded);
+    if (isDebugMode) {
+        console.log('Config loading result:', configLoaded);
+    }
 
     // Expose InfoPanelsManager to window for debugging distance settings
     (window as any).infoPanelsManager = this.infoPanelsManager;
-    console.log('🔧 InfoPanelsManager exposed to window.infoPanelsManager for debugging');
-    console.log('💡 Use window.infoPanelsManager.setVisibilityDistance(min, max) to adjust distance thresholds');
-    console.log('💡 Current settings: Show when 2-8 units away, fade 8-15 units, hide beyond 15 units');
-    console.log('💡 Use window.infoPanelsManager.getDistanceInfo() to see current distances');
+    if (isDebugMode) {
+        console.log('🔧 InfoPanelsManager exposed to window.infoPanelsManager for debugging');
+        console.log('💡 Use window.infoPanelsManager.setVisibilityDistance(min, max) to adjust distance thresholds');
+        console.log('💡 Current settings: Show when 2-8 units away, fade 8-15 units, hide beyond 15 units');
+        console.log('💡 Use window.infoPanelsManager.getDistanceInfo() to see current distances');
+    }
 
     const appManager = components.get(AppManager);
     const viewportGrid = viewport.querySelector<Grid>("bim-grid[floating]")!;
