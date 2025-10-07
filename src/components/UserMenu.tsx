@@ -12,7 +12,6 @@ import {
 import {
   AccountCircle,
   Logout as LogoutIcon,
-  Settings as SettingsIcon
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useAuth, logout } from './common/authentication';
@@ -103,18 +102,7 @@ const UserMenu: React.FC = () => {
           </Typography>
         </Box>
         
-        <Divider />
-        
-        {/* Menu Items */}
-        <MenuItem onClick={handleClose}>
-          <ListItemIcon>
-            <SettingsIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>{t('settings')}</ListItemText>
-        </MenuItem>
-        
-        <Divider />
-        
+        <Divider />        
         <MenuItem onClick={handleLogout}>
           <ListItemIcon>
             <LogoutIcon fontSize="small" />
