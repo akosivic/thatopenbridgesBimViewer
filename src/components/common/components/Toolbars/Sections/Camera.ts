@@ -113,6 +113,11 @@ export default (world: OBC.World) => {
     // Update camera position
     camera3js.position.copy(newPos);
 
+    // Notify NaviCube of camera change
+    window.dispatchEvent(new CustomEvent('cameraChanged', {
+      detail: { source: 'fps-movement', position: camera3js.position }
+    }));
+
     console.log('New position:', newPos);
     console.log('===================================');
   };
@@ -164,6 +169,11 @@ export default (world: OBC.World) => {
 
     // Apply rotation to camera
     camera3js.setRotationFromEuler(euler);
+
+    // Notify NaviCube of camera change
+    window.dispatchEvent(new CustomEvent('cameraChanged', {
+      detail: { source: 'fps-rotation', rotation: camera3js.quaternion, position: camera3js.position }
+    }));
 
     console.log('New rotation (degrees):', {
       x: euler.x * 180 / Math.PI,

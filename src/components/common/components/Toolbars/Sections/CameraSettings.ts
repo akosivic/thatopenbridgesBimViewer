@@ -197,6 +197,12 @@ export default (world: OBC.World) => {
         // In orthographic mode: No restrictions, allow free movement in all directions
         
         camera3js.position.copy(newPosition);
+        
+        // Notify NaviCube of camera change
+        window.dispatchEvent(new CustomEvent('cameraChanged', {
+            detail: { source: 'camera-settings-movement', position: newPosition }
+        }));
+        
         console.log(`${currentProjection} mode - New position:`, newPosition);
     };
 
@@ -247,6 +253,11 @@ export default (world: OBC.World) => {
 
         // Apply rotation to camera
         camera3js.setRotationFromEuler(euler);
+
+        // Notify NaviCube of camera change
+        window.dispatchEvent(new CustomEvent('cameraChanged', {
+            detail: { source: 'camera-settings-rotation', rotation: camera3js.quaternion, position: camera3js.position }
+        }));
 
         console.log(`${currentProjection} mode - New rotation (degrees):`, {
             x: euler.x * 180 / Math.PI,

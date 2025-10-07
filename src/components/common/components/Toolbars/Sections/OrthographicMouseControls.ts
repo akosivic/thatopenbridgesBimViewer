@@ -282,6 +282,11 @@ export class OrthographicMouseControls {
         // Always look at the origin (model center)
         camera.lookAt(0, 0, 0);
         
+        // Notify NaviCube of camera change
+        window.dispatchEvent(new CustomEvent('cameraChanged', {
+            detail: { source: 'orthographic-rotation', position: camera.position, rotation: camera.quaternion }
+        }));
+        
         console.log('Orthographic rotation - constrained (speed x' + speedMultiplier.toFixed(1) + '):', {
             theta: spherical.theta * 180 / Math.PI,
             phi: spherical.phi * 180 / Math.PI,
@@ -318,6 +323,11 @@ export class OrthographicMouseControls {
         // Apply pan to camera position
         camera.position.add(panVector);
         
+        // Notify NaviCube of camera change
+        window.dispatchEvent(new CustomEvent('cameraChanged', {
+            detail: { source: 'orthographic-pan', position: camera.position }
+        }));
+        
         console.log('Orthographic pan (speed x' + speedMultiplier.toFixed(1) + '):', camera.position);
     }
 
@@ -339,6 +349,11 @@ export class OrthographicMouseControls {
         const newZoom = Math.max(0.01, Math.min(100, currentZoom + direction));
         this.world.camera.three.zoom = newZoom;
         this.world.camera.three.updateProjectionMatrix();
+        
+        // Notify NaviCube of camera change (zoom affects view but not cube rotation typically)
+        window.dispatchEvent(new CustomEvent('cameraChanged', {
+            detail: { source: 'orthographic-zoom', zoom: newZoom }
+        }));
         
         console.log('Orthographic zoom (speed x' + speedMultiplier.toFixed(1) + '):', newZoom);
     }

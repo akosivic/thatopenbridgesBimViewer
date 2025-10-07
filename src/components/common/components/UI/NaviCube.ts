@@ -107,10 +107,13 @@ export default (world: OBC.World) => {
         animate();
     };
 
-    // Add camera movement detection
+    // Enhanced camera movement detection with improved sensitivity
     let lastCameraPosition = new THREE.Vector3();
     let lastCameraQuaternion = new THREE.Quaternion();
+    let lastCameraMatrix = new THREE.Matrix4();
     let cameraUpdateInterval: NodeJS.Timeout | null = null;
+    let lastUpdateTime = 0;
+    let isMonitoringActive = false;
 
     // Interactive rotation variables
     let isMouseDown = false;
@@ -118,21 +121,41 @@ export default (world: OBC.World) => {
     let lastMouseX = 0;
     let lastMouseY = 0;
 
+    // Global camera change listener for integration with other control systems
+    const handleGlobalCameraChange = () => {
+        if (!isUpdatingFromCamera && world.camera.three) {
+            updateNaviCubeFromCamera();
+        }
+    };
+
+    // Set up global camera change event listener
+    window.addEventListener('cameraChanged', handleGlobalCameraChange);
+
     const startCameraMonitoring = () => {
-        if (cameraUpdateInterval) return; // Already monitoring
+        if (cameraUpdateInterval || isMonitoringActive) return; // Already monitoring
+        
+        isMonitoringActive = true;
         
         cameraUpdateInterval = setInterval(() => {
-            if (!world.camera.three) return;
+            if (!world.camera.three || isUpdatingFromCamera) return;
             
             const camera3js = world.camera.three;
             const currentPosition = camera3js.position.clone();
             const currentQuaternion = camera3js.quaternion.clone();
+            const currentMatrix = camera3js.matrixWorld.clone();
             
-            // Check if camera position or rotation has changed significantly
-            const positionThreshold = 0.01;
+            // Enhanced change detection with multiple thresholds
+            const positionThreshold = 0.001; // More sensitive position threshold
+            const quaternionThreshold = 0.0001; // Quaternion sensitivity
+            const now = Date.now();
             
-            if (currentPosition.distanceTo(lastCameraPosition) > positionThreshold ||
-                !currentQuaternion.equals(lastCameraQuaternion)) {
+            // Check for any significant changes
+            const positionChanged = currentPosition.distanceTo(lastCameraPosition) > positionThreshold;
+            const rotationChanged = currentQuaternion.angleTo(lastCameraQuaternion) > quaternionThreshold;
+            const matrixChanged = !currentMatrix.equals(lastCameraMatrix);
+            
+            // Update if any change detected and enough time has passed (debouncing)
+            if ((positionChanged || rotationChanged || matrixChanged) && (now - lastUpdateTime > 16)) { // ~60fps max update rate
                 
                 // Camera has moved, update NaviCube
                 isUpdatingFromCamera = true;
@@ -142,11 +165,23 @@ export default (world: OBC.World) => {
                 // Update tracking variables
                 lastCameraPosition.copy(currentPosition);
                 lastCameraQuaternion.copy(currentQuaternion);
+                lastCameraMatrix.copy(currentMatrix);
+                lastUpdateTime = now;
+                
+                if (isDebugMode) {
+                    console.log('NaviCube: Camera change detected', {
+                        positionChanged,
+                        rotationChanged,
+                        matrixChanged,
+                        position: currentPosition,
+                        rotation: currentQuaternion
+                    });
+                }
             }
-        }, 50); // Check every 50ms for smooth updates
+        }, 16); // Check every 16ms for 60fps responsiveness
         
         if (isDebugMode) {
-            console.log('NaviCube: Camera monitoring started');
+            console.log('NaviCube: Enhanced camera monitoring started');
         }
     };
 
@@ -154,21 +189,37 @@ export default (world: OBC.World) => {
         if (cameraUpdateInterval) {
             clearInterval(cameraUpdateInterval);
             cameraUpdateInterval = null;
+            isMonitoringActive = false;
             if (isDebugMode) {
-                console.log('NaviCube: Camera monitoring stopped');
+                console.log('NaviCube: Enhanced camera monitoring stopped');
             }
         }
     };
 
-    // Start monitoring when the camera is available
+    // Enhanced camera monitoring initialization
     const initializeCameraMonitoring = () => {
         if (world.camera.three) {
+            // Initialize tracking variables
             lastCameraPosition.copy(world.camera.three.position);
             lastCameraQuaternion.copy(world.camera.three.quaternion);
+            lastCameraMatrix.copy(world.camera.three.matrixWorld);
+            
+            // Start enhanced monitoring
             startCameraMonitoring();
+            
+            // Initial NaviCube sync
+            setTimeout(() => {
+                if (!isUpdatingFromCamera) {
+                    updateNaviCubeFromCamera();
+                }
+            }, 100);
+            
+            if (isDebugMode) {
+                console.log('NaviCube: Camera monitoring initialized with initial position:', world.camera.three.position);
+            }
         } else {
-            // Retry until camera is available
-            setTimeout(initializeCameraMonitoring, 100);
+            // Retry until camera is available with exponential backoff
+            setTimeout(initializeCameraMonitoring, 50);
         }
     };
 
@@ -207,43 +258,80 @@ export default (world: OBC.World) => {
         }
     };
 
-    // Function to update NaviCube rotation based on camera position
+    // Enhanced function to update NaviCube rotation based on camera position and orientation
     const updateNaviCubeFromCamera = () => {
         if (!world.camera.three || isUpdatingFromCamera) return;
 
         const camera3js = world.camera.three;
         const target = new THREE.Vector3(0, 0, 0); // Look at origin
         
-        // Calculate the direction vector from target to camera
-        const direction = camera3js.position.clone().sub(target).normalize();
+        // Get camera's world direction and up vectors
+        const cameraDirection = new THREE.Vector3();
+        const cameraUp = new THREE.Vector3();
+        const cameraRight = new THREE.Vector3();
         
-        // Convert to spherical coordinates
+        // Extract camera orientation from its matrix
+        camera3js.getWorldDirection(cameraDirection);
+        cameraUp.setFromMatrixColumn(camera3js.matrixWorld, 1).normalize();
+        cameraRight.setFromMatrixColumn(camera3js.matrixWorld, 0).normalize();
+        
+        // Calculate camera position relative to target
+        const relativePosition = camera3js.position.clone().sub(target);
+        
+        // Convert to spherical coordinates for better handling
         const spherical = new THREE.Spherical();
-        spherical.setFromVector3(direction);
+        spherical.setFromVector3(relativePosition);
         
-        // Convert spherical coordinates to cube rotation angles
-        const newCubeRotationX = THREE.MathUtils.radToDeg(spherical.phi) - 90;
-        const newCubeRotationY = THREE.MathUtils.radToDeg(spherical.theta);
+        // Calculate cube rotation based on spherical coordinates
+        let newCubeRotationX = THREE.MathUtils.radToDeg(spherical.phi) - 90;
+        let newCubeRotationY = THREE.MathUtils.radToDeg(spherical.theta);
         
-        // Only update if the change is significant (to avoid jitter)
-        const threshold = 0.5; // degrees
-        if (Math.abs(newCubeRotationX - cubeRotationX) > threshold || 
-            Math.abs(newCubeRotationY - cubeRotationY) > threshold) {
+        // Account for camera's orientation (not just position)
+        const euler = new THREE.Euler().setFromQuaternion(camera3js.quaternion, 'YXZ');
+        
+        // Adjust rotations based on camera's actual orientation
+        newCubeRotationY += THREE.MathUtils.radToDeg(euler.y);
+        newCubeRotationX += THREE.MathUtils.radToDeg(euler.x) * 0.5; // Reduce influence of pitch
+        
+        // Normalize angles
+        newCubeRotationY = ((newCubeRotationY % 360) + 360) % 360;
+        if (newCubeRotationY > 180) newCubeRotationY -= 360;
+        
+        // Enhanced threshold for smoother updates but avoiding jitter
+        const threshold = 0.2; // More sensitive threshold
+        const deltaX = Math.abs(newCubeRotationX - cubeRotationX);
+        const deltaY = Math.abs(newCubeRotationY - cubeRotationY);
+        
+        if (deltaX > threshold || deltaY > threshold) {
+            // Smooth interpolation for less jarring updates
+            const lerpFactor = 0.3; // Adjust for smoothness vs responsiveness
+            cubeRotationX = THREE.MathUtils.lerp(cubeRotationX, newCubeRotationX, lerpFactor);
+            cubeRotationY = THREE.MathUtils.lerp(cubeRotationY, newCubeRotationY, lerpFactor);
             
-            cubeRotationX = newCubeRotationX;
-            cubeRotationY = newCubeRotationY;
+            // Clamp X rotation to prevent flipping with more generous range
+            cubeRotationX = Math.max(-85, Math.min(85, cubeRotationX));
             
-            // Clamp X rotation to prevent flipping
-            cubeRotationX = Math.max(-89, Math.min(89, cubeRotationX));
-            
-            // Update the visual cube rotation
+            // Update the visual cube rotation with smooth transitions
             const cube = element.querySelector('.cube') as HTMLElement;
             if (cube) {
+                cube.style.transition = 'transform 0.1s ease-out';
                 cube.style.transform = `rotateX(${cubeRotationX}deg) rotateY(${cubeRotationY}deg)`;
+                
+                // Remove transition after update to allow immediate updates
+                setTimeout(() => {
+                    cube.style.transition = '';
+                }, 100);
             }
             
             if (isDebugMode) {
-                console.log('NaviCube: Updated from camera position:', { x: cubeRotationX, y: cubeRotationY });
+                console.log('NaviCube: Smooth update from camera', {
+                    x: cubeRotationX.toFixed(1),
+                    y: cubeRotationY.toFixed(1),
+                    deltaX: deltaX.toFixed(1),
+                    deltaY: deltaY.toFixed(1),
+                    cameraPos: camera3js.position,
+                    cameraRot: euler
+                });
             }
         }
     };
@@ -963,20 +1051,51 @@ export default (world: OBC.World) => {
         }
     };
     
-    // Add exposed method for external triggering
+    // Add exposed methods for external triggering
     (element as any).triggerTopView = () => {
         console.log('NaviCube: triggerTopView called externally');
         initializeTopView();
     };
     
-    // Listen for model loaded event to trigger initial view
+    // Expose method to force immediate camera sync
+    (element as any).syncWithCamera = () => {
+        console.log('NaviCube: syncWithCamera called externally');
+        if (world.camera.three && !isUpdatingFromCamera) {
+            updateNaviCubeFromCamera();
+        }
+    };
+    
+    // Expose method to restart monitoring
+    (element as any).restartMonitoring = () => {
+        console.log('NaviCube: restartMonitoring called externally');
+        stopCameraMonitoring();
+        setTimeout(() => {
+            initializeCameraMonitoring();
+        }, 50);
+    };
+    
+    // Enhanced model loaded event handler for immediate camera sync
     const handleModelLoaded = (event: CustomEvent) => {
         console.log('NaviCube: Received modelLoaded event:', event.detail);
-        console.log('NaviCube: Setting TOP view after model load...');
+        console.log('NaviCube: Initializing camera sync after model load...');
         
-        // Small delay to ensure model is fully rendered
+        // Ensure camera monitoring is active
+        if (!isMonitoringActive) {
+            initializeCameraMonitoring();
+        }
+        
+        // Small delay to ensure model is fully rendered, then sync
         setTimeout(() => {
+            // Initialize to TOP view first
             initializeTopView();
+            
+            // Then ensure immediate sync with camera state
+            setTimeout(() => {
+                if (world.camera.three && !isUpdatingFromCamera) {
+                    console.log('NaviCube: Performing initial camera sync after model load');
+                    updateNaviCubeFromCamera();
+                }
+            }, 50);
         }, 100);
     };
     
@@ -985,20 +1104,33 @@ export default (world: OBC.World) => {
     
     console.log('NaviCube: Ready to respond to model load events');
 
-    // Add cleanup function to the element for proper removal
+    // Enhanced cleanup function to handle all monitoring and events
     (element as any).cleanup = () => {
         document.removeEventListener('mousemove', handleMouseMove);
         document.removeEventListener('mouseup', handleMouseUp);
         document.removeEventListener('touchmove', handleTouchMove);
         document.removeEventListener('touchend', handleTouchEnd);
         window.removeEventListener('modelLoaded', handleModelLoaded as EventListener);
-        stopCameraMonitoring(); // Stop camera monitoring
+        window.removeEventListener('cameraChanged', handleGlobalCameraChange);
+        
+        // Stop enhanced camera monitoring
+        stopCameraMonitoring();
+        
+        // Reset state variables
         isMouseDown = false;
         isDragging = false;
+        isMonitoringActive = false;
+        isUpdatingFromCamera = false;
+        
+        // Clear timing variables
+        lastUpdateTime = 0;
+        
+        // Remove styles
         if (style.parentNode) {
             style.parentNode.removeChild(style);
         }
-        console.log('NaviCube: Event listeners and camera monitoring cleaned up');
+        
+        console.log('NaviCube: Enhanced cleanup completed - all monitoring and events cleared');
     };
 
     console.log('NaviCube component created:', element);
