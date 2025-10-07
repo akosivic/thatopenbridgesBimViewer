@@ -13,6 +13,12 @@ export class OrthographicMouseControls {
     private lastMouseY = 0;
     private rotationSpeed = 0.005;
     private panSpeed = 0.01;
+    
+    // Delta limiting to prevent mouse boundary flips
+    private readonly MAX_DELTA = 50; // More aggressive limit - 50px max
+    private readonly SMOOTH_THRESHOLD = 25; // Start smoothing above 25px
+    private previousDeltaX = 0;
+    private previousDeltaY = 0;
 
     constructor(world: OBC.World, viewport: HTMLElement) {
         this.world = world;
@@ -79,12 +85,18 @@ export class OrthographicMouseControls {
             this.isLeftMouseDown = true;
             this.lastMouseX = event.clientX;
             this.lastMouseY = event.clientY;
+            // Reset delta tracking to prevent initial jump
+            this.previousDeltaX = 0;
+            this.previousDeltaY = 0;
             this.viewport.style.cursor = 'grab';
             console.log('Orthographic rotation started');
         } else if (event.button === 1) { // Middle mouse button - pan
             this.isMiddleMouseDown = true;
             this.lastMouseX = event.clientX;
             this.lastMouseY = event.clientY;
+            // Reset delta tracking to prevent initial jump
+            this.previousDeltaX = 0;
+            this.previousDeltaY = 0;
             this.viewport.style.cursor = 'move';
             event.preventDefault(); // Prevent browser scroll
             console.log('Orthographic pan started');
@@ -95,8 +107,13 @@ export class OrthographicMouseControls {
         // Only handle in orthographic mode
         if (getCurrentProjection() !== "Orthographic") return;
 
-        const deltaX = event.clientX - this.lastMouseX;
-        const deltaY = event.clientY - this.lastMouseY;
+        const rawDeltaX = event.clientX - this.lastMouseX;
+        const rawDeltaY = event.clientY - this.lastMouseY;
+        
+        // Apply delta clamping to prevent mouse boundary flips
+        const clampedDeltas = this.clampAndSmoothDeltas(rawDeltaX, rawDeltaY);
+        const deltaX = clampedDeltas.x;
+        const deltaY = clampedDeltas.y;
 
         if (this.isLeftMouseDown) {
             // Left mouse drag - rotate camera around model (360°)
@@ -108,6 +125,77 @@ export class OrthographicMouseControls {
 
         this.lastMouseX = event.clientX;
         this.lastMouseY = event.clientY;
+        
+        // Store for momentum calculation
+        this.previousDeltaX = deltaX;
+        this.previousDeltaY = deltaY;
+    }
+
+    /**
+     * Clamps and smooths mouse deltas to prevent flipping when mouse hits boundaries
+     * or moves extremely fast
+     */
+    private clampAndSmoothDeltas(rawDeltaX: number, rawDeltaY: number): { x: number, y: number } {
+        // Calculate magnitude of movement
+        const magnitude = Math.sqrt(rawDeltaX * rawDeltaX + rawDeltaY * rawDeltaY);
+        
+        // Aggressive clamping for very large movements that cause flipping
+        if (magnitude > 200) {
+            console.log('EXTREME movement detected - applying heavy clamping:', { magnitude, raw: { x: rawDeltaX, y: rawDeltaY } });
+            // For movements > 200px, reduce to tiny amount to prevent flip
+            return { 
+                x: Math.sign(rawDeltaX) * 5, 
+                y: Math.sign(rawDeltaY) * 5 
+            };
+        }
+        
+        // If movement is within normal range, use as-is
+        if (magnitude <= this.SMOOTH_THRESHOLD) {
+            return { x: rawDeltaX, y: rawDeltaY };
+        }
+        
+        // For extreme movements, apply progressive clamping
+        let clampedX = rawDeltaX;
+        let clampedY = rawDeltaY;
+        
+        // Hard limit: Never allow movement larger than MAX_DELTA
+        if (Math.abs(rawDeltaX) > this.MAX_DELTA) {
+            clampedX = Math.sign(rawDeltaX) * this.MAX_DELTA;
+        }
+        if (Math.abs(rawDeltaY) > this.MAX_DELTA) {
+            clampedY = Math.sign(rawDeltaY) * this.MAX_DELTA;
+        }
+        
+        // Smooth falloff for fast movements
+        if (magnitude > this.SMOOTH_THRESHOLD) {
+            const smoothFactor = Math.min(1.0, this.SMOOTH_THRESHOLD / magnitude);
+            clampedX *= smoothFactor;
+            clampedY *= smoothFactor;
+        }
+        
+        // Enhanced momentum dampening to prevent sudden direction changes
+        const momentumFactor = 0.5; // Reduced to 50% for more stability
+        if (this.previousDeltaX !== 0 || this.previousDeltaY !== 0) {
+            const directionChangeX = Math.abs(Math.sign(clampedX) - Math.sign(this.previousDeltaX));
+            const directionChangeY = Math.abs(Math.sign(clampedY) - Math.sign(this.previousDeltaY));
+            
+            if (directionChangeX > 0) {
+                clampedX *= momentumFactor;
+            }
+            if (directionChangeY > 0) {
+                clampedY *= momentumFactor;
+            }
+        }
+        
+        // Log extreme movements for debugging
+        if (magnitude > this.MAX_DELTA) {
+            console.log('Mouse delta clamped:', {
+                raw: { x: rawDeltaX, y: rawDeltaY, magnitude },
+                clamped: { x: clampedX, y: clampedY }
+            });
+        }
+        
+        return { x: clampedX, y: clampedY };
     }
 
     private onMouseUp(event: MouseEvent) {
@@ -116,9 +204,15 @@ export class OrthographicMouseControls {
 
         if (event.button === 0) {
             this.isLeftMouseDown = false;
+            // Reset delta tracking when rotation ends
+            this.previousDeltaX = 0;
+            this.previousDeltaY = 0;
             console.log('Orthographic rotation ended');
         } else if (event.button === 1) {
             this.isMiddleMouseDown = false;
+            // Reset delta tracking when panning ends  
+            this.previousDeltaX = 0;
+            this.previousDeltaY = 0;
             console.log('Orthographic pan ended');
         }
 
@@ -128,6 +222,9 @@ export class OrthographicMouseControls {
     private onMouseLeave() {
         this.isLeftMouseDown = false;
         this.isMiddleMouseDown = false;
+        // Reset delta tracking when mouse leaves viewport
+        this.previousDeltaX = 0;
+        this.previousDeltaY = 0;
         this.viewport.style.cursor = 'default';
     }
 
@@ -165,8 +262,18 @@ export class OrthographicMouseControls {
         spherical.theta -= deltaX * adjustedRotationSpeed; // Horizontal rotation (360°)
         spherical.phi += deltaY * adjustedRotationSpeed;   // Vertical rotation
         
-        // No restrictions - allow full 360° rotation in all directions
-        // (Unlike perspective mode, no clamping of phi)
+        // CRITICAL FIX: Constrain phi to prevent gimbal lock and flipping
+        // Allow near-full rotation but avoid mathematical singularities
+        const epsilon = 0.1; // Small margin to prevent singularities
+        spherical.phi = Math.max(epsilon, Math.min(Math.PI - epsilon, spherical.phi));
+        
+        // Normalize theta to prevent accumulation errors
+        spherical.theta = spherical.theta % (2 * Math.PI);
+        
+        // Ensure radius stays consistent
+        if (spherical.radius <= 0) {
+            spherical.radius = 10; // Fallback distance
+        }
         
         // Convert back to Cartesian coordinates
         vector.setFromSpherical(spherical);
@@ -175,9 +282,10 @@ export class OrthographicMouseControls {
         // Always look at the origin (model center)
         camera.lookAt(0, 0, 0);
         
-        console.log('Orthographic rotation - free 360° (speed x' + speedMultiplier.toFixed(1) + '):', {
+        console.log('Orthographic rotation - constrained (speed x' + speedMultiplier.toFixed(1) + '):', {
             theta: spherical.theta * 180 / Math.PI,
             phi: spherical.phi * 180 / Math.PI,
+            phiClamped: spherical.phi >= epsilon && spherical.phi <= Math.PI - epsilon,
             position: camera.position
         });
     }
