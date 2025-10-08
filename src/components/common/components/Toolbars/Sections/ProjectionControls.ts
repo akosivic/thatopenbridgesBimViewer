@@ -106,27 +106,77 @@ export default (world: OBC.World) => {
         window.dispatchEvent(event);
     };
 
+    // Camera position memory for seamless transitions
+    const cameraMemory = {
+        perspective: null as { position: THREE.Vector3, target: THREE.Vector3 } | null,
+        orthographic: null as { position: THREE.Vector3, target: THREE.Vector3 } | null,
+        isFirstTimeOrthographic: true,
+        isFirstTimePerspective: true
+    };
+
+    // Helper function to get current camera target (where camera is looking)
+    const getCurrentCameraTarget = (camera: THREE.Camera): THREE.Vector3 => {
+        const direction = new THREE.Vector3();
+        camera.getWorldDirection(direction);
+        const distance = 10; // Reasonable distance for target calculation
+        return camera.position.clone().add(direction.multiplyScalar(distance));
+    };
+
+    // Helper function to determine optimal orthographic distance based on current view
+    const calculateOrthographicDistance = (currentPosition: THREE.Vector3, target: THREE.Vector3): number => {
+        const distance = currentPosition.distanceTo(target);
+        return Math.max(distance, 5); // Minimum distance of 5 units
+    };
+
     const setProjectionMode = (mode: "Perspective" | "Orthographic") => {
         if (camera instanceof OBC.OrthoPerspectiveCamera && mode !== currentProjection) {
             const previousMode = currentProjection;
+            const camera3js = world.camera.three;
+            
+            // Store current camera state before switching
+            const currentPosition = camera3js.position.clone();
+            const currentTarget = getCurrentCameraTarget(camera3js);
+            
+            // Save current position to memory
+            if (previousMode === "Perspective") {
+                cameraMemory.perspective = { position: currentPosition, target: currentTarget };
+            } else {
+                cameraMemory.orthographic = { position: currentPosition, target: currentTarget };
+            }
+            
+            // Switch projection mode
             camera.projection.set(mode);
             currentProjection = mode;
             
-            // Get camera reference
-            const camera3js = world.camera.three;
+            console.log(`=== SWITCHING TO ${mode.toUpperCase()} MODE ===`);
             
-            // Define consistent TOP view position (no scaling, always the same)
-            const consistentTopPosition = new THREE.Vector3(0, 10, 0);
-            const consistentTopTarget = new THREE.Vector3(0, 0, 0);
-            
-            // Apply mode-specific defaults when switching
+            // Apply mode-specific camera positioning
             if (mode === "Orthographic") {
-                console.log("=== SWITCHING TO ORTHOGRAPHIC MODE ===");
-                console.log("Resetting to consistent TOP view position");
+                let newPosition: THREE.Vector3;
+                let newTarget: THREE.Vector3;
                 
-                // Set exact TOP view position (no scaling)
-                camera3js.position.copy(consistentTopPosition);
-                camera3js.lookAt(consistentTopTarget);
+                if (cameraMemory.orthographic && !cameraMemory.isFirstTimeOrthographic) {
+                    // Restore previous orthographic position
+                    newPosition = cameraMemory.orthographic.position.clone();
+                    newTarget = cameraMemory.orthographic.target.clone();
+                    console.log("Restoring previous orthographic position:", newPosition);
+                } else {
+                    // First time orthographic: create seamless transition
+                    // Preserve the viewing direction and target, but optimize distance for orthographic
+                    newTarget = currentTarget.clone();
+                    const direction = currentPosition.clone().sub(newTarget).normalize();
+                    const optimalDistance = calculateOrthographicDistance(currentPosition, newTarget);
+                    newPosition = newTarget.clone().add(direction.multiplyScalar(optimalDistance));
+                    
+                    console.log("First time orthographic: seamless transition");
+                    console.log("Preserving target:", newTarget);
+                    console.log("Optimized position:", newPosition);
+                    cameraMemory.isFirstTimeOrthographic = false;
+                }
+                
+                // Apply position smoothly
+                camera3js.position.copy(newPosition);
+                camera3js.lookAt(newTarget);
                 
                 // Reset zoom to default for orthographic
                 if (camera.controls?.camera) {
@@ -135,47 +185,47 @@ export default (world: OBC.World) => {
                     console.log("Zoom reset to 1.0 for orthographic mode");
                 }
                 
-                // Manually sync NaviCube visual state (without triggering setView scaling)
-                setTimeout(() => {
-                    const naviCube = document.getElementById('navi-cube');
-                    if (naviCube) {
-                        const cube = naviCube.querySelector('.cube') as HTMLElement;
-                        if (cube) {
-                            // Set cube rotation to show TOP face prominently (x: -90, y: 0)
-                            cube.style.transform = 'rotateX(-90deg) rotateY(0deg)';
-                            console.log("NaviCube visual state synced to TOP view for orthographic mode");
-                        }
-                    }
-                }, 100);
-                
-                console.log("Orthographic mode: Set to consistent TOP view position", consistentTopPosition);
             } else if (mode === "Perspective") {
-                console.log("=== SWITCHING TO PERSPECTIVE MODE ===");
-                console.log("Resetting to consistent TOP view position");
+                let newPosition: THREE.Vector3;
+                let newTarget: THREE.Vector3;
                 
-                // Set exact TOP view position (no scaling)
-                camera3js.position.copy(consistentTopPosition);
-                camera3js.lookAt(consistentTopTarget);
+                if (cameraMemory.perspective && !cameraMemory.isFirstTimePerspective) {
+                    // Restore previous perspective position
+                    newPosition = cameraMemory.perspective.position.clone();
+                    newTarget = cameraMemory.perspective.target.clone();
+                    console.log("Restoring previous perspective position:", newPosition);
+                } else {
+                    // First time perspective or seamless transition: preserve viewing context
+                    newTarget = currentTarget.clone();
+                    newPosition = currentPosition.clone();
+                    
+                    console.log("Seamless transition to perspective mode");
+                    console.log("Preserving position:", newPosition);
+                    console.log("Preserving target:", newTarget);
+                    cameraMemory.isFirstTimePerspective = false;
+                }
                 
-                // Manually sync NaviCube visual state (without triggering setView scaling)
-                setTimeout(() => {
-                    const naviCube = document.getElementById('navi-cube');
-                    if (naviCube) {
-                        const cube = naviCube.querySelector('.cube') as HTMLElement;
-                        if (cube) {
-                            // Set cube rotation to show TOP face prominently (x: -90, y: 0)
-                            cube.style.transform = 'rotateX(-90deg) rotateY(0deg)';
-                            console.log("NaviCube visual state synced to TOP view for perspective mode");
-                        }
-                    }
-                }, 100);
-                
-                console.log("Perspective mode: Set to consistent TOP view position", consistentTopPosition);
+                // Apply position smoothly
+                camera3js.position.copy(newPosition);
+                camera3js.lookAt(newTarget);
             }
+            
+            // Update NaviCube to reflect current view (without forcing specific orientations)
+            setTimeout(() => {
+                // Dispatch camera change event to update NaviCube naturally
+                window.dispatchEvent(new CustomEvent('cameraChanged', {
+                    detail: { 
+                        source: 'projection-switch', 
+                        position: camera3js.position, 
+                        rotation: camera3js.quaternion 
+                    }
+                }));
+            }, 100);
             
             updateProjectionDisplay();
             dispatchProjectionChangeEvent();
             console.log(`=== PROJECTION SET TO: ${mode} (from ${previousMode}) ===`);
+            console.log("Camera position preserved:", camera3js.position);
         }
     };
 
@@ -197,6 +247,16 @@ export default (world: OBC.World) => {
         perspective: perspectiveBindings,
         orthographic: orthographicBindings
     });
+    
+    // Expose camera memory for debugging and testing
+    (window as any).getCameraMemory = () => cameraMemory;
+    (window as any).resetCameraMemory = () => {
+        cameraMemory.perspective = null;
+        cameraMemory.orthographic = null;
+        cameraMemory.isFirstTimeOrthographic = true;
+        cameraMemory.isFirstTimePerspective = true;
+        console.log("Camera memory reset");
+    };
 
     return BUI.Component.create<BUI.PanelSection>(() => {
         const t = (key: string) => i18n.t(key);

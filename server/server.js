@@ -898,139 +898,139 @@ app.post('/ws/node/api/toggleLightGroup', (req, res) => {
   }
 });
 
-// Get info panels configuration
-app.get('/ws/node/api/getInfoPanelsConfig', (req, res) => {
-  console.log('getInfoPanelsConfig function started');
+// Get info panels configuration - DISABLED
+// app.get('/ws/node/api/getInfoPanelsConfig', (req, res) => {
+//   console.log('getInfoPanelsConfig function started');
 
-  try {
-    const configFilePath = path.join(__dirname, 'info-panels-config.json');
+//   try {
+//     const configFilePath = path.join(__dirname, 'info-panels-config.json');
 
-    // Check if file exists
-    if (!fs.existsSync(configFilePath)) {
-      return res.status(404).json({ 
-        error: 'Info panels configuration file not found' 
-      });
-    }
+//     // Check if file exists
+//     if (!fs.existsSync(configFilePath)) {
+//       return res.status(404).json({ 
+//         error: 'Info panels configuration file not found' 
+//       });
+//     }
 
-    console.log('Reading info panels configuration file');
+//     console.log('Reading info panels configuration file');
 
-    // Read the file
-    fs.readFile(configFilePath, 'utf8', (err, data) => {
-      if (err) {
-        console.error('Error reading info panels config file:', err);
-        return res.status(500).json({ 
-          error: `Error reading configuration file: ${err.message}` 
-        });
-      }
+//     // Read the file
+//     fs.readFile(configFilePath, 'utf8', (err, data) => {
+//       if (err) {
+//         console.error('Error reading info panels config file:', err);
+//         return res.status(500).json({ 
+//           error: `Error reading configuration file: ${err.message}` 
+//         });
+//       }
 
-      try {
-        const configData = JSON.parse(data);
-        console.log('Info panels configuration loaded successfully');
+//       try {
+//         const configData = JSON.parse(data);
+//         console.log('Info panels configuration loaded successfully');
         
-        res.setHeader('Content-Type', 'application/json');
-        res.setHeader('Cache-Control', 'no-cache');
-        return res.status(200).json(configData);
-      } catch (parseError) {
-        console.error('Error parsing info panels config JSON:', parseError);
-        return res.status(500).json({ 
-          error: `Error parsing configuration file: ${parseError.message}` 
-        });
-      }
-    });
+//         res.setHeader('Content-Type', 'application/json');
+//         res.setHeader('Cache-Control', 'no-cache');
+//         return res.status(200).json(configData);
+//       } catch (parseError) {
+//         console.error('Error parsing info panels config JSON:', parseError);
+//         return res.status(500).json({ 
+//           error: `Error parsing configuration file: ${parseError.message}` 
+//         });
+//       }
+//     });
 
-  } catch (error) {
-    console.error('Error processing getInfoPanelsConfig request:', error);
+//   } catch (error) {
+//     console.error('Error processing getInfoPanelsConfig request:', error);
 
-    return res.status(500).json({ 
-      error: `Error processing request: ${error.message}` 
-    });
-  }
-});
+//     return res.status(500).json({ 
+//       error: `Error processing request: ${error.message}` 
+//     });
+//   }
+// });
 
-// Update info panel configuration
-app.post('/ws/node/api/updateInfoPanel', (req, res) => {
-  console.log('updateInfoPanel function started');
+// Update info panel configuration - DISABLED
+// app.post('/ws/node/api/updateInfoPanel', (req, res) => {
+//   console.log('updateInfoPanel function started');
 
-  try {
-    const updatedPanel = req.body;
-    console.log('Received panel update:', updatedPanel);
+//   try {
+//     const updatedPanel = req.body;
+//     console.log('Received panel update:', updatedPanel);
 
-    if (!updatedPanel.id) {
-      return res.status(400).json({ 
-        error: 'Panel ID is required' 
-      });
-    }
+//     if (!updatedPanel.id) {
+//       return res.status(400).json({ 
+//         error: 'Panel ID is required' 
+//       });
+//     }
 
-    const configFilePath = path.join(__dirname, 'info-panels-config.json');
+//     const configFilePath = path.join(__dirname, 'info-panels-config.json');
 
-    // Check if file exists
-    if (!fs.existsSync(configFilePath)) {
-      return res.status(404).json({ 
-        error: 'Info panels configuration file not found' 
-      });
-    }
+//     // Check if file exists
+//     if (!fs.existsSync(configFilePath)) {
+//       return res.status(404).json({ 
+//         error: 'Info panels configuration file not found' 
+//       });
+//     }
 
-    // Read the current configuration
-    fs.readFile(configFilePath, 'utf8', (err, data) => {
-      if (err) {
-        console.error('Error reading info panels config file:', err);
-        return res.status(500).json({ 
-          error: `Error reading configuration file: ${err.message}` 
-        });
-      }
+//     // Read the current configuration
+//     fs.readFile(configFilePath, 'utf8', (err, data) => {
+//       if (err) {
+//         console.error('Error reading info panels config file:', err);
+//         return res.status(500).json({ 
+//           error: `Error reading configuration file: ${err.message}` 
+//         });
+//       }
 
-      try {
-        const config = JSON.parse(data);
+//       try {
+//         const config = JSON.parse(data);
         
-        // Find and update the panel
-        const panelIndex = config.panels.findIndex(panel => panel.id === updatedPanel.id);
+//         // Find and update the panel
+//         const panelIndex = config.panels.findIndex(panel => panel.id === updatedPanel.id);
         
-        if (panelIndex === -1) {
-          return res.status(404).json({ 
-            error: `Panel with ID '${updatedPanel.id}' not found` 
-          });
-        }
+//         if (panelIndex === -1) {
+//           return res.status(404).json({ 
+//             error: `Panel with ID '${updatedPanel.id}' not found` 
+//           });
+//         }
 
-        // Update the panel data
-        config.panels[panelIndex] = {
-          ...config.panels[panelIndex],
-          ...updatedPanel,
-          modified: new Date().toISOString()
-        };
+//         // Update the panel data
+//         config.panels[panelIndex] = {
+//           ...config.panels[panelIndex],
+//           ...updatedPanel,
+//           modified: new Date().toISOString()
+//         };
 
-        // Write the updated configuration back to file
-        fs.writeFile(configFilePath, JSON.stringify(config, null, 2), 'utf8', (writeErr) => {
-          if (writeErr) {
-            console.error('Error writing info panels config file:', writeErr);
-            return res.status(500).json({ 
-              error: `Error saving configuration file: ${writeErr.message}` 
-            });
-          }
+//         // Write the updated configuration back to file
+//         fs.writeFile(configFilePath, JSON.stringify(config, null, 2), 'utf8', (writeErr) => {
+//           if (writeErr) {
+//             console.error('Error writing info panels config file:', writeErr);
+//             return res.status(500).json({ 
+//               error: `Error saving configuration file: ${writeErr.message}` 
+//             });
+//           }
 
-          console.log(`Panel '${updatedPanel.id}' updated successfully`);
-          res.setHeader('Content-Type', 'application/json');
-          return res.status(200).json({ 
-            success: true,
-            message: `Panel '${updatedPanel.id}' updated successfully`,
-            panel: config.panels[panelIndex]
-          });
-        });
+//           console.log(`Panel '${updatedPanel.id}' updated successfully`);
+//           res.setHeader('Content-Type', 'application/json');
+//           return res.status(200).json({ 
+//             success: true,
+//             message: `Panel '${updatedPanel.id}' updated successfully`,
+//             panel: config.panels[panelIndex]
+//           });
+//         });
 
-      } catch (parseError) {
-        console.error('Error parsing info panels config JSON:', parseError);
-        return res.status(500).json({ 
-          error: `Error parsing configuration file: ${parseError.message}` 
-        });
-      }
-    });
+//       } catch (parseError) {
+//         console.error('Error parsing info panels config JSON:', parseError);
+//         return res.status(500).json({ 
+//           error: `Error parsing configuration file: ${parseError.message}` 
+//         });
+//       }
+//     });
 
-  } catch (error) {
-    console.error('Error processing updateInfoPanel request:', error);
-    return res.status(500).json({ 
-      error: `Error processing request: ${error.message}` 
-    });
-  }
-});
+//   } catch (error) {
+//     console.error('Error processing updateInfoPanel request:', error);
+//     return res.status(500).json({ 
+//       error: `Error processing request: ${error.message}` 
+//     });
+//   }
+// });
 
 // Stream IFC file (compatible with Azure Functions endpoint)
 app.get('/ws/node/api/streamIfc', (req, res) => {
@@ -1109,8 +1109,8 @@ app.listen(PORT, () => {
   console.log(`  - http://localhost:${PORT}/ws/node/api/getAllDataPointKeys`);
   console.log(`  - http://localhost:${PORT}/ws/node/api/getAllDatapoints`);
   console.log(`  - http://localhost:${PORT}/ws/node/api/GetDpsMapKeys`);
-  console.log(`  - http://localhost:${PORT}/ws/node/api/getInfoPanelsConfig`);
-  console.log(`  - http://localhost:${PORT}/ws/node/api/updateInfoPanel`);
+  // console.log(`  - http://localhost:${PORT}/ws/node/api/getInfoPanelsConfig`);
+  // console.log(`  - http://localhost:${PORT}/ws/node/api/updateInfoPanel`);
   console.log(`  - http://localhost:${PORT}/ws/node/api/streamIfc`);
 });
 

@@ -32,7 +32,7 @@ import cameraSettings from "./components/Toolbars/Sections/CameraSettings";
 import { AppManager } from "./components/bim-components";
 import { loadIfc } from "./components/Toolbars/Sections/Import";
 import { setBaseSpeed } from "./components/Toolbars/Sections/SpeedControls";
-import { InfoPanelsManager } from "./components/InfoPanelsManager";
+// import { InfoPanelsManager } from "./components/InfoPanelsManager"; // DISABLED
 import ZoomOptions from "./components/UI/ZoomOptions";
 import NaviCube from "./components/UI/NaviCube";
 import { getCurrentProjection } from "./components/Toolbars/Sections/ProjectionControls";
@@ -48,7 +48,7 @@ const dataState: State = {
   leftPanelMinimized: false,
 };
 export class WorldViewer extends HTMLElement {
-  private infoPanelsManager?: InfoPanelsManager;
+  // private infoPanelsManager?: InfoPanelsManager; // DISABLED
   private hasTriggeredInitialView = false; // Track if initial view has been set
 
   constructor() {
@@ -66,9 +66,9 @@ export class WorldViewer extends HTMLElement {
         console.log('WorldViewer disconnecting - cleaning up resources...');
     }
     
-    if (this.infoPanelsManager) {
-      this.infoPanelsManager.dispose();
-    }
+    // if (this.infoPanelsManager) {
+    //   this.infoPanelsManager.dispose();
+    // }
     
     // Clean up WebGL resources to prevent memory leaks
     try {
@@ -863,38 +863,38 @@ export class WorldViewer extends HTMLElement {
     postproduction.setPasses({ custom: true, ao: true, gamma: true });
     postproduction.customEffects.lineColor = 0x17191c;
 
-    // Initialize InfoPanelsManager for 3D information panels
-    if (isDebugMode) {
-        console.log('🔧 Initializing InfoPanelsManager...');
-    }
-    this.infoPanelsManager = new InfoPanelsManager(
-      world.scene.three,
-      world.camera.three,
-      world.renderer.three,
-      (config) => {
-        if (isDebugMode) {
-            console.log('Info panels configuration updated:', config);
-        }
-      }
-    );
+    // Initialize InfoPanelsManager for 3D information panels - DISABLED
+    // if (isDebugMode) {
+    //     console.log('🔧 Initializing InfoPanelsManager...');
+    // }
+    // this.infoPanelsManager = new InfoPanelsManager(
+    //   world.scene.three,
+    //   world.camera.three,
+    //   world.renderer.three,
+    //   (config) => {
+    //     if (isDebugMode) {
+    //         console.log('Info panels configuration updated:', config);
+    //     }
+    //   }
+    // );
 
-    // Load info panels configuration
-    if (isDebugMode) {
-        console.log('📁 Loading info panels configuration...');
-    }
-    const configLoaded = await this.infoPanelsManager.loadConfig();
-    if (isDebugMode) {
-        console.log('Config loading result:', configLoaded);
-    }
+    // // Load info panels configuration
+    // if (isDebugMode) {
+    //     console.log('📁 Loading info panels configuration...');
+    // }
+    // const configLoaded = await this.infoPanelsManager.loadConfig();
+    // if (isDebugMode) {
+    //     console.log('Config loading result:', configLoaded);
+    // }
 
-    // Expose InfoPanelsManager to window for debugging distance settings
-    (window as any).infoPanelsManager = this.infoPanelsManager;
-    if (isDebugMode) {
-        console.log('🔧 InfoPanelsManager exposed to window.infoPanelsManager for debugging');
-        console.log('💡 Use window.infoPanelsManager.setVisibilityDistance(min, max) to adjust distance thresholds');
-        console.log('💡 Current settings: Show when 2-8 units away, fade 8-15 units, hide beyond 15 units');
-        console.log('💡 Use window.infoPanelsManager.getDistanceInfo() to see current distances');
-    }
+    // // Expose InfoPanelsManager to window for debugging distance settings
+    // (window as any).infoPanelsManager = this.infoPanelsManager;
+    // if (isDebugMode) {
+    //     console.log('🔧 InfoPanelsManager exposed to window.infoPanelsManager for debugging');
+    //     console.log('💡 Use window.infoPanelsManager.setVisibilityDistance(min, max) to adjust distance thresholds');
+    //     console.log('💡 Current settings: Show when 2-8 units away, fade 8-15 units, hide beyond 15 units');
+    //     console.log('💡 Use window.infoPanelsManager.getDistanceInfo() to see current distances');
+    // }
 
     const appManager = components.get(AppManager);
     const viewportGrid = viewport.querySelector<Grid>("bim-grid[floating]")!;
@@ -1163,9 +1163,7 @@ export class WorldViewer extends HTMLElement {
       // Create custom tab buttons and content area
       const tabButtons = isDebugMode ? [
         { name: 'project', label: i18n.t('project'), icon: 'ph:building-fill' },
-        { name: 'infopanels', label: 'Info Panels', icon: 'material-symbols:info' },
         { name: 'settings', label: i18n.t('settings'), icon: 'solar:settings-bold' },
-        { name: 'infopanels', label: 'Info Panels', icon: 'material-symbols:info' },
         { name: 'help', label: i18n.t('help'), icon: 'material-symbols:help' }
       ] : [
         { name: 'project', label: i18n.t('project'), icon: 'ph:building-fill' }
@@ -1176,8 +1174,6 @@ export class WorldViewer extends HTMLElement {
         switch (currentActiveTab) {
           case 'project':
             return projectInformationPanel;
-          case 'infopanels':
-            return this.infoPanelsManager?.createManagementPanel();
           case 'settings':
             return settings(components);
           case 'help':
