@@ -150,6 +150,11 @@ export default (world: OBC.World) => {
                 console.log('Orthographic DOWN button - Zoom OUT (like down arrow)');
             }
             
+            // Trigger frustum update after zoom to prevent clipping
+            if ((window as any).frustumManager) {
+                (window as any).frustumManager.updateOrthographicFrustum();
+            }
+            
             return; // Exit early for orthographic up/down
         }
 

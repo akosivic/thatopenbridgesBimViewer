@@ -12,13 +12,7 @@ export class OrthographicMouseControls {
     private lastMouseX = 0;
     private lastMouseY = 0;
     private rotationSpeed = 0.005;
-    private panSpeed = 0.01;
-    
-    // Delta limiting to prevent mouse boundary flips
-    private readonly MAX_DELTA = 50; // More aggressive limit - 50px max
-    private readonly SMOOTH_THRESHOLD = 25; // Start smoothing above 25px
-    private previousDeltaX = 0;
-    private previousDeltaY = 0;
+    private panSpeed = 0.05; // Increased from 0.01 to 0.05 for more responsive middle mouse dragging
 
     constructor(world: OBC.World, viewport: HTMLElement) {
         this.world = world;
@@ -85,18 +79,12 @@ export class OrthographicMouseControls {
             this.isLeftMouseDown = true;
             this.lastMouseX = event.clientX;
             this.lastMouseY = event.clientY;
-            // Reset delta tracking to prevent initial jump
-            this.previousDeltaX = 0;
-            this.previousDeltaY = 0;
             this.viewport.style.cursor = 'grab';
             console.log('Orthographic rotation started');
         } else if (event.button === 1) { // Middle mouse button - pan
             this.isMiddleMouseDown = true;
             this.lastMouseX = event.clientX;
             this.lastMouseY = event.clientY;
-            // Reset delta tracking to prevent initial jump
-            this.previousDeltaX = 0;
-            this.previousDeltaY = 0;
             this.viewport.style.cursor = 'move';
             event.preventDefault(); // Prevent browser scroll
             console.log('Orthographic pan started');
@@ -125,77 +113,43 @@ export class OrthographicMouseControls {
 
         this.lastMouseX = event.clientX;
         this.lastMouseY = event.clientY;
-        
-        // Store for momentum calculation
-        this.previousDeltaX = deltaX;
-        this.previousDeltaY = deltaY;
     }
 
     /**
      * Clamps and smooths mouse deltas to prevent flipping when mouse hits boundaries
-     * or moves extremely fast
+     * or moves extremely fast. Uses more intelligent detection to avoid interfering with normal use.
      */
     private clampAndSmoothDeltas(rawDeltaX: number, rawDeltaY: number): { x: number, y: number } {
         // Calculate magnitude of movement
         const magnitude = Math.sqrt(rawDeltaX * rawDeltaX + rawDeltaY * rawDeltaY);
         
-        // Aggressive clamping for very large movements that cause flipping
-        if (magnitude > 200) {
-            console.log('EXTREME movement detected - applying heavy clamping:', { magnitude, raw: { x: rawDeltaX, y: rawDeltaY } });
-            // For movements > 200px, reduce to tiny amount to prevent flip
+        // Only apply extreme clamping for truly unrealistic movements (mouse teleportation)
+        // Increased threshold to 500px to avoid interfering with fast but normal movements
+        if (magnitude > 500) {
+            console.log('EXTREME movement detected - likely mouse teleportation:', { magnitude, raw: { x: rawDeltaX, y: rawDeltaY } });
+            // Instead of tiny movement, use moderate clamping to maintain responsiveness
+            const maxReasonable = 50; // Allow up to 50px movement
+            const scale = maxReasonable / magnitude;
             return { 
-                x: Math.sign(rawDeltaX) * 5, 
-                y: Math.sign(rawDeltaY) * 5 
+                x: rawDeltaX * scale, 
+                y: rawDeltaY * scale 
             };
         }
         
-        // If movement is within normal range, use as-is
-        if (magnitude <= this.SMOOTH_THRESHOLD) {
+        // For normal to fast movements (under 500px), allow them through
+        // This prevents the system from interfering with normal mouse usage
+        if (magnitude <= 100) {
+            // Normal movement - no clamping needed
             return { x: rawDeltaX, y: rawDeltaY };
         }
         
-        // For extreme movements, apply progressive clamping
-        let clampedX = rawDeltaX;
-        let clampedY = rawDeltaY;
+        // For moderately fast movements (100-500px), apply gentle smoothing only
+        // This handles fast mouse movements without making them feel sluggish
+        const smoothingFactor = Math.min(1.0, 100 / magnitude);
+        const smoothedX = rawDeltaX * (0.7 + 0.3 * smoothingFactor); // Gentler smoothing
+        const smoothedY = rawDeltaY * (0.7 + 0.3 * smoothingFactor);
         
-        // Hard limit: Never allow movement larger than MAX_DELTA
-        if (Math.abs(rawDeltaX) > this.MAX_DELTA) {
-            clampedX = Math.sign(rawDeltaX) * this.MAX_DELTA;
-        }
-        if (Math.abs(rawDeltaY) > this.MAX_DELTA) {
-            clampedY = Math.sign(rawDeltaY) * this.MAX_DELTA;
-        }
-        
-        // Smooth falloff for fast movements
-        if (magnitude > this.SMOOTH_THRESHOLD) {
-            const smoothFactor = Math.min(1.0, this.SMOOTH_THRESHOLD / magnitude);
-            clampedX *= smoothFactor;
-            clampedY *= smoothFactor;
-        }
-        
-        // Enhanced momentum dampening to prevent sudden direction changes
-        const momentumFactor = 0.5; // Reduced to 50% for more stability
-        if (this.previousDeltaX !== 0 || this.previousDeltaY !== 0) {
-            const directionChangeX = Math.abs(Math.sign(clampedX) - Math.sign(this.previousDeltaX));
-            const directionChangeY = Math.abs(Math.sign(clampedY) - Math.sign(this.previousDeltaY));
-            
-            if (directionChangeX > 0) {
-                clampedX *= momentumFactor;
-            }
-            if (directionChangeY > 0) {
-                clampedY *= momentumFactor;
-            }
-        }
-        
-        // Log extreme movements for debugging
-        if (magnitude > this.MAX_DELTA) {
-            console.log('Mouse delta clamped:', {
-                raw: { x: rawDeltaX, y: rawDeltaY, magnitude },
-                clamped: { x: clampedX, y: clampedY }
-            });
-        }
-        
-        return { x: clampedX, y: clampedY };
+        return { x: smoothedX, y: smoothedY };
     }
 
     private onMouseUp(event: MouseEvent) {
@@ -204,15 +158,9 @@ export class OrthographicMouseControls {
 
         if (event.button === 0) {
             this.isLeftMouseDown = false;
-            // Reset delta tracking when rotation ends
-            this.previousDeltaX = 0;
-            this.previousDeltaY = 0;
             console.log('Orthographic rotation ended');
         } else if (event.button === 1) {
             this.isMiddleMouseDown = false;
-            // Reset delta tracking when panning ends  
-            this.previousDeltaX = 0;
-            this.previousDeltaY = 0;
             console.log('Orthographic pan ended');
         }
 
@@ -222,9 +170,6 @@ export class OrthographicMouseControls {
     private onMouseLeave() {
         this.isLeftMouseDown = false;
         this.isMiddleMouseDown = false;
-        // Reset delta tracking when mouse leaves viewport
-        this.previousDeltaX = 0;
-        this.previousDeltaY = 0;
         this.viewport.style.cursor = 'default';
     }
 
@@ -243,9 +188,9 @@ export class OrthographicMouseControls {
 
         const camera = this.world.camera.three;
         
-        // Get current speed multiplier from camera settings
+        // Get current speed multiplier from camera settings (using consistent normalization)
         const currentSpeed = getCurrentSpeed();
-        const speedMultiplier = currentSpeed / 5.0; // Normalize against base speed
+        const speedMultiplier = currentSpeed / 5.0; // Use baseSpeed (5.0) for consistent normalization
         
         // Apply speed to rotation
         const adjustedRotationSpeed = this.rotationSpeed * speedMultiplier;
@@ -300,11 +245,11 @@ export class OrthographicMouseControls {
 
         const camera = this.world.camera.three;
         
-        // Get current speed multiplier from camera settings
+        // Get current speed multiplier from camera settings (using consistent normalization)
         const currentSpeed = getCurrentSpeed();
-        const speedMultiplier = currentSpeed / 5.0; // Normalize against base speed
+        const speedMultiplier = currentSpeed / 5.0; // Use baseSpeed (5.0) for consistent normalization
         
-        // Apply speed to panning
+        // Apply speed to panning with a more responsive feel for middle mouse dragging
         const adjustedPanSpeed = this.panSpeed * speedMultiplier;
         
         // Get camera's right and up vectors
@@ -335,9 +280,9 @@ export class OrthographicMouseControls {
         if (!this.world?.camera) return;
         if (!(this.world.camera instanceof OBC.OrthoPerspectiveCamera)) return;
 
-        // Get current speed multiplier from camera settings
+        // Get current speed multiplier from camera settings (using consistent normalization)
         const currentSpeed = getCurrentSpeed();
-        const speedMultiplier = currentSpeed / 5.0; // Normalize against base speed
+        const speedMultiplier = currentSpeed / 5.0; // Use baseSpeed (5.0) for consistent normalization
         
         // Apply speed to zoom
         const baseZoomSpeed = 0.1;

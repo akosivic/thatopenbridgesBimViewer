@@ -106,25 +106,59 @@ export default (world: OBC.World) => {
         window.dispatchEvent(event);
     };
 
-    // Camera position memory for seamless transitions
+    // Camera position memory for seamless transitions (only store position, always use current model center as target)
     const cameraMemory = {
-        perspective: null as { position: THREE.Vector3, target: THREE.Vector3 } | null,
-        orthographic: null as { position: THREE.Vector3, target: THREE.Vector3 } | null,
+        perspective: null as { position: THREE.Vector3 } | null,
+        orthographic: null as { position: THREE.Vector3 } | null,
         isFirstTimeOrthographic: true,
         isFirstTimePerspective: true
     };
 
     // Helper function to get current camera target (where camera is looking)
     const getCurrentCameraTarget = (camera: THREE.Camera): THREE.Vector3 => {
+        // Use model center as the target for more consistent view switching
+        if (world.meshes.size > 0) {
+            const bbox = new THREE.Box3();
+            world.meshes.forEach(mesh => {
+                bbox.expandByObject(mesh);
+            });
+            
+            if (!bbox.isEmpty()) {
+                const modelCenter = bbox.getCenter(new THREE.Vector3());
+                console.log("Using model center as camera target:", modelCenter);
+                return modelCenter;
+            }
+        }
+        
+        // Fallback: use camera direction with reasonable distance
         const direction = new THREE.Vector3();
         camera.getWorldDirection(direction);
         const distance = 10; // Reasonable distance for target calculation
-        return camera.position.clone().add(direction.multiplyScalar(distance));
+        const fallbackTarget = camera.position.clone().add(direction.multiplyScalar(distance));
+        console.log("Using fallback camera target:", fallbackTarget);
+        return fallbackTarget;
     };
 
     // Helper function to determine optimal orthographic distance based on current view
     const calculateOrthographicDistance = (currentPosition: THREE.Vector3, target: THREE.Vector3): number => {
         const distance = currentPosition.distanceTo(target);
+        
+        // Get model size to determine appropriate distance
+        if (world.meshes.size > 0) {
+            const bbox = new THREE.Box3();
+            world.meshes.forEach(mesh => {
+                bbox.expandByObject(mesh);
+            });
+            
+            if (!bbox.isEmpty()) {
+                const size = bbox.getSize(new THREE.Vector3());
+                const modelDiagonal = size.length();
+                const suggestedDistance = Math.max(modelDiagonal * 1.5, 5); // 1.5x model diagonal or minimum 5 units
+                console.log("Suggested orthographic distance based on model size:", suggestedDistance);
+                return Math.max(distance, suggestedDistance);
+            }
+        }
+        
         return Math.max(distance, 5); // Minimum distance of 5 units
     };
 
@@ -137,11 +171,11 @@ export default (world: OBC.World) => {
             const currentPosition = camera3js.position.clone();
             const currentTarget = getCurrentCameraTarget(camera3js);
             
-            // Save current position to memory
+            // Save current position to memory (target is always calculated as current model center)
             if (previousMode === "Perspective") {
-                cameraMemory.perspective = { position: currentPosition, target: currentTarget };
+                cameraMemory.perspective = { position: currentPosition };
             } else {
-                cameraMemory.orthographic = { position: currentPosition, target: currentTarget };
+                cameraMemory.orthographic = { position: currentPosition };
             }
             
             // Switch projection mode
@@ -153,17 +187,18 @@ export default (world: OBC.World) => {
             // Apply mode-specific camera positioning
             if (mode === "Orthographic") {
                 let newPosition: THREE.Vector3;
-                let newTarget: THREE.Vector3;
+                
+                // Always use current model center as target for consistent view
+                const newTarget = currentTarget.clone();
                 
                 if (cameraMemory.orthographic && !cameraMemory.isFirstTimeOrthographic) {
-                    // Restore previous orthographic position
+                    // Restore previous orthographic position but use current model center as target
                     newPosition = cameraMemory.orthographic.position.clone();
-                    newTarget = cameraMemory.orthographic.target.clone();
                     console.log("Restoring previous orthographic position:", newPosition);
+                    console.log("Using current model center as target:", newTarget);
                 } else {
                     // First time orthographic: create seamless transition
                     // Preserve the viewing direction and target, but optimize distance for orthographic
-                    newTarget = currentTarget.clone();
                     const direction = currentPosition.clone().sub(newTarget).normalize();
                     const optimalDistance = calculateOrthographicDistance(currentPosition, newTarget);
                     newPosition = newTarget.clone().add(direction.multiplyScalar(optimalDistance));
@@ -174,9 +209,11 @@ export default (world: OBC.World) => {
                     cameraMemory.isFirstTimeOrthographic = false;
                 }
                 
-                // Apply position smoothly
+                // Apply position and ensure camera looks at model center
                 camera3js.position.copy(newPosition);
                 camera3js.lookAt(newTarget);
+                console.log("Applied orthographic camera lookAt - target:", newTarget);
+                console.log("Camera now looking from:", camera3js.position, "to:", newTarget);
                 
                 // Reset zoom to default for orthographic
                 if (camera.controls?.camera) {
@@ -187,27 +224,30 @@ export default (world: OBC.World) => {
                 
             } else if (mode === "Perspective") {
                 let newPosition: THREE.Vector3;
-                let newTarget: THREE.Vector3;
+                
+                // Always use current model center as target for consistent view
+                const newTarget = currentTarget.clone();
                 
                 if (cameraMemory.perspective && !cameraMemory.isFirstTimePerspective) {
-                    // Restore previous perspective position
+                    // Restore previous perspective position but use current model center as target
                     newPosition = cameraMemory.perspective.position.clone();
-                    newTarget = cameraMemory.perspective.target.clone();
                     console.log("Restoring previous perspective position:", newPosition);
+                    console.log("Using current model center as target:", newTarget);
                 } else {
                     // First time perspective or seamless transition: preserve viewing context
-                    newTarget = currentTarget.clone();
                     newPosition = currentPosition.clone();
                     
                     console.log("Seamless transition to perspective mode");
                     console.log("Preserving position:", newPosition);
-                    console.log("Preserving target:", newTarget);
+                    console.log("Using current model center as target:", newTarget);
                     cameraMemory.isFirstTimePerspective = false;
                 }
                 
-                // Apply position smoothly
+                // Apply position and ensure camera looks at model center
                 camera3js.position.copy(newPosition);
                 camera3js.lookAt(newTarget);
+                console.log("Applied perspective camera lookAt - target:", newTarget);
+                console.log("Camera now looking from:", camera3js.position, "to:", newTarget);
             }
             
             // Update NaviCube to reflect current view (without forcing specific orientations)
