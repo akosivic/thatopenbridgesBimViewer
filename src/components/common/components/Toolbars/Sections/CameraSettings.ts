@@ -109,7 +109,7 @@ export default (world: OBC.World) => {
         const currentZoom = (world.camera.three as THREE.OrthographicCamera).zoom || 1;
         const zoomDelta = direction * adjustedZoomSpeed;
         
-        const newZoom = Math.max(0.01, Math.min(100, currentZoom + zoomDelta));
+        const newZoom = Math.max(0.001, Math.min(100, currentZoom + zoomDelta)); // Reduced from 0.01 to 0.001
         (world.camera.three as THREE.OrthographicCamera).zoom = newZoom;
         world.camera.three.updateProjectionMatrix();
         
@@ -150,10 +150,11 @@ export default (world: OBC.World) => {
                 console.log('Orthographic DOWN button - Zoom OUT (like down arrow)');
             }
             
+            // DISABLED: Frustum manager updates removed - using static clipping planes
             // Trigger frustum update after zoom to prevent clipping
-            if ((window as any).frustumManager) {
-                (window as any).frustumManager.updateOrthographicFrustum();
-            }
+            // if ((window as any).frustumManager) {
+            //     (window as any).frustumManager.updateOrthographicFrustum();
+            // }
             
             return; // Exit early for orthographic up/down
         }

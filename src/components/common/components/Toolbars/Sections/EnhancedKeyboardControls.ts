@@ -54,7 +54,7 @@ const zoomOrthographicCamera = (direction: number) => {
     const currentZoom = (world.camera.three as THREE.OrthographicCamera).zoom || 1;
     const zoomDelta = direction * adjustedZoomSpeed;
     
-    const newZoom = Math.max(0.01, Math.min(100, currentZoom + zoomDelta));
+    const newZoom = Math.max(0.001, Math.min(100, currentZoom + zoomDelta)); // Reduced from 0.01 to 0.001
     (world.camera.three as THREE.OrthographicCamera).zoom = newZoom;
     world.camera.three.updateProjectionMatrix();
     
@@ -311,7 +311,7 @@ const handleWheel = (event: WheelEvent) => {
         const currentZoom = world.camera.three.zoom || 1;
         const direction = event.deltaY > 0 ? -zoomSpeed : zoomSpeed;
         
-        const newZoom = Math.max(0.1, Math.min(5, currentZoom + direction));
+        const newZoom = Math.max(0.001, Math.min(100, currentZoom + direction)); // Fixed: 0.1 → 0.001, 5 → 100
         world.camera.three.zoom = newZoom;
         world.camera.three.updateProjectionMatrix();
         

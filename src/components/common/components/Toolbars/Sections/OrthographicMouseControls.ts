@@ -291,7 +291,7 @@ export class OrthographicMouseControls {
         const currentZoom = this.world.camera.three.zoom || 1;
         const direction = deltaY > 0 ? -adjustedZoomSpeed : adjustedZoomSpeed;
         
-        const newZoom = Math.max(0.01, Math.min(100, currentZoom + direction));
+        const newZoom = Math.max(0.001, Math.min(100, currentZoom + direction)); // Reduced from 0.01 to 0.001
         this.world.camera.three.zoom = newZoom;
         this.world.camera.three.updateProjectionMatrix();
         

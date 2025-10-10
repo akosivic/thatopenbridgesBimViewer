@@ -36,7 +36,7 @@ import { setBaseSpeed } from "./components/Toolbars/Sections/SpeedControls";
 import ZoomOptions from "./components/UI/ZoomOptions";
 import NaviCube from "./components/UI/NaviCube";
 import { getCurrentProjection } from "./components/Toolbars/Sections/ProjectionControls";
-import OrthographicFrustumManager from "./utils/OrthographicFrustumManager";
+// import OrthographicFrustumManager from "./utils/OrthographicFrustumManager"; // DISABLED
 
 
 interface State {
@@ -51,7 +51,7 @@ const dataState: State = {
 export class WorldViewer extends HTMLElement {
   // private infoPanelsManager?: InfoPanelsManager; // DISABLED
   private hasTriggeredInitialView = false; // Track if initial view has been set
-  private frustumManager?: OrthographicFrustumManager; // Manage orthographic clipping planes
+  // private frustumManager?: OrthographicFrustumManager; // DISABLED - Manage orthographic clipping planes
 
   constructor() {
     super();
@@ -73,10 +73,11 @@ export class WorldViewer extends HTMLElement {
     // }
     
     // Clean up frustum manager
-    if (this.frustumManager) {
-      // Remove global reference
-      delete (window as any).frustumManager;
-    }
+    // DISABLED: No frustum manager to clean up
+    // if (this.frustumManager) {
+    //   // Remove global reference
+    //   delete (window as any).frustumManager;
+    // }
     
     // Clean up WebGL resources to prevent memory leaks
     try {
@@ -333,14 +334,15 @@ export class WorldViewer extends HTMLElement {
           orthoCam.right = size * aspect;
           orthoCam.top = size;
           orthoCam.bottom = -size;
-          orthoCam.near = 0.1;
-          orthoCam.far = 1000;
+          orthoCam.near = 0.1;   // Standard near plane
+          orthoCam.far = 1000;   // Standard far plane - no dynamic management
           orthoCam.zoom = 0.5; // Start with wider view
           orthoCam.updateProjectionMatrix();
           
           // Initialize Orthographic Frustum Manager to fix clipping issues
-          this.frustumManager = new OrthographicFrustumManager(world);
-          this.frustumManager.enableAutomaticUpdates();
+          // DISABLED: Comment out to disable dynamic clipping management
+          // this.frustumManager = new OrthographicFrustumManager(world);
+          // this.frustumManager.enableAutomaticUpdates();
           
           if (isDebugMode) {
             console.log('Orthographic camera frustum configured:', {
@@ -350,11 +352,11 @@ export class WorldViewer extends HTMLElement {
               bottom: orthoCam.bottom,
               zoom: orthoCam.zoom
             });
-            console.log('🔧 OrthographicFrustumManager initialized to fix clipping issues');
+            // console.log('🔧 OrthographicFrustumManager initialized to fix clipping issues');
           }
           
           // Expose frustum manager for debugging
-          (window as any).frustumManager = this.frustumManager;
+          // (window as any).frustumManager = this.frustumManager;
         }
         
         // Also set via controls if available
