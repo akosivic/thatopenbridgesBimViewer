@@ -251,7 +251,15 @@ export default (world: OBC.World) => {
         
         // Directly update camera position for smooth real-time dragging
         camera3js.position.copy(newPosition);
-        camera3js.lookAt(target);
+        
+        // Check if camera state preservation is active (during projection switching)
+        const isCameraStateBeingPreserved = (window as any).isCameraStateBeingPreserved?.() || false;
+        
+        if (!isCameraStateBeingPreserved) {
+            camera3js.lookAt(target);
+        } else {
+            console.log("🔒 NaviCube: Skipping lookAt during camera state preservation");
+        }
         
         if (isDebugMode) {
             console.log('NaviCube: Camera updated to:', newPosition, 'Rotation:', { x: cubeRotationX, y: cubeRotationY });
@@ -580,8 +588,11 @@ export default (world: OBC.World) => {
             // Interpolate position
             camera.position.lerpVectors(startPosition, targetPosition, easeProgress);
             
-            // Look at target
-            camera.lookAt(targetLookAt);
+            // Look at target (but respect camera state preservation)
+            const isCameraStateBeingPreserved = (window as any).isCameraStateBeingPreserved?.() || false;
+            if (!isCameraStateBeingPreserved) {
+                camera.lookAt(targetLookAt);
+            }
 
             if (progress < 1) {
                 requestAnimationFrame(animate);
@@ -1010,7 +1021,15 @@ export default (world: OBC.World) => {
         
         // Set position directly without animation or scaling to avoid white screen
         camera3js.position.copy(orthographicPosition);
-        camera3js.lookAt(orthographicTarget);
+        
+        // Check if camera state preservation is active (during projection switching)
+        const isCameraStateBeingPreserved = (window as any).isCameraStateBeingPreserved?.() || false;
+        
+        if (!isCameraStateBeingPreserved) {
+            camera3js.lookAt(orthographicTarget);
+        } else {
+            console.log("🔒 NaviCube: Skipping lookAt during camera state preservation");
+        }
         
         // Ensure orthographic camera has proper frustum - critical for rendering
         if (camera3js.type === 'OrthographicCamera') {

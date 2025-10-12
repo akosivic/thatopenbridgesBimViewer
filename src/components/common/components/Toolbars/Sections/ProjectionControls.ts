@@ -111,7 +111,8 @@ export default (world: OBC.World) => {
         perspective: null as { position: THREE.Vector3; up: THREE.Vector3; quaternion: THREE.Quaternion } | null,
         orthographic: null as { position: THREE.Vector3; up: THREE.Vector3; quaternion: THREE.Quaternion } | null,
         isFirstTimeOrthographic: true,
-        isFirstTimePerspective: true
+        isFirstTimePerspective: true,
+        isPreservingState: false // Flag to prevent other systems from interfering
     };
 
     // Helper function to get current camera target (where camera is looking)
@@ -189,6 +190,10 @@ export default (world: OBC.World) => {
             // Apply mode-specific camera positioning
             if (mode === "Orthographic") {
                 
+                // Set protection flag to prevent other systems from interfering
+                cameraMemory.isPreservingState = true;
+                console.log("🔒 Camera state preservation LOCKED - preventing external interference");
+                
                 // Always use current model center as target for consistent view
                 const newTarget = currentTarget.clone();
                 
@@ -249,7 +254,17 @@ export default (world: OBC.World) => {
                     console.log("Zoom reset to 1.0 for orthographic mode");
                 }
                 
+                // Unlock camera state preservation after a short delay to allow state to settle
+                setTimeout(() => {
+                    cameraMemory.isPreservingState = false;
+                    console.log("🔓 Camera state preservation UNLOCKED - external systems can operate normally");
+                }, 100);
+                
             } else if (mode === "Perspective") {
+                
+                // Set protection flag to prevent other systems from interfering
+                cameraMemory.isPreservingState = true;
+                console.log("🔒 Camera state preservation LOCKED - preventing external interference");
                 
                 // Always use current model center as target for consistent view
                 const newTarget = currentTarget.clone();
@@ -303,6 +318,12 @@ export default (world: OBC.World) => {
                     console.log("✅ Corrected dot product:", correctedDotProduct);
                     console.log("✅ Camera now facing model center");
                 }
+                
+                // Unlock camera state preservation after a short delay to allow state to settle
+                setTimeout(() => {
+                    cameraMemory.isPreservingState = false;
+                    console.log("🔓 Camera state preservation UNLOCKED - external systems can operate normally");
+                }, 100);
             }
             
             // Update NaviCube to reflect current view (without forcing specific orientations)
@@ -345,6 +366,7 @@ export default (world: OBC.World) => {
     
     // Expose camera memory for debugging and testing
     (window as any).getCameraMemory = () => cameraMemory;
+    (window as any).isCameraStateBeingPreserved = () => cameraMemory.isPreservingState;
     (window as any).resetCameraMemory = () => {
         cameraMemory.perspective = null;
         cameraMemory.orthographic = null;

@@ -43,7 +43,52 @@ export class OrthographicMouseControls {
         window.addEventListener('moveSpeedChange', this.onSpeedChange);
     }
 
+    private disableTextSelection() {
+        // Disable text selection and highlighting on the viewport and document
+        const disableSelection = (element: HTMLElement) => {
+            element.style.userSelect = 'none';
+            element.style.webkitUserSelect = 'none';
+            (element.style as any).mozUserSelect = 'none';
+            (element.style as any).msUserSelect = 'none';
+            (element.style as any).webkitTouchCallout = 'none';
+            (element.style as any).webkitTapHighlightColor = 'transparent';
+        };
+
+        // Apply to viewport
+        disableSelection(this.viewport);
+        
+        // Apply to document body to prevent any text selection during mouse operations
+        disableSelection(document.body);
+        
+        // Prevent drag events that could trigger text selection
+        this.viewport.addEventListener('dragstart', (e) => e.preventDefault());
+        this.viewport.addEventListener('selectstart', (e) => e.preventDefault());
+        
+        console.log('Text selection disabled for orthographic controls');
+    }
+
+    private enableTextSelection() {
+        // Re-enable text selection and highlighting
+        const enableSelection = (element: HTMLElement) => {
+            element.style.userSelect = '';
+            element.style.webkitUserSelect = '';
+            (element.style as any).mozUserSelect = '';
+            (element.style as any).msUserSelect = '';
+            (element.style as any).webkitTouchCallout = '';
+            (element.style as any).webkitTapHighlightColor = '';
+        };
+
+        // Restore selection on viewport and document body
+        enableSelection(this.viewport);
+        enableSelection(document.body);
+        
+        console.log('Text selection re-enabled for orthographic controls');
+    }
+
     private setupEventListeners() {
+        // Disable text selection and highlighting during mouse interactions
+        this.disableTextSelection();
+        
         // Mouse event listeners
         this.viewport.addEventListener('mousedown', this.onMouseDown.bind(this));
         this.viewport.addEventListener('mousemove', this.onMouseMove.bind(this));
@@ -97,13 +142,15 @@ export class OrthographicMouseControls {
             this.lastMouseX = event.clientX;
             this.lastMouseY = event.clientY;
             this.viewport.style.cursor = 'grab';
+            // Prevent text selection during rotation
+            event.preventDefault();
             console.log('Orthographic rotation started');
         } else if (event.button === 1) { // Middle mouse button - pan
             this.isMiddleMouseDown = true;
             this.lastMouseX = event.clientX;
             this.lastMouseY = event.clientY;
             this.viewport.style.cursor = 'move';
-            event.preventDefault(); // Prevent browser scroll
+            event.preventDefault(); // Prevent browser scroll and text selection
             console.log('Orthographic pan started');
         }
     }
@@ -122,9 +169,15 @@ export class OrthographicMouseControls {
 
         if (this.isLeftMouseDown) {
             // Left mouse drag - rotate camera around model (360°)
+            // Prevent any text selection during active dragging
+            event.preventDefault();
+            event.stopPropagation();
             this.rotateCamera(deltaX, deltaY);
         } else if (this.isMiddleMouseDown) {
             // Middle mouse drag - pan camera
+            // Prevent any text selection during active dragging
+            event.preventDefault();
+            event.stopPropagation();
             this.panCamera(deltaX, deltaY);
         }
 
@@ -244,8 +297,15 @@ export class OrthographicMouseControls {
         vector.setFromSpherical(spherical);
         camera.position.copy(vector.add(modelCenter)); // Add model center back to get world position
         
-        // Always look at the model center for consistency with projection switching
-        camera.lookAt(modelCenter);
+        // Check if camera state preservation is active (during projection switching)
+        const isCameraStateBeingPreserved = (window as any).isCameraStateBeingPreserved?.() || false;
+        
+        if (!isCameraStateBeingPreserved) {
+            // Always look at the model center for consistency with projection switching
+            camera.lookAt(modelCenter);
+        } else {
+            console.log("🔒 Skipping lookAt during camera state preservation");
+        }
         
         // Notify NaviCube of camera change
         window.dispatchEvent(new CustomEvent('cameraChanged', {
@@ -323,6 +383,9 @@ export class OrthographicMouseControls {
         this.isLeftMouseDown = false;
         this.isMiddleMouseDown = false;
         this.viewport.style.cursor = 'default';
+        
+        // Re-enable text selection when cleaning up
+        this.enableTextSelection();
         
         // Clean up speed change listener
         window.removeEventListener('moveSpeedChange', this.onSpeedChange);

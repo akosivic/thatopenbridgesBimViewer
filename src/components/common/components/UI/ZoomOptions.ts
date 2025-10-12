@@ -207,7 +207,12 @@ export default (world: OBC.World) => {
                 requestAnimationFrame(animate);
             } else {
                 camera.position.copy(targetPosition);
-                camera.lookAt(targetLookAt);
+                // Check if camera state preservation is active before calling lookAt
+                if (!(window as any).isCameraStateBeingPreserved || !(window as any).isCameraStateBeingPreserved()) {
+                    camera.lookAt(targetLookAt);
+                } else {
+                    console.log("🔒 ZoomOptions: Skipping lookAt during camera state preservation");
+                }
                 if (onComplete) onComplete();
             }
         };

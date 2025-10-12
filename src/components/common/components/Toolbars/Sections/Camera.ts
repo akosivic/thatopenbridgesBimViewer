@@ -221,7 +221,12 @@ export default (world: OBC.World) => {
         const defaultLookAt = new THREE.Vector3(0, 1, 0);
 
         camera3js.position.copy(defaultPosition);
-        camera3js.lookAt(defaultLookAt);
+        // Check if camera state preservation is active before calling lookAt
+        if (!(window as any).isCameraStateBeingPreserved || !(window as any).isCameraStateBeingPreserved()) {
+          camera3js.lookAt(defaultLookAt);
+        } else {
+          console.log("🔒 Camera: Skipping lookAt during camera state preservation");
+        }
         console.log('Perspective reset - Position:', defaultPosition, 'LookAt:', defaultLookAt);
       } else {
         console.log('Applying orthographic mode defaults - no restrictions');
@@ -230,7 +235,12 @@ export default (world: OBC.World) => {
         const defaultLookAt = new THREE.Vector3(0, 0, 0);
 
         camera3js.position.copy(defaultPosition);
-        camera3js.lookAt(defaultLookAt);
+        // Check if camera state preservation is active before calling lookAt
+        if (!(window as any).isCameraStateBeingPreserved || !(window as any).isCameraStateBeingPreserved()) {
+          camera3js.lookAt(defaultLookAt);
+        } else {
+          console.log("🔒 Camera: Skipping lookAt during camera state preservation");
+        }
         console.log('Orthographic reset - Position:', defaultPosition, 'LookAt:', defaultLookAt);
       }
     } catch (error) {
@@ -239,7 +249,12 @@ export default (world: OBC.World) => {
       const defaultPosition = new THREE.Vector3(-1.29, 1.60, 1.14);
       const defaultLookAt = new THREE.Vector3(0, 1, 0);
       camera3js.position.copy(defaultPosition);
-      camera3js.lookAt(defaultLookAt);
+      // Check if camera state preservation is active before calling lookAt
+      if (!(window as any).isCameraStateBeingPreserved || !(window as any).isCameraStateBeingPreserved()) {
+        camera3js.lookAt(defaultLookAt);
+      } else {
+        console.log("🔒 Camera: Skipping lookAt during camera state preservation");
+      }
     }
 
     // Reset zoom if available
@@ -269,7 +284,12 @@ export default (world: OBC.World) => {
 
     // Move up and look down
     camera3js.position.set(currentPos.x, currentPos.y + 10, currentPos.z);
-    camera3js.lookAt(currentPos.x, currentPos.y, currentPos.z);
+    // Check if camera state preservation is active before calling lookAt
+    if (!(window as any).isCameraStateBeingPreserved || !(window as any).isCameraStateBeingPreserved()) {
+      camera3js.lookAt(currentPos.x, currentPos.y, currentPos.z);
+    } else {
+      console.log("🔒 Camera: Skipping lookAt during camera state preservation");
+    }
 
     console.log('=== FPS TOP VIEW SET ===');
     console.log('Position:', camera3js.position);
@@ -282,7 +302,12 @@ export default (world: OBC.World) => {
     const currentPos = camera3js.position.clone();
 
     // Look towards negative Z (front)
-    camera3js.lookAt(currentPos.x, currentPos.y, currentPos.z - 10);
+    // Check if camera state preservation is active before calling lookAt
+    if (!(window as any).isCameraStateBeingPreserved || !(window as any).isCameraStateBeingPreserved()) {
+      camera3js.lookAt(currentPos.x, currentPos.y, currentPos.z - 10);
+    } else {
+      console.log("🔒 Camera: Skipping lookAt during camera state preservation");
+    }
 
     console.log('=== FPS FRONT VIEW SET ===');
   };
@@ -294,7 +319,12 @@ export default (world: OBC.World) => {
     const currentPos = camera3js.position.clone();
 
     // Look towards positive X (right side)
-    camera3js.lookAt(currentPos.x + 10, currentPos.y, currentPos.z);
+    // Check if camera state preservation is active before calling lookAt
+    if (!(window as any).isCameraStateBeingPreserved || !(window as any).isCameraStateBeingPreserved()) {
+      camera3js.lookAt(currentPos.x + 10, currentPos.y, currentPos.z);
+    } else {
+      console.log("🔒 Camera: Skipping lookAt during camera state preservation");
+    }
 
     console.log('=== FPS SIDE VIEW SET ===');
   };
