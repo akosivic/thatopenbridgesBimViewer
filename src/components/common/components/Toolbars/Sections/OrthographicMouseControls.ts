@@ -21,6 +21,23 @@ export class OrthographicMouseControls {
         this.setupSpeedChangeListener();
     }
 
+    private getModelCenter(): THREE.Vector3 {
+        // Calculate model center from all meshes in the scene
+        if (this.world.meshes.size > 0) {
+            const bbox = new THREE.Box3();
+            this.world.meshes.forEach(mesh => {
+                bbox.expandByObject(mesh);
+            });
+            
+            if (!bbox.isEmpty()) {
+                return bbox.getCenter(new THREE.Vector3());
+            }
+        }
+        
+        // Fallback to origin if no meshes or empty bounds
+        return new THREE.Vector3(0, 0, 0);
+    }
+
     private setupSpeedChangeListener() {
         // Listen for speed changes to update orthographic controls dynamically
         window.addEventListener('moveSpeedChange', this.onSpeedChange);
@@ -195,12 +212,15 @@ export class OrthographicMouseControls {
         // Apply speed to rotation
         const adjustedRotationSpeed = this.rotationSpeed * speedMultiplier;
         
-        // Get the camera's current position relative to the origin (model center)
+        // Get the model center for consistent lookAt target
+        const modelCenter = this.getModelCenter();
+        
+        // Get the camera's current position relative to the model center
         const spherical = new THREE.Spherical();
         const vector = new THREE.Vector3();
         
-        // Calculate spherical coordinates from current position
-        vector.copy(camera.position);
+        // Calculate spherical coordinates relative to model center (not origin)
+        vector.copy(camera.position).sub(modelCenter); // Position relative to model center
         spherical.setFromVector3(vector);
         
         // Apply rotation deltas with speed adjustment
@@ -220,12 +240,12 @@ export class OrthographicMouseControls {
             spherical.radius = 10; // Fallback distance
         }
         
-        // Convert back to Cartesian coordinates
+        // Convert back to Cartesian coordinates relative to model center
         vector.setFromSpherical(spherical);
-        camera.position.copy(vector);
+        camera.position.copy(vector.add(modelCenter)); // Add model center back to get world position
         
-        // Always look at the origin (model center)
-        camera.lookAt(0, 0, 0);
+        // Always look at the model center for consistency with projection switching
+        camera.lookAt(modelCenter);
         
         // Notify NaviCube of camera change
         window.dispatchEvent(new CustomEvent('cameraChanged', {
@@ -280,16 +300,12 @@ export class OrthographicMouseControls {
         if (!this.world?.camera) return;
         if (!(this.world.camera instanceof OBC.OrthoPerspectiveCamera)) return;
 
-        // Get current speed multiplier from camera settings (using consistent normalization)
-        const currentSpeed = getCurrentSpeed();
-        const speedMultiplier = currentSpeed / 5.0; // Use baseSpeed (5.0) for consistent normalization
-        
-        // Apply speed to zoom
-        const baseZoomSpeed = 0.1;
-        const adjustedZoomSpeed = baseZoomSpeed * speedMultiplier;
+        // Use a fixed, small zoom speed for mouse wheel - don't apply speed multiplier
+        // Mouse wheel should have consistent, fine-grained control regardless of movement speed setting
+        const baseZoomSpeed = 0.05; // Reduced from 0.1 and no speed multiplier applied
         
         const currentZoom = this.world.camera.three.zoom || 1;
-        const direction = deltaY > 0 ? -adjustedZoomSpeed : adjustedZoomSpeed;
+        const direction = deltaY > 0 ? -baseZoomSpeed : baseZoomSpeed;
         
         const newZoom = Math.max(0.001, Math.min(100, currentZoom + direction)); // Reduced from 0.01 to 0.001
         this.world.camera.three.zoom = newZoom;
@@ -300,7 +316,7 @@ export class OrthographicMouseControls {
             detail: { source: 'orthographic-zoom', zoom: newZoom }
         }));
         
-        console.log('Orthographic zoom (speed x' + speedMultiplier.toFixed(1) + '):', newZoom);
+        console.log('Orthographic zoom (fixed speed):', newZoom);
     }
 
     public cleanup() {

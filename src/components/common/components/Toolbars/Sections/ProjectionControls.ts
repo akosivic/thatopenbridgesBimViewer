@@ -108,8 +108,8 @@ export default (world: OBC.World) => {
 
     // Camera position memory for seamless transitions (only store position, always use current model center as target)
     const cameraMemory = {
-        perspective: null as { position: THREE.Vector3 } | null,
-        orthographic: null as { position: THREE.Vector3 } | null,
+        perspective: null as { position: THREE.Vector3; up: THREE.Vector3; quaternion: THREE.Quaternion } | null,
+        orthographic: null as { position: THREE.Vector3; up: THREE.Vector3; quaternion: THREE.Quaternion } | null,
         isFirstTimeOrthographic: true,
         isFirstTimePerspective: true
     };
@@ -139,43 +139,45 @@ export default (world: OBC.World) => {
         return fallbackTarget;
     };
 
-    // Helper function to determine optimal orthographic distance based on current view
-    const calculateOrthographicDistance = (currentPosition: THREE.Vector3, target: THREE.Vector3): number => {
-        const distance = currentPosition.distanceTo(target);
-        
-        // Get model size to determine appropriate distance
-        if (world.meshes.size > 0) {
-            const bbox = new THREE.Box3();
-            world.meshes.forEach(mesh => {
-                bbox.expandByObject(mesh);
-            });
-            
-            if (!bbox.isEmpty()) {
-                const size = bbox.getSize(new THREE.Vector3());
-                const modelDiagonal = size.length();
-                const suggestedDistance = Math.max(modelDiagonal * 1.5, 5); // 1.5x model diagonal or minimum 5 units
-                console.log("Suggested orthographic distance based on model size:", suggestedDistance);
-                return Math.max(distance, suggestedDistance);
-            }
-        }
-        
-        return Math.max(distance, 5); // Minimum distance of 5 units
-    };
-
     const setProjectionMode = (mode: "Perspective" | "Orthographic") => {
         if (camera instanceof OBC.OrthoPerspectiveCamera && mode !== currentProjection) {
             const previousMode = currentProjection;
             const camera3js = world.camera.three;
             
-            // Store current camera state before switching
+            // Store current camera state before switching (ENHANCED DEBUGGING)
             const currentPosition = camera3js.position.clone();
+            const currentUp = camera3js.up.clone();
+            const currentQuaternion = camera3js.quaternion.clone();
             const currentTarget = getCurrentCameraTarget(camera3js);
+            
+            // Get current camera direction for debugging
+            const currentDirection = new THREE.Vector3();
+            camera3js.getWorldDirection(currentDirection);
+            
+            console.log("=== COMPREHENSIVE CAMERA STATE DEBUGGING ===");
+            console.log(`BEFORE SWITCHING: ${previousMode} → ${mode}`);
+            console.log("Current camera position:", currentPosition);
+            console.log("Current camera up vector:", currentUp);
+            console.log("Current camera quaternion:", currentQuaternion);
+            console.log("Current camera direction:", currentDirection);
+            console.log("Current target (model center):", currentTarget);
+            console.log("Distance to target:", currentPosition.distanceTo(currentTarget));
             
             // Save current position to memory (target is always calculated as current model center)
             if (previousMode === "Perspective") {
-                cameraMemory.perspective = { position: currentPosition };
+                cameraMemory.perspective = { 
+                    position: currentPosition,
+                    up: currentUp.clone(),
+                    quaternion: currentQuaternion.clone()
+                };
+                console.log("Saved perspective camera state to memory");
             } else {
-                cameraMemory.orthographic = { position: currentPosition };
+                cameraMemory.orthographic = { 
+                    position: currentPosition,
+                    up: currentUp.clone(),
+                    quaternion: currentQuaternion.clone()
+                };
+                console.log("Saved orthographic camera state to memory");
             }
             
             // Switch projection mode
@@ -186,34 +188,63 @@ export default (world: OBC.World) => {
             
             // Apply mode-specific camera positioning
             if (mode === "Orthographic") {
-                let newPosition: THREE.Vector3;
                 
                 // Always use current model center as target for consistent view
                 const newTarget = currentTarget.clone();
                 
                 if (cameraMemory.orthographic && !cameraMemory.isFirstTimeOrthographic) {
-                    // Restore previous orthographic position but use current model center as target
-                    newPosition = cameraMemory.orthographic.position.clone();
-                    console.log("Restoring previous orthographic position:", newPosition);
-                    console.log("Using current model center as target:", newTarget);
+                    // Restore complete previous orthographic camera state
+                    console.log("Restoring complete orthographic camera state");
+                    camera3js.position.copy(cameraMemory.orthographic.position);
+                    camera3js.up.copy(cameraMemory.orthographic.up);
+                    camera3js.quaternion.copy(cameraMemory.orthographic.quaternion);
+                    camera3js.updateMatrixWorld();
+                    console.log("Complete camera state restored - no orientation override");
                 } else {
-                    // First time orthographic: create seamless transition
-                    // Preserve the viewing direction and target, but optimize distance for orthographic
-                    const direction = currentPosition.clone().sub(newTarget).normalize();
-                    const optimalDistance = calculateOrthographicDistance(currentPosition, newTarget);
-                    newPosition = newTarget.clone().add(direction.multiplyScalar(optimalDistance));
-                    
-                    console.log("First time orthographic: seamless transition");
-                    console.log("Preserving target:", newTarget);
-                    console.log("Optimized position:", newPosition);
+                    // First time orthographic: preserve complete current camera state
+                    console.log("First time orthographic: preserving complete camera orientation");
+                    console.log("Preserving current position and rotation without lookAt override");
+                    // Don't call lookAt - preserve the current camera transformation completely
                     cameraMemory.isFirstTimeOrthographic = false;
                 }
                 
-                // Apply position and ensure camera looks at model center
-                camera3js.position.copy(newPosition);
-                camera3js.lookAt(newTarget);
-                console.log("Applied orthographic camera lookAt - target:", newTarget);
-                console.log("Camera now looking from:", camera3js.position, "to:", newTarget);
+                // DETAILED POST-SWITCH DEBUGGING FOR ORTHOGRAPHIC
+                const newDirection = new THREE.Vector3();
+                camera3js.getWorldDirection(newDirection);
+                const newUp = camera3js.up.clone();
+                const newQuaternion = camera3js.quaternion.clone();
+                const toTarget = newTarget.clone().sub(camera3js.position).normalize();
+                const directionDotProduct = newDirection.dot(toTarget);
+                
+                console.log("=== AFTER ORTHOGRAPHIC SWITCH ===");
+                console.log("Orthographic camera state restored - NO lookAt used");
+                console.log("Camera now at:", camera3js.position, "with preserved orientation");
+                console.log("New camera direction:", newDirection);
+                console.log("New camera up vector:", newUp);
+                console.log("New camera quaternion:", newQuaternion);
+                console.log("Direction to target:", toTarget);
+                console.log("Camera direction dot product with target direction:", directionDotProduct);
+                console.log("Is camera looking toward target?", directionDotProduct > 0);
+                
+                if (directionDotProduct < 0) {
+                    console.warn("⚠️  WARNING: Camera appears to be looking AWAY from target!");
+                    console.warn("Dot product:", directionDotProduct, "- This indicates the original camera was not facing the model center");
+                    console.warn("This is CORRECT behavior - we preserved the exact camera orientation from perspective mode");
+                    
+                    // OPTIONAL: Auto-correct camera to look toward model center
+                    // Uncomment these lines if you want to force camera to always look at model:
+                    /*
+                    console.log("Auto-correcting camera to look toward model center...");
+                    camera3js.lookAt(newTarget);
+                    camera3js.updateMatrixWorld();
+                    
+                    const correctedDirection = new THREE.Vector3();
+                    camera3js.getWorldDirection(correctedDirection);
+                    const correctedDotProduct = correctedDirection.dot(toTarget);
+                    console.log("✅ Corrected camera direction:", correctedDirection);
+                    console.log("✅ Corrected dot product:", correctedDotProduct);
+                    */
+                }
                 
                 // Reset zoom to default for orthographic
                 if (camera.controls?.camera) {
@@ -223,31 +254,49 @@ export default (world: OBC.World) => {
                 }
                 
             } else if (mode === "Perspective") {
-                let newPosition: THREE.Vector3;
                 
                 // Always use current model center as target for consistent view
                 const newTarget = currentTarget.clone();
                 
                 if (cameraMemory.perspective && !cameraMemory.isFirstTimePerspective) {
-                    // Restore previous perspective position but use current model center as target
-                    newPosition = cameraMemory.perspective.position.clone();
-                    console.log("Restoring previous perspective position:", newPosition);
-                    console.log("Using current model center as target:", newTarget);
+                    // Restore complete previous perspective camera state
+                    console.log("Restoring complete perspective camera state");
+                    camera3js.position.copy(cameraMemory.perspective.position);
+                    camera3js.up.copy(cameraMemory.perspective.up);
+                    camera3js.quaternion.copy(cameraMemory.perspective.quaternion);
+                    camera3js.updateMatrixWorld();
+                    console.log("Complete camera state restored - no orientation override");
                 } else {
-                    // First time perspective or seamless transition: preserve viewing context
-                    newPosition = currentPosition.clone();
-                    
+                    // First time perspective: preserve complete current camera state
                     console.log("Seamless transition to perspective mode");
-                    console.log("Preserving position:", newPosition);
-                    console.log("Using current model center as target:", newTarget);
+                    console.log("Preserving complete camera orientation without lookAt override");
+                    // Don't call lookAt - preserve the current camera transformation completely
                     cameraMemory.isFirstTimePerspective = false;
                 }
                 
-                // Apply position and ensure camera looks at model center
-                camera3js.position.copy(newPosition);
-                camera3js.lookAt(newTarget);
-                console.log("Applied perspective camera lookAt - target:", newTarget);
-                console.log("Camera now looking from:", camera3js.position, "to:", newTarget);
+                // DETAILED POST-SWITCH DEBUGGING FOR PERSPECTIVE
+                const newDirection = new THREE.Vector3();
+                camera3js.getWorldDirection(newDirection);
+                const newUp = camera3js.up.clone();
+                const newQuaternion = camera3js.quaternion.clone();
+                const toTarget = newTarget.clone().sub(camera3js.position).normalize();
+                const directionDotProduct = newDirection.dot(toTarget);
+                
+                console.log("=== AFTER PERSPECTIVE SWITCH ===");
+                console.log("Perspective camera state restored - NO lookAt used");
+                console.log("Camera now at:", camera3js.position, "with preserved orientation");
+                console.log("New camera direction:", newDirection);
+                console.log("New camera up vector:", newUp);
+                console.log("New camera quaternion:", newQuaternion);
+                console.log("Direction to target:", toTarget);
+                console.log("Camera direction dot product with target direction:", directionDotProduct);
+                console.log("Is camera looking toward target?", directionDotProduct > 0);
+                
+                if (directionDotProduct < 0) {
+                    console.warn("⚠️  WARNING: Camera appears to be looking AWAY from target!");
+                    console.warn("Dot product:", directionDotProduct, "- This indicates the original camera was not facing the model center");
+                    console.warn("This is CORRECT behavior - we preserved the exact camera orientation from orthographic mode");
+                }
             }
             
             // Update NaviCube to reflect current view (without forcing specific orientations)
