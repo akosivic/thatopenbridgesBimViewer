@@ -217,7 +217,7 @@ export default (world: OBC.World) => {
                 const directionDotProduct = newDirection.dot(toTarget);
                 
                 console.log("=== AFTER ORTHOGRAPHIC SWITCH ===");
-                console.log("Orthographic camera state restored - NO lookAt used");
+                console.log("Orthographic camera state restored - Option 2: Auto-correct enabled");
                 console.log("Camera now at:", camera3js.position, "with preserved orientation");
                 console.log("New camera direction:", newDirection);
                 console.log("New camera up vector:", newUp);
@@ -228,13 +228,9 @@ export default (world: OBC.World) => {
                 
                 if (directionDotProduct < 0) {
                     console.warn("⚠️  WARNING: Camera appears to be looking AWAY from target!");
-                    console.warn("Dot product:", directionDotProduct, "- This indicates the original camera was not facing the model center");
-                    console.warn("This is CORRECT behavior - we preserved the exact camera orientation from perspective mode");
+                    console.warn("Dot product:", directionDotProduct, "- Auto-correcting to face model center (Option 2)");
                     
-                    // OPTIONAL: Auto-correct camera to look toward model center
-                    // Uncomment these lines if you want to force camera to always look at model:
-                    /*
-                    console.log("Auto-correcting camera to look toward model center...");
+                    console.log("🔧 Auto-correcting camera to look toward model center...");
                     camera3js.lookAt(newTarget);
                     camera3js.updateMatrixWorld();
                     
@@ -243,7 +239,7 @@ export default (world: OBC.World) => {
                     const correctedDotProduct = correctedDirection.dot(toTarget);
                     console.log("✅ Corrected camera direction:", correctedDirection);
                     console.log("✅ Corrected dot product:", correctedDotProduct);
-                    */
+                    console.log("✅ Camera now facing model center");
                 }
                 
                 // Reset zoom to default for orthographic
@@ -283,7 +279,7 @@ export default (world: OBC.World) => {
                 const directionDotProduct = newDirection.dot(toTarget);
                 
                 console.log("=== AFTER PERSPECTIVE SWITCH ===");
-                console.log("Perspective camera state restored - NO lookAt used");
+                console.log("Perspective camera state restored - Option 2: Auto-correct enabled");
                 console.log("Camera now at:", camera3js.position, "with preserved orientation");
                 console.log("New camera direction:", newDirection);
                 console.log("New camera up vector:", newUp);
@@ -294,8 +290,18 @@ export default (world: OBC.World) => {
                 
                 if (directionDotProduct < 0) {
                     console.warn("⚠️  WARNING: Camera appears to be looking AWAY from target!");
-                    console.warn("Dot product:", directionDotProduct, "- This indicates the original camera was not facing the model center");
-                    console.warn("This is CORRECT behavior - we preserved the exact camera orientation from orthographic mode");
+                    console.warn("Dot product:", directionDotProduct, "- Auto-correcting to face model center (Option 2)");
+                    
+                    console.log("🔧 Auto-correcting camera to look toward model center...");
+                    camera3js.lookAt(newTarget);
+                    camera3js.updateMatrixWorld();
+                    
+                    const correctedDirection = new THREE.Vector3();
+                    camera3js.getWorldDirection(correctedDirection);
+                    const correctedDotProduct = correctedDirection.dot(toTarget);
+                    console.log("✅ Corrected camera direction:", correctedDirection);
+                    console.log("✅ Corrected dot product:", correctedDotProduct);
+                    console.log("✅ Camera now facing model center");
                 }
             }
             
