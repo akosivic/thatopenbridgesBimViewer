@@ -361,6 +361,7 @@ export class WorldViewer extends HTMLElement {
         
         // Also set via controls if available
         if (world.camera.controls?.camera) {
+          world.camera.set("Orbit");
           world.camera.controls.camera.zoom = 0.5;
           world.camera.controls.camera.updateProjectionMatrix();
         }
