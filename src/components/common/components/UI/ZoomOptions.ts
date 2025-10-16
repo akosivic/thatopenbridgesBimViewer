@@ -2,6 +2,29 @@ import * as OBC from "@thatopen/components";
 import * as THREE from "three";
 
 export default (world: OBC.World) => {
+    // Helper for orthographic zoom with margin
+    function zoomModelWithMargin(center: THREE.Vector3, size: THREE.Vector3, camera3js: THREE.Camera, margin: number) {
+        const fitWidth = size.x * margin;
+        const fitHeight = size.y * margin;
+        const orthoCam = camera3js as THREE.OrthographicCamera;
+        const frustumWidth = Math.abs(orthoCam.right - orthoCam.left);
+        const frustumHeight = Math.abs(orthoCam.top - orthoCam.bottom);
+        const zoomForWidth = frustumWidth / fitWidth;
+        const zoomForHeight = frustumHeight / fitHeight;
+        const targetZoom = Math.min(zoomForWidth, zoomForHeight);
+        const currentDirection = new THREE.Vector3();
+        camera3js.getWorldDirection(currentDirection);
+        currentDirection.normalize();
+        const distance = camera3js.position.distanceTo(center);
+        const newPosition = center.clone().sub(currentDirection.clone().multiplyScalar(distance));
+        animateCameraTransition(camera3js, newPosition, center, () => {
+            if (world.camera instanceof OBC.OrthoPerspectiveCamera) {
+                const orthoCam2 = world.camera.three as THREE.OrthographicCamera;
+                orthoCam2.zoom = targetZoom;
+                orthoCam2.updateProjectionMatrix();
+            }
+        });
+    }
     const { camera } = world;
 
     console.log('ZoomOptions component being created...');
@@ -13,50 +36,25 @@ export default (world: OBC.World) => {
             world.meshes.forEach(mesh => {
                 bbox.expandByObject(mesh);
             });
-            
             if (!bbox.isEmpty()) {
-                // Calculate model center and size
                 const center = bbox.getCenter(new THREE.Vector3());
                 const size = bbox.getSize(new THREE.Vector3());
                 const diagonalLength = size.length();
-                
-                // Get current camera and determine projection mode
                 const camera3js = world.camera.three;
-                const isOrthographic = camera3js.type === 'OrthographicCamera';
-                
-                if (isOrthographic) {
-                    // EXTENTS: Move camera back for full overview with generous padding
-                    const padding = 1.3; // 30% extra padding for comfortable overview
-                    const optimalDistance = diagonalLength * padding;
-                    
-                    const currentDirection = new THREE.Vector3();
-                    camera3js.getWorldDirection(currentDirection);
-                    currentDirection.normalize();
-                    
-                    const newPosition = center.clone().sub(currentDirection.clone().multiplyScalar(optimalDistance));
-                    
-                    // Animate with zoom adjustment
-                    animateCameraTransition(camera3js, newPosition, center, () => {
-                        if (world.camera instanceof OBC.OrthoPerspectiveCamera) {
-                            const orthoCam = world.camera.three as THREE.OrthographicCamera;
-                            orthoCam.zoom = 0.6; // Lower zoom for wide overview
-                            orthoCam.updateProjectionMatrix();
-                        }
-                    });
+                if (camera3js.type === 'OrthographicCamera') {
+                    // Use margin 1.2 for extents (default)
+                    zoomModelWithMargin(center, size, camera3js, 1.5);
                 } else {
                     // Perspective mode: Far back for full overview
                     const fov = (camera3js as THREE.PerspectiveCamera).fov * Math.PI / 180;
                     const padding = 1.5; // 50% padding for perspective
                     const optimalDistance = (diagonalLength * padding) / (2 * Math.tan(fov / 2));
-                    
                     const currentDirection = new THREE.Vector3();
                     camera3js.getWorldDirection(currentDirection);
                     currentDirection.normalize();
-                    
                     const newPosition = center.clone().sub(currentDirection.clone().multiplyScalar(optimalDistance));
                     animateCameraTransition(camera3js, newPosition, center);
                 }
-                
                 console.log('Zoom to Extents: Wide overview with generous padding');
             }
         }
@@ -68,50 +66,25 @@ export default (world: OBC.World) => {
             world.meshes.forEach(mesh => {
                 bbox.expandByObject(mesh);
             });
-            
             if (!bbox.isEmpty()) {
-                // Calculate model center and size
                 const center = bbox.getCenter(new THREE.Vector3());
                 const size = bbox.getSize(new THREE.Vector3());
                 const maxDimension = Math.max(size.x, size.y, size.z);
-                
-                // Get current camera and determine projection mode
                 const camera3js = world.camera.three;
-                const isOrthographic = camera3js.type === 'OrthographicCamera';
-                
-                if (isOrthographic) {
-                    // FIT: Move camera close for tight framing with minimal padding
-                    const padding = 0.85; // Get closer than model bounds for tight detail
-                    const optimalDistance = maxDimension * padding; // Use maxDimension for tighter approach
-                    
-                    const currentDirection = new THREE.Vector3();
-                    camera3js.getWorldDirection(currentDirection);
-                    currentDirection.normalize();
-                    
-                    const newPosition = center.clone().sub(currentDirection.clone().multiplyScalar(optimalDistance));
-                    
-                    // Animate with high zoom for detail
-                    animateCameraTransition(camera3js, newPosition, center, () => {
-                        if (world.camera instanceof OBC.OrthoPerspectiveCamera) {
-                            const orthoCam = world.camera.three as THREE.OrthographicCamera;
-                            orthoCam.zoom = 2.5; // High zoom for tight detail view
-                            orthoCam.updateProjectionMatrix();
-                        }
-                    });
+                if (camera3js.type === 'OrthographicCamera') {
+                    // Use larger margin for fit (e.g., 2.0)
+                    zoomModelWithMargin(center, size, camera3js, 2.0);
                 } else {
                     // Perspective mode: Close for tight detail
                     const fov = (camera3js as THREE.PerspectiveCamera).fov * Math.PI / 180;
                     const padding = 0.7; // Minimal padding for tight fit
                     const optimalDistance = (maxDimension * padding) / (2 * Math.tan(fov / 2));
-                    
                     const currentDirection = new THREE.Vector3();
                     camera3js.getWorldDirection(currentDirection);
                     currentDirection.normalize();
-                    
                     const newPosition = center.clone().sub(currentDirection.clone().multiplyScalar(optimalDistance));
                     animateCameraTransition(camera3js, newPosition, center);
                 }
-                
                 console.log('Zoom to Fit: Close framing for maximum detail');
             }
         }
