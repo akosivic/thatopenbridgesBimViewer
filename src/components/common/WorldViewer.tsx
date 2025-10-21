@@ -801,65 +801,73 @@ export class WorldViewer extends HTMLElement {
         console.log('Enhanced keyboard controls initialized with projection-specific bindings');
     }
 
-    // Enable scroll wheel movement: scroll up = forward, scroll down = backward
+    // Enable scroll wheel: zoom in orthographic mode, movement in perspective mode
     viewport.addEventListener('wheel', async (event: WheelEvent) => {
       if (!fpControls) return;
 
       event.preventDefault(); // Prevent default scroll behavior
 
       if (isDebugMode) {
-          console.log('=== MOUSEWHEEL MOVEMENT ===');
+          console.log('=== MOUSEWHEEL EVENT ===');
           console.log('Delta:', event.deltaY);
+          console.log('Camera type:', world.camera.three.type);
       }
 
-      // Calculate movement distance based on scroll
-      const scrollMovementSpeed = 2.0; // Adjust this value to control scroll sensitivity
-      const moveDistance = scrollMovementSpeed;
-
-      // Get camera's forward direction
-      const direction = new THREE.Vector3();
-      world.camera.three.getWorldDirection(direction);
-
-      // Scroll up (negative deltaY) = move forward (like up arrow)
-      // Scroll down (positive deltaY) = move backward (like down arrow)
-      if (event.deltaY < 0) {
-        // Scroll up = move forward
-        world.camera.three.position.addScaledVector(direction, moveDistance);
-        console.log('Scroll up: Moving FORWARD');
-      } else if (event.deltaY > 0) {
-        // Scroll down = move backward
-        world.camera.three.position.addScaledVector(direction, -moveDistance);
-        if (isDebugMode) {
-            console.log('Scroll down: Moving BACKWARD');
-        }
-      }
-
-      // Get current projection mode to apply restrictions only to perspective mode
-      try {
-        const { getCurrentProjection } = await import('./components/Toolbars/Sections/ProjectionControls');
-        const currentProjection = getCurrentProjection();
+      // Check if we're in orthographic mode
+      if (world.camera.three.type === 'OrthographicCamera') {
+        // ORTHOGRAPHIC MODE: Apply zoom (same as zoom in/out buttons)
+        const orthoCam = world.camera.three as THREE.OrthographicCamera;
+        const currentZoom = orthoCam.zoom || 1;
         
-        if (currentProjection === "Perspective") {
-          // FORCE Y position to always be at eye level (1.6 meters) - perspective mode only
-          world.camera.three.position.y = 1.6;
+        if (event.deltaY < 0) {
+          // Scroll up = Zoom in
+          const newZoom = Math.min(5, currentZoom * 1.2);
+          orthoCam.zoom = newZoom;
+          orthoCam.updateProjectionMatrix();
           if (isDebugMode) {
-              console.log('Perspective mode: Y position locked to 1.6m');
+              console.log('Orthographic: Zoomed IN to', newZoom);
           }
-        } else {
-          // Orthographic mode: No Y-axis restrictions, allow free movement
+        } else if (event.deltaY > 0) {
+          // Scroll down = Zoom out
+          const newZoom = Math.max(0.001, currentZoom * 0.8);
+          orthoCam.zoom = newZoom;
+          orthoCam.updateProjectionMatrix();
           if (isDebugMode) {
-              console.log('Orthographic mode: No Y-axis restrictions applied');
+              console.log('Orthographic: Zoomed OUT to', newZoom);
           }
         }
-      } catch (error) {
-        if (isDebugMode) {
-            console.warn('Could not determine projection mode, applying default restrictions:', error);
-        }
-        world.camera.three.position.y = 1.6; // Fallback to perspective behavior
-      }
+        
+      } else {
+        // PERSPECTIVE MODE: Move forward/backward (existing behavior)
+        const scrollMovementSpeed = 2.0; // Adjust this value to control scroll sensitivity
+        const moveDistance = scrollMovementSpeed;
 
-      if (isDebugMode) {
-          console.log('New position:', world.camera.three.position);
+        // Get camera's forward direction
+        const direction = new THREE.Vector3();
+        world.camera.three.getWorldDirection(direction);
+
+        // Scroll up (negative deltaY) = move forward (like up arrow)
+        // Scroll down (positive deltaY) = move backward (like down arrow)
+        if (event.deltaY < 0) {
+          // Scroll up = move forward
+          world.camera.three.position.addScaledVector(direction, moveDistance);
+          if (isDebugMode) {
+              console.log('Perspective: Moving FORWARD');
+          }
+        } else if (event.deltaY > 0) {
+          // Scroll down = move backward
+          world.camera.three.position.addScaledVector(direction, -moveDistance);
+          if (isDebugMode) {
+              console.log('Perspective: Moving BACKWARD');
+          }
+        }
+
+        // FORCE Y position to always be at eye level (1.6 meters) in perspective mode
+        world.camera.three.position.y = 1.6;
+        if (isDebugMode) {
+            console.log('Perspective mode: Y position locked to 1.6m');
+            console.log('New position:', world.camera.three.position);
+        }
       }
     });
 
