@@ -1041,9 +1041,9 @@ export default (world: OBC.World) => {
             orthoCam.right = size * aspect;
             orthoCam.top = size;
             orthoCam.bottom = -size;
-            orthoCam.near = 0.1;
+            orthoCam.near = 1;
             orthoCam.far = 1000;
-            orthoCam.zoom = 0.5;
+            orthoCam.zoom = 1;
             orthoCam.updateProjectionMatrix();
             
             console.log('NaviCube: Orthographic camera frustum configured');
