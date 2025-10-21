@@ -3,7 +3,8 @@ import * as BUI from "@thatopen/ui";
 import * as THREE from "three";
 import { PointerLockControls } from "three/examples/jsm/Addons.js";
 import i18n from "../../../utils/i18n";
-import projectionControls from "./ProjectionControls";
+// TEMPORARILY HIDDEN: Projection controls (code kept for potential future use)
+// import projectionControls from "./ProjectionControls";
 import { getCurrentProjection } from "./ProjectionControls";
 
 // Global reference to FPS controls - will be set from WorldViewer
@@ -331,13 +332,12 @@ export default (world: OBC.World) => {
         
         // Call initialization after component is rendered
         setTimeout(initializeSpeedDisplay, 100);
+        // TEMPORARILY HIDDEN: Projection controls (code kept for potential future use)
         // Initialize projection controls component
-        const projectionControlsComponent = projectionControls(world);
+        // const projectionControlsComponent = projectionControls(world);
         
         return BUI.html`
       <bim-toolbar-section label="${t('cameraSettings')}" icon="ph:camera-fill" style="pointer-events: auto">
-        <!-- Projection Controls (Always visible) -->
-        ${projectionControlsComponent}
         
         <!-- Horizontal Container for all control sections -->
         <div style="display: flex; gap: 10px; margin: 10px 0; align-items: flex-start;">
