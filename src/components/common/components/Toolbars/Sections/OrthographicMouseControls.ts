@@ -137,21 +137,21 @@ export class OrthographicMouseControls {
         // Don't interfere with toolbar buttons
         if (this.isToolbarButton(event.target)) return;
 
-        if (event.button === 0) { // Left mouse button - rotation
+        if (event.button === 0) { // Left mouse button - rotation (direct mapping)
             this.isLeftMouseDown = true;
             this.lastMouseX = event.clientX;
             this.lastMouseY = event.clientY;
             this.viewport.style.cursor = 'grab';
             // Prevent text selection during rotation
             event.preventDefault();
-            console.log('Orthographic rotation started');
+            console.log('Orthographic rotation started (left mouse, direct)');
         } else if (event.button === 1) { // Middle mouse button - pan
             this.isMiddleMouseDown = true;
             this.lastMouseX = event.clientX;
             this.lastMouseY = event.clientY;
             this.viewport.style.cursor = 'move';
             event.preventDefault(); // Prevent browser scroll and text selection
-            console.log('Orthographic pan started');
+            console.log('Orthographic pan started (middle mouse)');
         }
     }
 
@@ -168,11 +168,11 @@ export class OrthographicMouseControls {
         const deltaY = clampedDeltas.y;
 
         if (this.isLeftMouseDown) {
-            // Left mouse drag - rotate camera around model (360°)
+            // Left mouse drag - rotate camera (direct mapping: drag right = rotate right)
             // Prevent any text selection during active dragging
             event.preventDefault();
             event.stopPropagation();
-            this.rotateCamera(deltaX, deltaY);
+            this.rotateCameraDirect(deltaX, deltaY);
         } else if (this.isMiddleMouseDown) {
             // Middle mouse drag - pan camera
             // Prevent any text selection during active dragging
@@ -228,10 +228,10 @@ export class OrthographicMouseControls {
 
         if (event.button === 0) {
             this.isLeftMouseDown = false;
-            console.log('Orthographic rotation ended');
+            console.log('Orthographic rotation ended (left mouse, direct)');
         } else if (event.button === 1) {
             this.isMiddleMouseDown = false;
-            console.log('Orthographic pan ended');
+            console.log('Orthographic pan ended (middle mouse)');
         }
 
         this.viewport.style.cursor = 'default';
@@ -251,6 +251,73 @@ export class OrthographicMouseControls {
         
         // Mouse wheel - zoom in/out
         this.zoomCamera(event.deltaY);
+    }
+
+    private rotateCameraDirect(deltaX: number, deltaY: number) {
+        if (!this.world?.camera?.three) return;
+
+        const camera = this.world.camera.three;
+        
+        // Get current speed multiplier from camera settings (using consistent normalization)
+        const currentSpeed = getCurrentSpeed();
+        const speedMultiplier = currentSpeed / 5.0; // Use baseSpeed (5.0) for consistent normalization
+        
+        // Apply speed to rotation
+        const adjustedRotationSpeed = this.rotationSpeed * speedMultiplier;
+        
+        // Get the model center for consistent lookAt target
+        const modelCenter = this.getModelCenter();
+        
+        // Get the camera's current position relative to the model center
+        const spherical = new THREE.Spherical();
+        const vector = new THREE.Vector3();
+        
+        // Calculate spherical coordinates relative to model center (not origin)
+        vector.copy(camera.position).sub(modelCenter); // Position relative to model center
+        spherical.setFromVector3(vector);
+        
+        // Apply rotation deltas with INVERTED MAPPING (traditional orbit feel)
+        spherical.theta -= deltaX * adjustedRotationSpeed; // MINUS: drag right = model rotates left
+        spherical.phi += deltaY * adjustedRotationSpeed;   // PLUS: drag down = model rotates up
+        
+        // CRITICAL FIX: Constrain phi to prevent gimbal lock and flipping
+        // Allow near-full rotation but avoid mathematical singularities
+        const epsilon = 0.1; // Small margin to prevent singularities
+        spherical.phi = Math.max(epsilon, Math.min(Math.PI - epsilon, spherical.phi));
+        
+        // Normalize theta to prevent accumulation errors
+        spherical.theta = spherical.theta % (2 * Math.PI);
+        
+        // Ensure radius stays consistent
+        if (spherical.radius <= 0) {
+            spherical.radius = 10; // Fallback distance
+        }
+        
+        // Convert back to Cartesian coordinates relative to model center
+        vector.setFromSpherical(spherical);
+        camera.position.copy(vector.add(modelCenter)); // Add model center back to get world position
+        
+        // Check if camera state preservation is active (during projection switching)
+        const isCameraStateBeingPreserved = (window as any).isCameraStateBeingPreserved?.() || false;
+        
+        if (!isCameraStateBeingPreserved) {
+            // Always look at the model center for consistency with projection switching
+            camera.lookAt(modelCenter);
+        } else {
+            console.log("🔒 Skipping lookAt during camera state preservation");
+        }
+        
+        // Notify NaviCube of camera change
+        window.dispatchEvent(new CustomEvent('cameraChanged', {
+            detail: { source: 'orthographic-rotation-direct', position: camera.position, rotation: camera.quaternion }
+        }));
+        
+        console.log('Orthographic rotation DIRECT (speed x' + speedMultiplier.toFixed(1) + '):', {
+            theta: spherical.theta * 180 / Math.PI,
+            phi: spherical.phi * 180 / Math.PI,
+            phiClamped: spherical.phi >= epsilon && spherical.phi <= Math.PI - epsilon,
+            position: camera.position
+        });
     }
 
     private rotateCamera(deltaX: number, deltaY: number) {
@@ -318,6 +385,42 @@ export class OrthographicMouseControls {
             phiClamped: spherical.phi >= epsilon && spherical.phi <= Math.PI - epsilon,
             position: camera.position
         });
+    }
+
+    private panCameraDirect(deltaX: number, deltaY: number) {
+        if (!this.world?.camera?.three) return;
+
+        const camera = this.world.camera.three;
+        
+        // Get current speed multiplier from camera settings (using consistent normalization)
+        const currentSpeed = getCurrentSpeed();
+        const speedMultiplier = currentSpeed / 5.0; // Use baseSpeed (5.0) for consistent normalization
+        
+        // Apply speed to panning with a more responsive feel for mouse dragging
+        const adjustedPanSpeed = this.panSpeed * speedMultiplier;
+        
+        // Get camera's right and up vectors
+        const right = new THREE.Vector3();
+        const up = new THREE.Vector3();
+        
+        camera.getWorldDirection(new THREE.Vector3()); // Update camera matrix
+        right.setFromMatrixColumn(camera.matrix, 0); // X axis
+        up.setFromMatrixColumn(camera.matrix, 1);    // Y axis
+        
+        // Calculate pan movement with DIRECT MAPPING (drag right = move right, drag down = move down)
+        const panVector = new THREE.Vector3();
+        panVector.addScaledVector(right, deltaX * adjustedPanSpeed);  // Direct: drag right = camera moves right
+        panVector.addScaledVector(up, -deltaY * adjustedPanSpeed);    // Direct: drag down = camera moves down (negative Y)
+        
+        // Apply pan to camera position
+        camera.position.add(panVector);
+        
+        // Notify NaviCube of camera change
+        window.dispatchEvent(new CustomEvent('cameraChanged', {
+            detail: { source: 'orthographic-pan-direct', position: camera.position }
+        }));
+        
+        console.log('Orthographic pan direct (speed x' + speedMultiplier.toFixed(1) + '):', camera.position);
     }
 
     private panCamera(deltaX: number, deltaY: number) {
