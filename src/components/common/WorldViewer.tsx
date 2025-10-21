@@ -1527,6 +1527,22 @@ export class WorldViewer extends HTMLElement {
                 }
               }));
             }
+            
+            // If in orthographic mode, zoom to center after a slight delay
+            // to ensure NaviCube positioning is complete
+            setTimeout(() => {
+              const camera3js = world.camera.three;
+              if (camera3js.type === 'OrthographicCamera') {
+                const zoomOptionsElement = document.getElementById('zoom-options-panel');
+                const zoomOptionsWithMethod = zoomOptionsElement as unknown as { zoomToCenter: () => void } | null;
+                if (zoomOptionsWithMethod?.zoomToCenter) {
+                  console.log('Triggering initial zoom to center for orthographic mode...');
+                  zoomOptionsWithMethod.zoomToCenter();
+                } else {
+                  console.warn('ZoomOptions component or zoomToCenter method not found');
+                }
+              }
+            }, 500); // Additional delay to ensure camera position is set
           }, 300); // Small delay to ensure fragments are fully processed
         } else {
           console.log('Initial view already triggered - skipping NaviCube view change');

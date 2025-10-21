@@ -132,6 +132,10 @@ export default (world: OBC.World) => {
                 if (camera3js.type === 'OrthographicCamera') {
                     // Use larger margin for fit (e.g., 2.0)
                     zoomModelWithMargin(center, size, camera3js, 2.0);
+                    // Notify NaviCube to sync after zoom animation completes
+                    setTimeout(() => {
+                        window.dispatchEvent(new CustomEvent('cameraChanged'));
+                    }, 850); // Wait for animation to complete (duration is 800ms)
                 } else {
                     // Perspective mode: Close for tight detail
                     const fov = (camera3js as THREE.PerspectiveCamera).fov * Math.PI / 180;
@@ -142,6 +146,10 @@ export default (world: OBC.World) => {
                     currentDirection.normalize();
                     const newPosition = center.clone().sub(currentDirection.clone().multiplyScalar(optimalDistance));
                     animateCameraTransition(camera3js, newPosition, center);
+                    // Notify NaviCube to sync after zoom animation completes
+                    setTimeout(() => {
+                        window.dispatchEvent(new CustomEvent('cameraChanged'));
+                    }, 850);
                 }
                 console.log('Zoom to Fit: Close framing for maximum detail');
             }
@@ -177,6 +185,10 @@ export default (world: OBC.World) => {
                 
                 // Short, quick animation primarily for rotation
                 animateCameraLookAt(camera3js, targetPosition, center);
+                // Notify NaviCube to sync after zoom animation completes
+                setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent('cameraChanged'));
+                }, 450); // Wait for animation to complete (duration is 400ms)
                 console.log('Zoom to Center: Camera pointed toward model center (minimal movement)');
             }
         }
@@ -435,6 +447,9 @@ export default (world: OBC.World) => {
     document.head.appendChild(style);
 
     console.log('ZoomOptions component created (DOM version):', element);
+    
+    // Expose zoomToCenter for external use (e.g., initial load)
+    (element as unknown as { zoomToCenter: () => void }).zoomToCenter = zoomToCenter;
     
     return element;
 };
