@@ -1,7 +1,55 @@
 import * as OBC from "@thatopen/components";
 import * as THREE from "three";
 
+// Global minimum zoom limit that can be accessed by other modules
+let globalMinZoomLimit = 0.8; // Default fallback
+
+// Export getter for the minimum zoom limit
+export const getMinZoomLimit = () => globalMinZoomLimit;
+
 export default (world: OBC.World) => {
+    // Store the zoom-to-fit value as the minimum zoom out limit
+    let minZoomLimit = 0.8; // Default fallback
+    
+    // Function to calculate the zoom-to-fit value (minimum allowed zoom)
+    function calculateZoomToFitValue(): number {
+        if (world.meshes.size === 0) return 0.8; // Fallback if no model
+        
+        const bbox = new THREE.Box3();
+        world.meshes.forEach(mesh => {
+            bbox.expandByObject(mesh);
+        });
+        
+        if (bbox.isEmpty()) return 0.8; // Fallback if empty bounds
+        
+        const size = bbox.getSize(new THREE.Vector3());
+        const camera3js = world.camera.three;
+        
+        if (camera3js.type === 'OrthographicCamera') {
+            const orthoCam = camera3js as THREE.OrthographicCamera;
+            const margin = 2.0; // Same margin as zoomToFit
+            const fitWidth = size.x * margin;
+            const fitHeight = size.y * margin;
+            const frustumWidth = Math.abs(orthoCam.right - orthoCam.left);
+            const frustumHeight = Math.abs(orthoCam.top - orthoCam.bottom);
+            const zoomForWidth = frustumWidth / fitWidth;
+            const zoomForHeight = frustumHeight / fitHeight;
+            const fitZoom = Math.min(zoomForWidth, zoomForHeight);
+            
+            console.log('Calculated zoom-to-fit minimum:', fitZoom);
+            return Math.max(0.1, fitZoom); // Ensure it's not too small
+        }
+        
+        return 0.8; // Fallback for non-orthographic
+    }
+    
+    // Update global minimum zoom limit
+    const updateMinZoomLimit = (value: number) => {
+        minZoomLimit = value;
+        globalMinZoomLimit = value;
+        console.log('Updated global minimum zoom limit to:', globalMinZoomLimit);
+    };
+    
     // Helper for orthographic zoom with margin
     function zoomModelWithMargin(center: THREE.Vector3, size: THREE.Vector3, camera3js: THREE.Camera, margin: number) {
         const fitWidth = size.x * margin;
@@ -12,6 +60,10 @@ export default (world: OBC.World) => {
         const zoomForWidth = frustumWidth / fitWidth;
         const zoomForHeight = frustumHeight / fitHeight;
         const targetZoom = Math.min(zoomForWidth, zoomForHeight);
+        
+        // Update the minimum zoom limit when zoom-to-fit is used
+        updateMinZoomLimit(Math.max(0.1, targetZoom));
+        
         const currentDirection = new THREE.Vector3();
         camera3js.getWorldDirection(currentDirection);
         currentDirection.normalize();
@@ -28,6 +80,12 @@ export default (world: OBC.World) => {
     const { camera } = world;
 
     console.log('ZoomOptions component being created...');
+    
+    // Calculate initial minimum zoom limit based on model
+    setTimeout(() => {
+        const calculatedMin = calculateZoomToFitValue();
+        updateMinZoomLimit(calculatedMin);
+    }, 100);
 
     // Zoom functions with DISTINCT Adobe-style behaviors
     const zoomToExtents = () => {
@@ -139,10 +197,10 @@ export default (world: OBC.World) => {
         if (world.camera instanceof OBC.OrthoPerspectiveCamera && world.camera.three.type === 'OrthographicCamera') {
             const orthoCam = world.camera.three as THREE.OrthographicCamera;
             const currentZoom = orthoCam.zoom || 1;
-            const newZoom = Math.max(0.8, currentZoom * 0.8); // Minimum zoom limited to 0.8
+            const newZoom = Math.max(minZoomLimit, currentZoom * 0.8); // Minimum zoom limited to zoom-to-fit value
             orthoCam.zoom = newZoom;
             orthoCam.updateProjectionMatrix();
-            console.log('Zoomed out:', newZoom);
+            console.log('Zoomed out to:', newZoom, '(min limit:', minZoomLimit + ')');
         }
     };
 

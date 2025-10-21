@@ -33,7 +33,7 @@ import { AppManager } from "./components/bim-components";
 import { loadIfc } from "./components/Toolbars/Sections/Import";
 import { setBaseSpeed } from "./components/Toolbars/Sections/SpeedControls";
 // import { InfoPanelsManager } from "./components/InfoPanelsManager"; // DISABLED
-import ZoomOptions from "./components/UI/ZoomOptions";
+import ZoomOptions, { getMinZoomLimit } from "./components/UI/ZoomOptions";
 import NaviCube from "./components/UI/NaviCube";
 import { getCurrentProjection } from "./components/Toolbars/Sections/ProjectionControls";
 // import OrthographicFrustumManager from "./utils/OrthographicFrustumManager"; // DISABLED
@@ -829,11 +829,12 @@ export class WorldViewer extends HTMLElement {
           }
         } else if (event.deltaY > 0) {
           // Scroll down = Zoom out
-          const newZoom = Math.max(0.8, currentZoom * 0.8); // Minimum zoom limited to 0.8
+          const minZoom = getMinZoomLimit(); // Get dynamic minimum from zoom-to-fit
+          const newZoom = Math.max(minZoom, currentZoom * 0.8);
           orthoCam.zoom = newZoom;
           orthoCam.updateProjectionMatrix();
           if (isDebugMode) {
-              console.log('Orthographic: Zoomed OUT to', newZoom);
+              console.log('Orthographic: Zoomed OUT to', newZoom, '(min:', minZoom + ')');
           }
         }
         
