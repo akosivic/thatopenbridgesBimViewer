@@ -13,38 +13,38 @@ export default (world: OBC.World) => {
     const viewPositions = {
         front: { position: new THREE.Vector3(0, 0, 10), target: new THREE.Vector3(0, 0, 0) },
         back: { position: new THREE.Vector3(0, 0, -10), target: new THREE.Vector3(0, 0, 0) },
-        left: { position: new THREE.Vector3(-10, 0, 0), target: new THREE.Vector3(0, 0, 0) },
-        right: { position: new THREE.Vector3(10, 0, 0), target: new THREE.Vector3(0, 0, 0) },
+        left: { position: new THREE.Vector3(10, 0, 0), target: new THREE.Vector3(0, 0, 0) },  // Swapped: was -10 (inverted X-axis to match model)
+        right: { position: new THREE.Vector3(-10, 0, 0), target: new THREE.Vector3(0, 0, 0) }, // Swapped: was 10 (inverted X-axis to match model)
         top: { position: new THREE.Vector3(0, 10, 0), target: new THREE.Vector3(0, 0, 0) },
         bottom: { position: new THREE.Vector3(0, -10, 0), target: new THREE.Vector3(0, 0, 0) },
-        // Isometric corners
-        frontTopRight: { position: new THREE.Vector3(7, 7, 7), target: new THREE.Vector3(0, 0, 0) },
-        frontTopLeft: { position: new THREE.Vector3(-7, 7, 7), target: new THREE.Vector3(0, 0, 0) },
-        frontBottomRight: { position: new THREE.Vector3(7, -7, 7), target: new THREE.Vector3(0, 0, 0) },
-        frontBottomLeft: { position: new THREE.Vector3(-7, -7, 7), target: new THREE.Vector3(0, 0, 0) },
-        backTopRight: { position: new THREE.Vector3(7, 7, -7), target: new THREE.Vector3(0, 0, 0) },
-        backTopLeft: { position: new THREE.Vector3(-7, 7, -7), target: new THREE.Vector3(0, 0, 0) },
-        backBottomRight: { position: new THREE.Vector3(7, -7, -7), target: new THREE.Vector3(0, 0, 0) },
-        backBottomLeft: { position: new THREE.Vector3(-7, -7, -7), target: new THREE.Vector3(0, 0, 0) }
+        // Isometric corners (X coordinates swapped to match inverted axis)
+        frontTopRight: { position: new THREE.Vector3(-7, 7, 7), target: new THREE.Vector3(0, 0, 0) },  // Swapped: was 7
+        frontTopLeft: { position: new THREE.Vector3(7, 7, 7), target: new THREE.Vector3(0, 0, 0) },   // Swapped: was -7
+        frontBottomRight: { position: new THREE.Vector3(-7, -7, 7), target: new THREE.Vector3(0, 0, 0) }, // Swapped: was 7
+        frontBottomLeft: { position: new THREE.Vector3(7, -7, 7), target: new THREE.Vector3(0, 0, 0) },  // Swapped: was -7
+        backTopRight: { position: new THREE.Vector3(-7, 7, -7), target: new THREE.Vector3(0, 0, 0) },    // Swapped: was 7
+        backTopLeft: { position: new THREE.Vector3(7, 7, -7), target: new THREE.Vector3(0, 0, 0) },     // Swapped: was -7
+        backBottomRight: { position: new THREE.Vector3(-7, -7, -7), target: new THREE.Vector3(0, 0, 0) }, // Swapped: was 7
+        backBottomLeft: { position: new THREE.Vector3(7, -7, -7), target: new THREE.Vector3(0, 0, 0) }   // Swapped: was -7
     };
 
     // Predefined cube rotations to show each face prominently
     const cubeRotationsForViews = {
         front: { x: 0, y: 0 },
         back: { x: 0, y: 180 },
-        left: { x: 0, y: 90 },    // Rotate cube 90° clockwise to bring left face to front
-        right: { x: 0, y: -90 },  // Rotate cube 90° counter-clockwise to bring right face to front
+        left: { x: 0, y: -90 },   // Swapped: Rotate cube 90° counter-clockwise (inverted for correct orientation)
+        right: { x: 0, y: 90 },   // Swapped: Rotate cube 90° clockwise (inverted for correct orientation)
         top: { x: -90, y: 0 },
         bottom: { x: 90, y: 0 },
-        // Isometric corners - show the corner prominently
-        frontTopRight: { x: -30, y: 45 },
-        frontTopLeft: { x: -30, y: -45 },
-        frontBottomRight: { x: 30, y: 45 },
-        frontBottomLeft: { x: 30, y: -45 },
-        backTopRight: { x: -30, y: 135 },
-        backTopLeft: { x: -30, y: -135 },
-        backBottomRight: { x: 30, y: 135 },
-        backBottomLeft: { x: 30, y: -135 }
+        // Isometric corners - show the corner prominently (Y angles swapped for inverted X-axis)
+        frontTopRight: { x: -30, y: -45 },  // Swapped: was 45
+        frontTopLeft: { x: -30, y: 45 },    // Swapped: was -45
+        frontBottomRight: { x: 30, y: -45 }, // Swapped: was 45
+        frontBottomLeft: { x: 30, y: 45 },   // Swapped: was -45
+        backTopRight: { x: -30, y: -135 },   // Swapped: was 135
+        backTopLeft: { x: -30, y: 135 },     // Swapped: was -135
+        backBottomRight: { x: 30, y: -135 }, // Swapped: was 135
+        backBottomLeft: { x: 30, y: 135 }    // Swapped: was -135
     };
 
     // Function to set camera view with smooth transition
