@@ -829,7 +829,7 @@ export class WorldViewer extends HTMLElement {
           }
         } else if (event.deltaY > 0) {
           // Scroll down = Zoom out
-          const newZoom = Math.max(0.001, currentZoom * 0.8);
+          const newZoom = Math.max(0.8, currentZoom * 0.8); // Minimum zoom limited to 0.8
           orthoCam.zoom = newZoom;
           orthoCam.updateProjectionMatrix();
           if (isDebugMode) {

@@ -139,7 +139,7 @@ export default (world: OBC.World) => {
         if (world.camera instanceof OBC.OrthoPerspectiveCamera && world.camera.three.type === 'OrthographicCamera') {
             const orthoCam = world.camera.three as THREE.OrthographicCamera;
             const currentZoom = orthoCam.zoom || 1;
-            const newZoom = Math.max(0.001, currentZoom * 0.8); // Reduced from 0.1 to 0.001 for more zoom-out
+            const newZoom = Math.max(0.8, currentZoom * 0.8); // Minimum zoom limited to 0.8
             orthoCam.zoom = newZoom;
             orthoCam.updateProjectionMatrix();
             console.log('Zoomed out:', newZoom);
