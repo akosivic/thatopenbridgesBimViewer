@@ -213,9 +213,21 @@ export default (world: OBC.World) => {
         console.log(`${currentProjection} mode - New position:`, newPosition);
     };
 
-    // Rotation controls
-    const rotationStep = 0.1; // radians for FPS rotation
+    // Get the model center for consistent rotation target (same as NaviCube)
+    const getModelCenter = (): THREE.Vector3 => {
+        if (world.meshes.size > 0) {
+            const bbox = new THREE.Box3();
+            world.meshes.forEach(mesh => {
+                bbox.expandByObject(mesh);
+            });
+            if (!bbox.isEmpty()) {
+                return bbox.getCenter(new THREE.Vector3());
+            }
+        }
+        return new THREE.Vector3(0, 0, 0);
+    };
 
+    // Rotation controls - Mode-specific behavior
     const rotateCamera = (direction: 'left' | 'right' | 'up' | 'down') => {
         if (!fpControls) {
             console.log('FPS controls not initialized');
@@ -223,54 +235,133 @@ export default (world: OBC.World) => {
         }
 
         const camera3js = world.camera.three;
-        console.log(`=== FPS CAMERA ROTATION: ${direction.toUpperCase()} ===`);
-
-        const euler = new THREE.Euler().setFromQuaternion(camera3js.quaternion, 'YXZ');
         
-        // Get current projection mode to determine restrictions
+        // Get current projection mode to determine rotation style
         const currentProjection = getCurrentProjection();
-        const isPerspective = currentProjection === "Perspective";
+        const isOrthographic = currentProjection === "Orthographic";
 
-        switch (direction) {
-            case 'left':
-                euler.y -= rotationStep; // Rotate left (counter-clockwise around Y)
-                break;
-            case 'right':
-                euler.y += rotationStep; // Rotate right (clockwise around Y)
-                break;
-            case 'up':
-                if (isPerspective) {
-                    // Perspective mode: Apply clamps to prevent flip
-                    euler.x = Math.max(-Math.PI / 2 + 0.1, euler.x - rotationStep);
-                } else {
-                    // Orthographic mode: No restrictions, allow full rotation
-                    euler.x -= rotationStep;
-                }
-                break;
-            case 'down':
-                if (isPerspective) {
-                    // Perspective mode: Apply clamps to prevent flip
-                    euler.x = Math.min(Math.PI / 2 - 0.1, euler.x + rotationStep);
-                } else {
-                    // Orthographic mode: No restrictions, allow full rotation
-                    euler.x += rotationStep;
-                }
-                break;
+        if (isOrthographic) {
+            // ORTHOGRAPHIC MODE: Use orbit-style rotation (like NaviCube)
+            const target = getModelCenter();
+            console.log(`=== ORBIT CAMERA ROTATION (ORTHOGRAPHIC): ${direction.toUpperCase()} ===`);
+
+            /*
+             * ORBIT ROTATION SYSTEM (NaviCube-style):
+             * 
+             * Positions camera around model center to show different sides.
+             * Camera always looks at the model center after rotation.
+             */
+
+            // Calculate camera position relative to model center
+            const relativePosition = camera3js.position.clone().sub(target);
+            
+            // Convert to spherical coordinates
+            const spherical = new THREE.Spherical();
+            spherical.setFromVector3(relativePosition);
+            
+            // Apply rotation based on direction (like NaviCube)
+            const rotationStep = 0.2; // Larger steps for button controls
+            
+            switch (direction) {
+                case 'left':
+                    spherical.theta -= rotationStep; // Orbit left (model appears to rotate right)
+                    break;
+                case 'right':
+                    spherical.theta += rotationStep; // Orbit right (model appears to rotate left)
+                    break;
+                case 'up':
+                    // Constrain phi to prevent flipping and limit bottom view (like NaviCube)
+                    const bottomLimit = Math.PI * 0.25; // ~45° - limit bottom view
+                    spherical.phi = Math.max(bottomLimit, spherical.phi - rotationStep); // Orbit up
+                    break;
+                case 'down':
+                    // Constrain phi to prevent going too high
+                    const epsilon = 0.1;
+                    spherical.phi = Math.min(Math.PI - epsilon, spherical.phi + rotationStep); // Orbit down
+                    break;
+            }
+            
+            // Normalize theta to prevent accumulation errors
+            spherical.theta = spherical.theta % (2 * Math.PI);
+            
+            // Ensure radius stays consistent (maintain distance)
+            if (spherical.radius <= 0) {
+                spherical.radius = 10; // Fallback distance
+            }
+            
+            // Convert back to Cartesian coordinates relative to model center
+            const newPosition = new THREE.Vector3();
+            newPosition.setFromSpherical(spherical);
+            newPosition.add(target); // Add model center back to get world position
+            
+            // Update camera position
+            camera3js.position.copy(newPosition);
+            
+            // Check if camera state preservation is active (during projection switching)
+            const isCameraStateBeingPreserved = (window as any).isCameraStateBeingPreserved?.() || false;
+            
+            if (!isCameraStateBeingPreserved) {
+                // Always look at the model center (like NaviCube)
+                camera3js.lookAt(target);
+            } else {
+                console.log("🔒 Skipping lookAt during camera state preservation");
+            }
+
+            // Notify NaviCube of camera change
+            window.dispatchEvent(new CustomEvent('cameraChanged', {
+                detail: { source: 'camera-settings-orbit-rotation', rotation: camera3js.quaternion, position: camera3js.position }
+            }));
+
+            console.log('Orbit rotation:', {
+                direction,
+                theta: spherical.theta * 180 / Math.PI,
+                phi: spherical.phi * 180 / Math.PI,
+                position: camera3js.position,
+                target: target
+            });
+        } else {
+            // PERSPECTIVE MODE: Use FPS-style rotation (original behavior)
+            console.log(`=== FPS CAMERA ROTATION (PERSPECTIVE): ${direction.toUpperCase()} ===`);
+
+            /*
+             * FPS ROTATION SYSTEM:
+             * 
+             * Uses Euler angles for direct camera rotation.
+             * Rotation is applied relative to current camera orientation.
+             */
+
+            const euler = new THREE.Euler().setFromQuaternion(camera3js.quaternion, 'YXZ');
+            const rotationStep = 0.1; // radians for FPS rotation
+
+            switch (direction) {
+                case 'left':
+                    euler.y -= rotationStep; // Rotate left (counter-clockwise around Y)
+                    break;
+                case 'right':
+                    euler.y += rotationStep; // Rotate right (clockwise around Y)
+                    break;
+                case 'up':
+                    euler.x = Math.max(-Math.PI / 2 + 0.1, euler.x - rotationStep); // Look up (clamp to prevent flip)
+                    break;
+                case 'down':
+                    euler.x = Math.min(Math.PI / 2 - 0.1, euler.x + rotationStep); // Look down (clamp to prevent flip)
+                    break;
+            }
+
+            // Apply rotation to camera
+            camera3js.setRotationFromEuler(euler);
+
+            // Notify NaviCube of camera change
+            window.dispatchEvent(new CustomEvent('cameraChanged', {
+                detail: { source: 'camera-settings-fps-rotation', rotation: camera3js.quaternion, position: camera3js.position }
+            }));
+
+            console.log('FPS rotation (degrees):', {
+                x: euler.x * 180 / Math.PI,
+                y: euler.y * 180 / Math.PI,
+                z: euler.z * 180 / Math.PI
+            });
         }
-
-        // Apply rotation to camera
-        camera3js.setRotationFromEuler(euler);
-
-        // Notify NaviCube of camera change
-        window.dispatchEvent(new CustomEvent('cameraChanged', {
-            detail: { source: 'camera-settings-rotation', rotation: camera3js.quaternion, position: camera3js.position }
-        }));
-
-        console.log(`${currentProjection} mode - New rotation (degrees):`, {
-            x: euler.x * 180 / Math.PI,
-            y: euler.y * 180 / Math.PI,
-            z: euler.z * 180 / Math.PI
-        });
     };
 
 
