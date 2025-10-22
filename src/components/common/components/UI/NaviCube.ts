@@ -1,6 +1,28 @@
 import * as OBC from "@thatopen/components";
 import * as THREE from "three";
 
+/*
+ * NaviCube Component
+ * 
+ * VISUAL vs LOGICAL BEHAVIOR:
+ * 
+ * VISUAL NAVICUBE DRAGGING:
+ * - Drag NaviCube RIGHT → NaviCube visually rotates RIGHT (intuitive)
+ * - Drag NaviCube LEFT → NaviCube visually rotates LEFT (intuitive)
+ * 
+ * LOGICAL MODEL REPRESENTATION:
+ * - When NaviCube shows RIGHT face → Camera positioned to see LEFT side of model
+ * - When NaviCube shows LEFT face → Camera positioned to see RIGHT side of model
+ * 
+ * CONSISTENT WITH MODEL DRAGGING:
+ * - Drag model RIGHT → See LEFT side → NaviCube shows RIGHT face (represents viewing angle)
+ * - Drag NaviCube RIGHT → NaviCube shows RIGHT face → Camera sees LEFT side (same result)
+ * 
+ * COORDINATE SYSTEM:
+ * - Visual rotation: Normal (drag right = rotate right)
+ * - Camera positioning: Inverted theta for model-side representation
+ */
+
 export default (world: OBC.World) => {
     // Check if debug mode is enabled
     const isDebugMode = window.location.search.toLowerCase().includes('debug');
@@ -9,42 +31,56 @@ export default (world: OBC.World) => {
         console.log('NaviCube component being created...');
     }
 
+    // Get the model center for consistent reference (same as OrthographicMouseControls)
+    const getModelCenter = (): THREE.Vector3 => {
+        if (world.meshes.size > 0) {
+            const bbox = new THREE.Box3();
+            world.meshes.forEach(mesh => {
+                bbox.expandByObject(mesh);
+            });
+            if (!bbox.isEmpty()) {
+                return bbox.getCenter(new THREE.Vector3());
+            }
+        }
+        return new THREE.Vector3(0, 0, 0);
+    };
+
     // Predefined view positions for standard views
     const viewPositions = {
         front: { position: new THREE.Vector3(0, 0, 10), target: new THREE.Vector3(0, 0, 0) },
         back: { position: new THREE.Vector3(0, 0, -10), target: new THREE.Vector3(0, 0, 0) },
-        left: { position: new THREE.Vector3(10, 0, 0), target: new THREE.Vector3(0, 0, 0) },  // Swapped: was -10 (inverted X-axis to match model)
-        right: { position: new THREE.Vector3(-10, 0, 0), target: new THREE.Vector3(0, 0, 0) }, // Swapped: was 10 (inverted X-axis to match model)
+        left: { position: new THREE.Vector3(-10, 0, 0), target: new THREE.Vector3(0, 0, 0) }, // Fixed: Camera on left shows left side of model
+        right: { position: new THREE.Vector3(10, 0, 0), target: new THREE.Vector3(0, 0, 0) }, // Fixed: Camera on right shows right side of model
         top: { position: new THREE.Vector3(0, 10, 0), target: new THREE.Vector3(0, 0, 0) },
         bottom: { position: new THREE.Vector3(0, -10, 0), target: new THREE.Vector3(0, 0, 0) },
-        // Isometric corners (X coordinates swapped to match inverted axis)
-        frontTopRight: { position: new THREE.Vector3(-7, 7, 7), target: new THREE.Vector3(0, 0, 0) },  // Swapped: was 7
-        frontTopLeft: { position: new THREE.Vector3(7, 7, 7), target: new THREE.Vector3(0, 0, 0) },   // Swapped: was -7
-        frontBottomRight: { position: new THREE.Vector3(-7, -7, 7), target: new THREE.Vector3(0, 0, 0) }, // Swapped: was 7
-        frontBottomLeft: { position: new THREE.Vector3(7, -7, 7), target: new THREE.Vector3(0, 0, 0) },  // Swapped: was -7
-        backTopRight: { position: new THREE.Vector3(-7, 7, -7), target: new THREE.Vector3(0, 0, 0) },    // Swapped: was 7
-        backTopLeft: { position: new THREE.Vector3(7, 7, -7), target: new THREE.Vector3(0, 0, 0) },     // Swapped: was -7
-        backBottomRight: { position: new THREE.Vector3(-7, -7, -7), target: new THREE.Vector3(0, 0, 0) }, // Swapped: was 7
-        backBottomLeft: { position: new THREE.Vector3(7, -7, -7), target: new THREE.Vector3(0, 0, 0) }   // Swapped: was -7
+        // Isometric corners - fixed for correct model side representation
+        frontTopRight: { position: new THREE.Vector3(7, 7, 7), target: new THREE.Vector3(0, 0, 0) },   // Fixed: See front-top-right
+        frontTopLeft: { position: new THREE.Vector3(-7, 7, 7), target: new THREE.Vector3(0, 0, 0) },   // Fixed: See front-top-left
+        frontBottomRight: { position: new THREE.Vector3(7, -7, 7), target: new THREE.Vector3(0, 0, 0) }, // Fixed: See front-bottom-right
+        frontBottomLeft: { position: new THREE.Vector3(-7, -7, 7), target: new THREE.Vector3(0, 0, 0) }, // Fixed: See front-bottom-left
+        backTopRight: { position: new THREE.Vector3(7, 7, -7), target: new THREE.Vector3(0, 0, 0) },    // Fixed: See back-top-right
+        backTopLeft: { position: new THREE.Vector3(-7, 7, -7), target: new THREE.Vector3(0, 0, 0) },    // Fixed: See back-top-left
+        backBottomRight: { position: new THREE.Vector3(7, -7, -7), target: new THREE.Vector3(0, 0, 0) }, // Fixed: See back-bottom-right
+        backBottomLeft: { position: new THREE.Vector3(-7, -7, -7), target: new THREE.Vector3(0, 0, 0) }  // Fixed: See back-bottom-left
     };
 
     // Predefined cube rotations to show each face prominently
     const cubeRotationsForViews = {
         front: { x: 0, y: 0 },
         back: { x: 0, y: 180 },
-        left: { x: 0, y: -90 },   // Swapped: Rotate cube 90° counter-clockwise (inverted for correct orientation)
-        right: { x: 0, y: 90 },   // Swapped: Rotate cube 90° clockwise (inverted for correct orientation)
+        left: { x: 0, y: 90 },    // Fixed: Show left face when camera is on left side (model shows left)
+        right: { x: 0, y: -90 },  // Fixed: Show right face when camera is on right side (model shows right)
         top: { x: -90, y: 0 },
         bottom: { x: 90, y: 0 },
-        // Isometric corners - show the corner prominently (Y angles swapped for inverted X-axis)
-        frontTopRight: { x: -30, y: -45 },  // Swapped: was 45
-        frontTopLeft: { x: -30, y: 45 },    // Swapped: was -45
-        frontBottomRight: { x: 30, y: -45 }, // Swapped: was 45
-        frontBottomLeft: { x: 30, y: 45 },   // Swapped: was -45
-        backTopRight: { x: -30, y: -135 },   // Swapped: was 135
-        backTopLeft: { x: -30, y: 135 },     // Swapped: was -135
-        backBottomRight: { x: 30, y: -135 }, // Swapped: was 135
-        backBottomLeft: { x: 30, y: 135 }    // Swapped: was -135
+        // Isometric corners - adjusted for correct model side representation
+        frontTopRight: { x: -30, y: 45 },   // Fixed: Show front-top-right corner
+        frontTopLeft: { x: -30, y: -45 },   // Fixed: Show front-top-left corner
+        frontBottomRight: { x: 30, y: 45 },  // Fixed: Show front-bottom-right corner
+        frontBottomLeft: { x: 30, y: -45 },  // Fixed: Show front-bottom-left corner
+        backTopRight: { x: -30, y: 135 },    // Fixed: Show back-top-right corner
+        backTopLeft: { x: -30, y: -135 },    // Fixed: Show back-top-left corner
+        backBottomRight: { x: 30, y: 135 },  // Fixed: Show back-bottom-right corner
+        backBottomLeft: { x: 30, y: -135 }   // Fixed: Show back-bottom-left corner
     };
 
     // Function to set camera view with smooth transition
@@ -234,20 +270,21 @@ export default (world: OBC.World) => {
         if (!world.camera.three || isUpdatingFromCamera) return;
 
         const camera3js = world.camera.three;
-        const target = new THREE.Vector3(0, 0, 0); // Look at origin
+        const target = getModelCenter(); // Use model center
         
         // Calculate current distance to maintain zoom
         const currentDistance = camera3js.position.distanceTo(target);
         
-        // Convert cube rotation to camera position
+        // Convert cube rotation to camera position with inversion for model-side logic
         const spherical = new THREE.Spherical();
         spherical.radius = currentDistance;
-        spherical.phi = THREE.MathUtils.degToRad(90 + cubeRotationX); // Convert to spherical coordinates
-        spherical.theta = THREE.MathUtils.degToRad(cubeRotationY);
+        spherical.phi = THREE.MathUtils.degToRad(90 + cubeRotationX);
+        spherical.theta = THREE.MathUtils.degToRad(-cubeRotationY); // INVERT: NaviCube right face = camera on left side
         
         // Calculate new position
         const newPosition = new THREE.Vector3();
         newPosition.setFromSpherical(spherical);
+        newPosition.add(target); // Add model center offset
         
         // Directly update camera position for smooth real-time dragging
         camera3js.position.copy(newPosition);
@@ -271,17 +308,7 @@ export default (world: OBC.World) => {
         if (!world.camera.three || isUpdatingFromCamera) return;
 
         const camera3js = world.camera.three;
-        const target = new THREE.Vector3(0, 0, 0); // Look at origin
-        
-        // Get camera's world direction and up vectors
-        const cameraDirection = new THREE.Vector3();
-        const cameraUp = new THREE.Vector3();
-        const cameraRight = new THREE.Vector3();
-        
-        // Extract camera orientation from its matrix
-        camera3js.getWorldDirection(cameraDirection);
-        cameraUp.setFromMatrixColumn(camera3js.matrixWorld, 1).normalize();
-        cameraRight.setFromMatrixColumn(camera3js.matrixWorld, 0).normalize();
+        const target = getModelCenter(); // Use model center
         
         // Calculate camera position relative to target
         const relativePosition = camera3js.position.clone().sub(target);
@@ -292,18 +319,23 @@ export default (world: OBC.World) => {
         
         // Calculate cube rotation based on spherical coordinates
         let newCubeRotationX = THREE.MathUtils.radToDeg(spherical.phi) - 90;
-        let newCubeRotationY = THREE.MathUtils.radToDeg(spherical.theta);
+        let newCubeRotationY = -THREE.MathUtils.radToDeg(spherical.theta); // INVERTED: Camera on left = NaviCube shows right
         
-        // Account for camera's orientation (not just position)
-        const euler = new THREE.Euler().setFromQuaternion(camera3js.quaternion, 'YXZ');
-        
-        // Adjust rotations based on camera's actual orientation
-        newCubeRotationY += THREE.MathUtils.radToDeg(euler.y);
-        newCubeRotationX += THREE.MathUtils.radToDeg(euler.x) * 0.5; // Reduce influence of pitch
+        // Remove double quaternion application - spherical coordinates are sufficient
         
         // Normalize angles
         newCubeRotationY = ((newCubeRotationY % 360) + 360) % 360;
         if (newCubeRotationY > 180) newCubeRotationY -= 360;
+        
+        if (isDebugMode) {
+            console.log('NaviCube: Using model center:', target);
+            console.log('Camera position relative to model center:', relativePosition);
+            console.log('Spherical coordinates:', {
+                theta: spherical.theta * 180 / Math.PI,
+                phi: spherical.phi * 180 / Math.PI,
+                radius: spherical.radius
+            });
+        }
         
         // Enhanced threshold for smoother updates but avoiding jitter
         const threshold = 0.2; // More sensitive threshold
@@ -338,7 +370,10 @@ export default (world: OBC.World) => {
                     deltaX: deltaX.toFixed(1),
                     deltaY: deltaY.toFixed(1),
                     cameraPos: camera3js.position,
-                    cameraRot: euler
+                    spherical: {
+                        theta: spherical.theta * 180 / Math.PI,
+                        phi: spherical.phi * 180 / Math.PI
+                    }
                 });
             }
         }
@@ -411,8 +446,8 @@ export default (world: OBC.World) => {
         // Rotation sensitivity - make it more responsive
         const sensitivity = 1.0; // Increased sensitivity
         
-        // Update cube rotation
-        cubeRotationY += deltaX * sensitivity;
+        // Visual NaviCube rotation: Drag right = rotate right (intuitive)
+        cubeRotationY += deltaX * sensitivity; // NORMAL: Drag right rotates cube right
         cubeRotationX -= deltaY * sensitivity; // Negative for intuitive up/down
         
         // Clamp X rotation to prevent flipping
@@ -529,7 +564,8 @@ export default (world: OBC.World) => {
 
         const sensitivity = 1.0; // Increased sensitivity
         
-        cubeRotationY += deltaX * sensitivity;
+        // Visual NaviCube rotation: Drag right = rotate right (same as mouse)
+        cubeRotationY += deltaX * sensitivity; // NORMAL: Drag right rotates cube right
         cubeRotationX -= deltaY * sensitivity;
         
         cubeRotationX = Math.max(-89, Math.min(89, cubeRotationX));
