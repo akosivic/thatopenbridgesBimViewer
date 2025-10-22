@@ -52,7 +52,7 @@ export default (world: OBC.World) => {
         left: { position: new THREE.Vector3(-10, 0, 0), target: new THREE.Vector3(0, 0, 0) }, // Fixed: Camera on left shows left side of model
         right: { position: new THREE.Vector3(10, 0, 0), target: new THREE.Vector3(0, 0, 0) }, // Fixed: Camera on right shows right side of model
         top: { position: new THREE.Vector3(0, 10, 0), target: new THREE.Vector3(0, 0, 0) },
-        bottom: { position: new THREE.Vector3(0, -10, 0), target: new THREE.Vector3(0, 0, 0) },
+        bottom: { position: new THREE.Vector3(0, -7, 7), target: new THREE.Vector3(0, 0, 0) }, // Modified: Angled view instead of straight down
         // Isometric corners - fixed for correct model side representation
         frontTopRight: { position: new THREE.Vector3(7, 7, 7), target: new THREE.Vector3(0, 0, 0) },   // Fixed: See front-top-right
         frontTopLeft: { position: new THREE.Vector3(-7, 7, 7), target: new THREE.Vector3(0, 0, 0) },   // Fixed: See front-top-left
@@ -71,7 +71,7 @@ export default (world: OBC.World) => {
         left: { x: 0, y: 90 },    // Fixed: Show left face when camera is on left side (model shows left)
         right: { x: 0, y: -90 },  // Fixed: Show right face when camera is on right side (model shows right)
         top: { x: -90, y: 0 },
-        bottom: { x: 90, y: 0 },
+        bottom: { x: 45, y: 0 }, // Modified: 45° angle instead of 90° straight down
         // Isometric corners - adjusted for correct model side representation
         frontTopRight: { x: -30, y: 45 },   // Fixed: Show front-top-right corner
         frontTopLeft: { x: -30, y: -45 },   // Fixed: Show front-top-left corner
@@ -348,8 +348,8 @@ export default (world: OBC.World) => {
             cubeRotationX = THREE.MathUtils.lerp(cubeRotationX, newCubeRotationX, lerpFactor);
             cubeRotationY = THREE.MathUtils.lerp(cubeRotationY, newCubeRotationY, lerpFactor);
             
-            // Clamp X rotation to prevent flipping with more generous range
-            cubeRotationX = Math.max(-85, Math.min(85, cubeRotationX));
+            // Clamp X rotation to prevent flipping and limit bottom view to glimpse only
+            cubeRotationX = Math.max(-85, Math.min(45, cubeRotationX)); // Limited bottom view to 45°
             
             // Update the visual cube rotation with smooth transitions
             const cube = element.querySelector('.cube') as HTMLElement;
@@ -450,8 +450,8 @@ export default (world: OBC.World) => {
         cubeRotationY += deltaX * sensitivity; // NORMAL: Drag right rotates cube right
         cubeRotationX -= deltaY * sensitivity; // Negative for intuitive up/down
         
-        // Clamp X rotation to prevent flipping
-        cubeRotationX = Math.max(-89, Math.min(89, cubeRotationX)); // Slightly less restrictive
+        // Clamp X rotation to prevent flipping and limit bottom view to glimpse only
+        cubeRotationX = Math.max(-89, Math.min(45, cubeRotationX)); // Limited bottom view to 45°
         
         // Update cube visual rotation
         const cube = element.querySelector('.cube') as HTMLElement;
@@ -568,7 +568,7 @@ export default (world: OBC.World) => {
         cubeRotationY += deltaX * sensitivity; // NORMAL: Drag right rotates cube right
         cubeRotationX -= deltaY * sensitivity;
         
-        cubeRotationX = Math.max(-89, Math.min(89, cubeRotationX));
+        cubeRotationX = Math.max(-89, Math.min(45, cubeRotationX)); // Limited bottom view to 45°
         
         const cube = element.querySelector('.cube') as HTMLElement;
         if (cube) {

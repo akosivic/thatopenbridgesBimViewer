@@ -280,10 +280,11 @@ export class OrthographicMouseControls {
         spherical.theta -= deltaX * adjustedRotationSpeed; // MINUS: drag right = model rotates left
         spherical.phi += deltaY * adjustedRotationSpeed;   // PLUS: drag down = model rotates up
         
-        // CRITICAL FIX: Constrain phi to prevent gimbal lock and flipping
-        // Allow near-full rotation but avoid mathematical singularities
+        // CRITICAL FIX: Constrain phi to prevent gimbal lock and limit bottom view
+        // Allow near-full rotation but avoid mathematical singularities and limit bottom view to glimpse
         const epsilon = 0.1; // Small margin to prevent singularities
-        spherical.phi = Math.max(epsilon, Math.min(Math.PI - epsilon, spherical.phi));
+        const bottomLimit = Math.PI * 0.25; // ~45° - limit bottom view to glimpse only
+        spherical.phi = Math.max(bottomLimit, Math.min(Math.PI - epsilon, spherical.phi));
         
         // Normalize theta to prevent accumulation errors
         spherical.theta = spherical.theta % (2 * Math.PI);
