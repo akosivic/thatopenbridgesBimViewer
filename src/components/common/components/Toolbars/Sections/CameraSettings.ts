@@ -160,6 +160,21 @@ export default (world: OBC.World) => {
             return; // Exit early for orthographic up/down
         }
 
+        // For forward/backward movement in orthographic mode, use zoom behavior
+        if (isOrthographic && (direction === 'forward' || direction === 'backward')) {
+            // Forward = zoom in, Backward = zoom out (like the zoom buttons)
+            
+            if (direction === 'forward') {
+                zoomOrthographicCamera(1); // Zoom in
+                console.log('Orthographic FORWARD button - Zoom IN (like zoom in button)');
+            } else {
+                zoomOrthographicCamera(-1); // Zoom out
+                console.log('Orthographic BACKWARD button - Zoom OUT (like zoom out button)');
+            }
+            
+            return; // Exit early for orthographic forward/backward
+        }
+
         // For all other movements, use the existing logic
         const forward = new THREE.Vector3();
         const right = new THREE.Vector3();
@@ -244,6 +259,7 @@ export default (world: OBC.World) => {
             // ORTHOGRAPHIC MODE: Use orbit-style rotation (like NaviCube)
             const target = getModelCenter();
             console.log(`=== ORBIT CAMERA ROTATION (ORTHOGRAPHIC): ${direction.toUpperCase()} ===`);
+            console.log(`Using speed multiplier: ${currentMultiplier} (base step: 0.2, adjusted step: ${0.2 * currentMultiplier})`);
 
             /*
              * ORBIT ROTATION SYSTEM (NaviCube-style):
@@ -260,7 +276,9 @@ export default (world: OBC.World) => {
             spherical.setFromVector3(relativePosition);
             
             // Apply rotation based on direction (like NaviCube)
-            const rotationStep = 0.2; // Larger steps for button controls
+            // Apply speed multiplier to rotation step
+            const baseRotationStep = 0.2; // Base rotation step for button controls  
+            const rotationStep = baseRotationStep * currentMultiplier;
             
             switch (direction) {
                 case 'left':
@@ -317,11 +335,14 @@ export default (world: OBC.World) => {
                 theta: spherical.theta * 180 / Math.PI,
                 phi: spherical.phi * 180 / Math.PI,
                 position: camera3js.position,
-                target: target
+                target: target,
+                speedMultiplier: currentMultiplier,
+                rotationStep: rotationStep
             });
         } else {
             // PERSPECTIVE MODE: Use FPS-style rotation (original behavior)
             console.log(`=== FPS CAMERA ROTATION (PERSPECTIVE): ${direction.toUpperCase()} ===`);
+            console.log(`Using speed multiplier: ${currentMultiplier} (base step: 0.1, adjusted step: ${0.1 * currentMultiplier})`);
 
             /*
              * FPS ROTATION SYSTEM:
@@ -331,7 +352,9 @@ export default (world: OBC.World) => {
              */
 
             const euler = new THREE.Euler().setFromQuaternion(camera3js.quaternion, 'YXZ');
-            const rotationStep = 0.1; // radians for FPS rotation
+            // Apply speed multiplier to rotation step  
+            const baseRotationStep = 0.1; // Base radians for FPS rotation
+            const rotationStep = baseRotationStep * currentMultiplier;
 
             switch (direction) {
                 case 'left':
@@ -359,7 +382,9 @@ export default (world: OBC.World) => {
             console.log('FPS rotation (degrees):', {
                 x: euler.x * 180 / Math.PI,
                 y: euler.y * 180 / Math.PI,
-                z: euler.z * 180 / Math.PI
+                z: euler.z * 180 / Math.PI,
+                speedMultiplier: currentMultiplier,
+                rotationStep: rotationStep
             });
         }
     };

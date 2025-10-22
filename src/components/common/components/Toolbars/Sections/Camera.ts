@@ -20,6 +20,13 @@ export const setMovementSpeedMultiplier = (multiplier: number) => {
 
 export const getMovementSpeedMultiplier = () => speedMultiplier;
 
+// Listen for speed change events to update rotation speed
+window.addEventListener('moveSpeedChange', (event: any) => {
+  const { multiplier } = event.detail;
+  speedMultiplier = multiplier;
+  console.log(`Camera rotation speed multiplier updated to: ${multiplier}`);
+});
+
 export default (world: OBC.World) => {
   const { camera } = world;
 
@@ -53,6 +60,35 @@ export default (world: OBC.World) => {
 
     console.log(`=== FPS CAMERA MOVEMENT: ${direction.toUpperCase()} ===`);
     console.log('Current position:', currentPos);
+
+    // Get current projection mode to determine movement behavior
+    const currentProjection = getCurrentProjection();
+    const isOrthographic = currentProjection === "Orthographic";
+
+    // In orthographic mode: forward/backward should be zoom in/zoom out
+    if (isOrthographic && (direction === 'forward' || direction === 'backward')) {
+      if (!camera.controls?.camera) {
+        console.log('Camera controls not available for zoom');
+        return;
+      }
+
+      const currentZoom = camera.controls.camera.zoom;
+      // Apply speed multiplier to zoom step
+      const baseZoomStep = 0.1;
+      const zoomStep = baseZoomStep * speedMultiplier;
+      
+      const newZoom = direction === 'forward' ?
+        currentZoom + zoomStep :
+        Math.max(0.001, currentZoom - zoomStep);
+
+      camera.controls.camera.zoom = newZoom;
+      camera.controls.camera.updateProjectionMatrix();
+
+      console.log(`=== ORTHOGRAPHIC ZOOM: ${direction.toUpperCase()} ===`);
+      console.log(`Using speed multiplier: ${speedMultiplier} (base step: ${baseZoomStep}, adjusted step: ${zoomStep})`);
+      console.log('Zoom changed from', currentZoom, 'to', newZoom);
+      return;
+    }
 
     /*
      * FPS MOVEMENT SYSTEM:
@@ -152,6 +188,7 @@ export default (world: OBC.World) => {
       // ORTHOGRAPHIC MODE: Use orbit-style rotation (like NaviCube)
       const target = getModelCenter();
       console.log(`=== ORBIT CAMERA ROTATION (ORTHOGRAPHIC): ${direction.toUpperCase()} ===`);
+      console.log(`Using speed multiplier: ${speedMultiplier} (base step: 0.2, adjusted step: ${0.2 * speedMultiplier})`);
 
       /*
        * ORBIT ROTATION SYSTEM (NaviCube-style):
@@ -168,7 +205,9 @@ export default (world: OBC.World) => {
       spherical.setFromVector3(relativePosition);
       
       // Apply rotation based on direction (like NaviCube)
-      const rotationStep = 0.2; // Larger steps for button controls
+      // Apply speed multiplier to rotation step
+      const baseRotationStep = 0.2; // Base rotation step for button controls
+      const rotationStep = baseRotationStep * speedMultiplier;
       
       switch (direction) {
         case 'left':
@@ -225,11 +264,14 @@ export default (world: OBC.World) => {
         theta: spherical.theta * 180 / Math.PI,
         phi: spherical.phi * 180 / Math.PI,
         position: camera3js.position,
-        target: target
+        target: target,
+        speedMultiplier: speedMultiplier,
+        rotationStep: rotationStep
       });
     } else {
       // PERSPECTIVE MODE: Use FPS-style rotation (original behavior)
       console.log(`=== FPS CAMERA ROTATION (PERSPECTIVE): ${direction.toUpperCase()} ===`);
+      console.log(`Using speed multiplier: ${speedMultiplier} (base step: 0.1, adjusted step: ${0.1 * speedMultiplier})`);
 
       /*
        * FPS ROTATION SYSTEM:
@@ -243,7 +285,9 @@ export default (world: OBC.World) => {
        */
 
       const euler = new THREE.Euler().setFromQuaternion(camera3js.quaternion, 'YXZ');
-      const rotationStep = 0.1; // radians for FPS rotation
+      // Apply speed multiplier to rotation step
+      const baseRotationStep = 0.1; // Base radians for FPS rotation
+      const rotationStep = baseRotationStep * speedMultiplier;
 
       switch (direction) {
         case 'left':
@@ -271,7 +315,9 @@ export default (world: OBC.World) => {
       console.log('FPS rotation (degrees):', {
         x: euler.x * 180 / Math.PI,
         y: euler.y * 180 / Math.PI,
-        z: euler.z * 180 / Math.PI
+        z: euler.z * 180 / Math.PI,
+        speedMultiplier: speedMultiplier,
+        rotationStep: rotationStep
       });
     }
     
