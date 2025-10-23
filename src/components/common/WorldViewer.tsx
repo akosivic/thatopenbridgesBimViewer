@@ -974,20 +974,141 @@ export class WorldViewer extends HTMLElement {
     highlighter.config = {
       selectName: "select",
       /** Toggles the select functionality. */
-      selectEnabled: isDebugMode,
+      selectEnabled: true, // Always enable selection for light highlighting
       /** Name of the hover event. */
       hoverName: "hover",
       /** Toggles the hover functionality. */
       hoverEnabled: isDebugMode,
       /** Color used for selection. */
-      selectionColor: new THREE.Color(1, 1, 0),
+      selectionColor: new THREE.Color(1, 1, 0), // Base yellow color
       /** Color used for hover. */
       hoverColor: new THREE.Color(1, 1, 1),
       /** Whether to automatically highlight fragments on click. */
-      autoHighlightOnClick: isDebugMode,
+      autoHighlightOnClick: isDebugMode, // Keep this debug-only
       /** The world in which the highlighter operates. */
       world: world
     };
+
+    // Store reference to highlighted materials for flashlight effect
+    const flashlightMaterials = new Map<THREE.Object3D, THREE.Material | THREE.Material[]>();
+    let flashlightAnimationId: number | null = null;
+
+    // Create flashlight effect for selected lights
+    const createFlashlightEffect = () => {
+      let time = 0;
+      const flashSpeed = 0.05; // Speed of the flash animation
+
+      const animateFlash = () => {
+        time += flashSpeed;
+        
+        // Create a pulsing effect using sine wave (0.3 to 1.0 intensity)
+        const intensity = 0.3 + 0.7 * Math.abs(Math.sin(time));
+        
+        // Apply the pulsing effect to all highlighted materials
+        flashlightMaterials.forEach((_, mesh) => {
+          if (mesh && 'material' in mesh) {
+            const meshObj = mesh as THREE.Mesh;
+            if (meshObj.material) {
+              if (Array.isArray(meshObj.material)) {
+                meshObj.material.forEach((mat: THREE.Material) => {
+                  if (mat && 'emissive' in mat) {
+                    const emissiveMaterial = mat as THREE.MeshStandardMaterial;
+                    emissiveMaterial.emissive.setRGB(intensity * 0.8, intensity * 0.8, 0);
+                    emissiveMaterial.emissiveIntensity = intensity * 0.5;
+                    emissiveMaterial.needsUpdate = true;
+                  }
+                });
+              } else {
+                const mat = meshObj.material as THREE.Material;
+                if (mat && 'emissive' in mat) {
+                  const emissiveMaterial = mat as THREE.MeshStandardMaterial;
+                  emissiveMaterial.emissive.setRGB(intensity * 0.8, intensity * 0.8, 0);
+                  emissiveMaterial.emissiveIntensity = intensity * 0.5;
+                  emissiveMaterial.needsUpdate = true;
+                }
+              }
+            }
+          }
+        });
+        
+        flashlightAnimationId = requestAnimationFrame(animateFlash);
+      };
+      
+      animateFlash();
+    };
+
+    // Hook into highlighter events instead of overriding methods
+    highlighter.events.select.onHighlight.add((fragmentIdMap) => {
+      console.log('🔦 Flashlight effect: Selection detected', fragmentIdMap);
+      
+      // Clear previous flashlight materials
+      flashlightMaterials.clear();
+      
+      // Stop any existing animation
+      if (flashlightAnimationId) {
+        cancelAnimationFrame(flashlightAnimationId);
+        flashlightAnimationId = null;
+      }
+      
+      // Find and collect highlighted meshes
+      const fragmentsManager = components.get(FragmentsManager);
+      for (const fragmentId in fragmentIdMap) {
+        const fragment = fragmentsManager.list.get(fragmentId);
+        if (fragment && fragment.mesh) {
+          const mesh = fragment.mesh;
+          console.log('🔦 Adding mesh to flashlight effect', mesh);
+          
+          // Store original material for restoration
+          flashlightMaterials.set(mesh, mesh.material);
+        }
+      }
+      
+      // Start flashlight animation if we have meshes to animate
+      if (flashlightMaterials.size > 0) {
+        console.log('🔦 Starting flashlight animation for', flashlightMaterials.size, 'meshes');
+        createFlashlightEffect();
+      }
+    });
+
+    // Hook into clear event
+    highlighter.events.select.onClear.add(() => {
+      console.log('🔦 Flashlight effect: Selection cleared');
+      
+      // Stop flashlight animation
+      if (flashlightAnimationId) {
+        cancelAnimationFrame(flashlightAnimationId);
+        flashlightAnimationId = null;
+      }
+      
+      // Reset materials to remove emissive effect
+      flashlightMaterials.forEach((_, mesh) => {
+        if (mesh && 'material' in mesh) {
+          const meshObj = mesh as THREE.Mesh;
+          if (meshObj.material) {
+            if (Array.isArray(meshObj.material)) {
+              meshObj.material.forEach((mat: THREE.Material) => {
+                if (mat && 'emissive' in mat) {
+                  const emissiveMaterial = mat as THREE.MeshStandardMaterial;
+                  emissiveMaterial.emissive.setRGB(0, 0, 0);
+                  emissiveMaterial.emissiveIntensity = 0;
+                  emissiveMaterial.needsUpdate = true;
+                }
+              });
+            } else {
+              const mat = meshObj.material as THREE.Material;
+              if (mat && 'emissive' in mat) {
+                const emissiveMaterial = mat as THREE.MeshStandardMaterial;
+                emissiveMaterial.emissive.setRGB(0, 0, 0);
+                emissiveMaterial.emissiveIntensity = 0;
+                emissiveMaterial.needsUpdate = true;
+              }
+            }
+          }
+        }
+      });
+      
+      flashlightMaterials.clear();
+    });
     const culler = components.get(Cullers).create(world);
     culler.threshold = 5;
 
