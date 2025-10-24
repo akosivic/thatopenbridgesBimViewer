@@ -2,8 +2,8 @@ import * as BUI from "@thatopen/ui";
 import * as OBC from "@thatopen/components";
 import * as CUI from "@thatopen/ui-obc";
 import groupings from "./Sections/Groupings";
-import { Highlighter } from "@thatopen/components-front";
 import { FragmentsGroup } from "@thatopen/fragments";
+import * as THREE from "three";
 import i18n from "../../utils/i18n";
 
 interface DataPointState {
@@ -18,7 +18,7 @@ interface DataPointKeysResponse {
 
 let model: FragmentsGroup | undefined;
 
-export default async (components: OBC.Components, isDebug: boolean, highlighter: Highlighter) => {
+export default async (components: OBC.Components, isDebug: boolean) => {
 
 
   const [modelsList] = CUI.tables.modelsList({ components });
@@ -43,6 +43,260 @@ export default async (components: OBC.Components, isDebug: boolean, highlighter:
     keys: [],
     buttonStates: {},
     buttons: []
+  };
+
+  // State tracking for yellow-highlighted fragments with group association
+  const yellowHighlightedFragments = new Map<string, Set<number>>();
+  const fragmentToGroupMap = new Map<string, string>(); // Track which fragment belongs to which group
+
+  // Helper function to apply yellow emissive color to fragments
+  const applyYellowColorToFragments = (fragmentIdMap: any, components: OBC.Components, groupKey?: string) => {
+    const fragmentsManager = components.get(OBC.FragmentsManager);
+    
+    for (const fragmentId in fragmentIdMap) {
+      const fragment = fragmentsManager.list.get(fragmentId);
+      if (fragment && fragment.mesh) {
+        const mesh = fragment.mesh;
+        const expressIDs = fragmentIdMap[fragmentId];
+        
+        // Track this fragment as highlighted
+        if (!yellowHighlightedFragments.has(fragmentId)) {
+          yellowHighlightedFragments.set(fragmentId, new Set());
+        }
+        expressIDs.forEach((id: number) => yellowHighlightedFragments.get(fragmentId)!.add(id));
+        
+        // Track which group this fragment belongs to (if provided)
+        if (groupKey) {
+          fragmentToGroupMap.set(fragmentId, groupKey);
+        }
+        
+        // Instead of modifying materials globally, let's use the fragment's built-in highlighting
+        // by temporarily storing original colors and applying yellow to specific items
+        console.log(`🟡 Applying yellow highlight to fragment ${fragmentId} with expressIDs:`, expressIDs);
+        
+        // For each expressID, find the corresponding geometry and apply yellow material
+        expressIDs.forEach((expressID: number) => {
+          // Use fragment's setColor method if available, or fall back to material modification
+          if (fragment.setColor && typeof fragment.setColor === 'function') {
+            try {
+              // Set yellow color (RGB: 255, 255, 0)
+              fragment.setColor(new THREE.Color(1, 1, 0), [expressID]);
+              console.log(`🎨 Set yellow color for expressID ${expressID} using fragment.setColor`);
+            } catch (error) {
+              console.warn(`⚠️ Failed to use fragment.setColor for expressID ${expressID}:`, error);
+              // Fallback to material modification
+              applyYellowToMaterial(mesh);
+            }
+          } else {
+            // Fallback: apply emissive to the whole mesh (less precise but works)
+            console.log(`🔧 Using fallback material modification for fragment ${fragmentId}`);
+            applyYellowToMaterial(mesh);
+          }
+        });
+      }
+    }
+  };
+
+  // Helper function to apply yellow emissive to mesh material (fallback method)
+  const applyYellowToMaterial = (mesh: THREE.Mesh) => {
+    if (mesh.material) {
+      if (Array.isArray(mesh.material)) {
+        mesh.material.forEach((mat: THREE.Material) => {
+          if (mat && 'emissive' in mat) {
+            const emissiveMaterial = mat as THREE.MeshStandardMaterial;
+            // Store original emissive values if not already stored
+            if (!mat.userData.originalEmissive) {
+              mat.userData.originalEmissive = emissiveMaterial.emissive.clone();
+              mat.userData.originalEmissiveIntensity = emissiveMaterial.emissiveIntensity;
+            }
+            // Set yellow emissive color
+            emissiveMaterial.emissive.setRGB(1, 1, 0); // Pure yellow
+            emissiveMaterial.emissiveIntensity = 0.3; // Lower intensity to be less overwhelming
+            emissiveMaterial.needsUpdate = true;
+          }
+        });
+      } else {
+        const mat = mesh.material as THREE.Material;
+        if (mat && 'emissive' in mat) {
+          const emissiveMaterial = mat as THREE.MeshStandardMaterial;
+          // Store original emissive values if not already stored
+          if (!mat.userData.originalEmissive) {
+            mat.userData.originalEmissive = emissiveMaterial.emissive.clone();
+            mat.userData.originalEmissiveIntensity = emissiveMaterial.emissiveIntensity;
+          }
+          // Set yellow emissive color
+          emissiveMaterial.emissive.setRGB(1, 1, 0); // Pure yellow
+          emissiveMaterial.emissiveIntensity = 0.3; // Lower intensity
+          emissiveMaterial.needsUpdate = true;
+        }
+      }
+    }
+  };
+
+  // Helper function to restore original colors (clear yellow highlighting)
+  // Can clear all highlights or just specific fragments/groups
+  const clearYellowHighlighting = (components: OBC.Components, specificFragmentIds?: string[], groupKey?: string) => {
+    const fragmentsManager = components.get(OBC.FragmentsManager);
+    
+    // Determine which fragments to clear
+    let fragmentsToClear: string[] = [];
+    
+    if (specificFragmentIds) {
+      // Clear only specific fragment IDs
+      fragmentsToClear = specificFragmentIds;
+      console.log(`🔄 Clearing yellow highlighting for specific fragments:`, specificFragmentIds);
+    } else if (groupKey) {
+      // Clear all fragments belonging to a specific group
+      fragmentsToClear = Array.from(fragmentToGroupMap.entries())
+        .filter(([, group]) => group === groupKey)
+        .map(([fragmentId]) => fragmentId);
+      console.log(`🔄 Clearing yellow highlighting for group "${groupKey}" fragments:`, fragmentsToClear);
+    } else {
+      // Clear all highlighted fragments (fallback to original behavior)
+      fragmentsToClear = Array.from(yellowHighlightedFragments.keys());
+      console.log(`🔄 Clearing ALL yellow highlighting for ${fragmentsToClear.length} fragments`);
+    }
+    
+    // Clear the specified fragments
+    for (const fragmentId of fragmentsToClear) {
+      const expressIDs = yellowHighlightedFragments.get(fragmentId);
+      if (!expressIDs) continue;
+      
+      const fragment = fragmentsManager.list.get(fragmentId);
+      if (fragment && fragment.mesh) {
+        const mesh = fragment.mesh;
+        
+        // Try to use fragment's resetColor method first
+        if (fragment.resetColor && typeof fragment.resetColor === 'function') {
+          try {
+            // Reset colors for specific expressIDs
+            Array.from(expressIDs).forEach((expressID: number) => {
+              fragment.resetColor([expressID]);
+            });
+            console.log(`🔄 Reset colors for fragment ${fragmentId} using fragment.resetColor`);
+          } catch (error) {
+            console.warn(`⚠️ Failed to use fragment.resetColor for fragment ${fragmentId}:`, error);
+            // Fallback to material restoration
+            restoreMaterialColors(mesh);
+          }
+        } else {
+          // Fallback: restore material colors
+          console.log(`🔧 Using fallback material restoration for fragment ${fragmentId}`);
+          restoreMaterialColors(mesh);
+        }
+      }
+      
+      // Remove from tracking maps
+      yellowHighlightedFragments.delete(fragmentId);
+      fragmentToGroupMap.delete(fragmentId);
+    }
+    
+    console.log(`✅ Cleared highlighting for ${fragmentsToClear.length} fragments`);
+  };
+
+  // Helper function to clear highlights for a specific light group
+  const clearGroupHighlighting = async (groupKey: string, components: OBC.Components) => {
+    console.log(`🔄 Clearing highlights for light group: ${groupKey}`);
+    
+    try {
+      // Get the individual lights for this group to find their fragment IDs
+      const lightDataResponse = await fetch(`/ws/node/api/getDataPoint?key=${groupKey}`);
+      if (lightDataResponse.ok) {
+        const lightData: [{ key: string; name: string }] = await lightDataResponse.json();
+        const fragmentIdsToClear: string[] = [];
+        
+        // Find fragment IDs for this group's lights
+        for (const element of lightData) {
+          const targetKey = Object.keys(element)[0];
+          
+          // Search for this element in the relations tree
+          getByQuery(targetKey);
+          await relationsTree.requestUpdate();
+          await relationsTree.updateComplete;
+          
+          // Find items matching this key
+          const findItemsByName = (items: any[], name: string): any[] => {
+            if (!items || !Array.isArray(items)) return [];
+            let results: any[] = [];
+            for (const item of items) {
+              if (!item || !item.data) continue;
+              if ((item.data.Tag === name) || (item.data?.Name && typeof item.data.Name === 'string' && item.data.Name.includes(name))) {
+                results.push(item);
+              }
+              if (item.children && Array.isArray(item.children)) {
+                results = [...results, ...findItemsByName(item.children, name)];
+              }
+            }
+            return results;
+          };
+
+          const foundItems = findItemsByName(relationsTree.data, targetKey);
+          if (foundItems.length > 0 && model) {
+            const fragmentIdMap = model.getFragmentMap([foundItems[0].data.expressID]);
+            
+            // Collect fragment IDs that belong to this group
+            for (const fragmentId in fragmentIdMap) {
+              if (!fragmentIdsToClear.includes(fragmentId)) {
+                fragmentIdsToClear.push(fragmentId);
+              }
+            }
+          }
+        }
+        
+        // Clear highlighting only for these specific fragments
+        clearYellowHighlighting(components, fragmentIdsToClear);
+        console.log(`✅ Cleared highlights for ${fragmentIdsToClear.length} fragments in group ${groupKey}`);
+        
+      } else {
+        console.error(`❌ Failed to fetch light data for group ${groupKey}`);
+      }
+    } catch (error) {
+      console.error(`❌ Error clearing highlights for group ${groupKey}:`, error);
+    }
+  };
+
+  // Helper function to restore material colors (fallback method)
+  const restoreMaterialColors = (mesh: THREE.Mesh) => {
+    if (mesh.material) {
+      if (Array.isArray(mesh.material)) {
+        mesh.material.forEach((mat: THREE.Material) => {
+          if (mat && 'emissive' in mat) {
+            const emissiveMaterial = mat as THREE.MeshStandardMaterial;
+            // Restore original emissive values if they were stored
+            if (mat.userData.originalEmissive) {
+              emissiveMaterial.emissive.copy(mat.userData.originalEmissive);
+              emissiveMaterial.emissiveIntensity = mat.userData.originalEmissiveIntensity || 0;
+              // Clean up stored values
+              delete mat.userData.originalEmissive;
+              delete mat.userData.originalEmissiveIntensity;
+            } else {
+              // Default restoration
+              emissiveMaterial.emissive.setRGB(0, 0, 0);
+              emissiveMaterial.emissiveIntensity = 0;
+            }
+            emissiveMaterial.needsUpdate = true;
+          }
+        });
+      } else {
+        const mat = mesh.material as THREE.Material;
+        if (mat && 'emissive' in mat) {
+          const emissiveMaterial = mat as THREE.MeshStandardMaterial;
+          // Restore original emissive values if they were stored
+          if (mat.userData.originalEmissive) {
+            emissiveMaterial.emissive.copy(mat.userData.originalEmissive);
+            emissiveMaterial.emissiveIntensity = mat.userData.originalEmissiveIntensity || 0;
+            // Clean up stored values
+            delete mat.userData.originalEmissive;
+            delete mat.userData.originalEmissiveIntensity;
+          } else {
+            // Default restoration
+            emissiveMaterial.emissive.setRGB(0, 0, 0);
+            emissiveMaterial.emissiveIntensity = 0;
+          }
+          emissiveMaterial.needsUpdate = true;
+        }
+      }
+    }
   };
 
   // Fetch all datapoint keys with debugging
@@ -98,27 +352,6 @@ export default async (components: OBC.Components, isDebug: boolean, highlighter:
     return [];
   };
 
-  // Helper function to re-highlight all currently ON groups
-  const reHighlightAllOnGroups = async () => {
-    try {
-      // Get current button states
-      const statesResponse = await fetch("/ws/node/api/getInitialButtonStates");
-      if (!statesResponse.ok) return;
-      
-      const buttonStates = await statesResponse.json();
-      
-      // Highlight each group that is ON
-      for (const [groupKey, isOn] of Object.entries(buttonStates)) {
-        if (isOn) {
-          console.log(`🔄 Re-highlighting ON group: ${groupKey}`);
-          await highlightGroup(groupKey);
-        }
-      }
-    } catch (error) {
-      console.error('❌ Error re-highlighting groups:', error);
-    }
-  };
-
   // Helper function to highlight a specific group
   const highlightGroup = async (groupKey: string) => {
     try {
@@ -157,9 +390,9 @@ export default async (components: OBC.Components, isDebug: boolean, highlighter:
           const foundItems = findItemsByName(relationsTree.data, targetKey);
           if (foundItems.length > 0 && model) {
             const fragmentIdMap = model.getFragmentMap([foundItems[0].data.expressID]);
-            // Re-enabled red highlighting
-            highlighter.highlightByID("select", fragmentIdMap, false, false, undefined, undefined, false);
-            console.log(`🔴 Highlighted elements in red for ${targetKey}`);
+            // Apply yellow highlighting using emissive materials, passing the groupKey for tracking
+            applyYellowColorToFragments(fragmentIdMap, components, groupKey);
+            console.log(`🟡 Highlighted elements in yellow for ${targetKey} in group ${groupKey}`);
           }
         }
       }
@@ -196,10 +429,9 @@ export default async (components: OBC.Components, isDebug: boolean, highlighter:
       
       // Handle highlighting based on new state - selective approach
       if (!newState) {
-        console.log(`� Light group ${key} turned OFF - removing only its highlights`);
-        // Clear all highlights and re-highlight only the groups that should remain ON
-        highlighter.clear();
-        await reHighlightAllOnGroups();
+        console.log(`💡 Light group ${key} turned OFF - removing only its highlights`);
+        // Use the new selective clearing to only clear this specific group
+        await clearGroupHighlighting(key, components);
       } else {
         console.log(`💡 Light group ${key} turned ON - adding its highlights`);
         // Just add highlights for this group (other groups remain highlighted)
@@ -295,8 +527,8 @@ export default async (components: OBC.Components, isDebug: boolean, highlighter:
       return;
     }
 
-    // Clear any existing highlights first
-    highlighter.clear();
+    // Clear any existing yellow highlights first
+    clearYellowHighlighting(components);
     
     // Get current button states from the server
     try {
@@ -356,8 +588,8 @@ export default async (components: OBC.Components, isDebug: boolean, highlighter:
                 if (foundItems.length > 0) {
                   console.log(`✅ Found ${foundItems.length} items for key ${targetKey} - highlighting...`);
                   const fragmentIdMap = model.getFragmentMap([foundItems[0].data.expressID]);
-                  highlighter.highlightByID("select", fragmentIdMap, false, false, undefined, undefined, false);
-                  console.log(`🎨 Highlighted elements for ${targetKey}`);
+                  applyYellowColorToFragments(fragmentIdMap, components, groupKey);
+                  console.log(`🟡 Highlighted elements in yellow for ${targetKey} in group ${groupKey}`);
                 } else {
                   console.log(`⚠️ No items found for key ${targetKey} in relations tree`);
                 }
