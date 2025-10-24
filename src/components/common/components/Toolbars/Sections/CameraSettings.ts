@@ -3,8 +3,8 @@ import * as BUI from "@thatopen/ui";
 import * as THREE from "three";
 import { PointerLockControls } from "three/examples/jsm/Addons.js";
 import i18n from "../../../utils/i18n";
-// TEMPORARILY HIDDEN: Projection controls (code kept for potential future use)
-// import projectionControls from "./ProjectionControls";
+// Projection controls restored
+import projectionControls from "./ProjectionControls";
 import { getCurrentProjection } from "./ProjectionControls";
 
 // Global reference to FPS controls - will be set from WorldViewer
@@ -32,7 +32,7 @@ export default (world: OBC.World) => {
     let movementInterval: number | null = null;
     let rotationInterval: number | null = null;
     const movementIntervalMs = 50; // 20 FPS for smooth movement
-    
+
     // Calculate movement step to match keyboard movement speed
     // Keyboard: moveDistance = moveSpeed * 0.016 (per frame at 60fps)
     // Button: should move same distance per button interval (50ms)
@@ -98,22 +98,22 @@ export default (world: OBC.World) => {
     // Helper function copied from EnhancedKeyboardControls.ts
     const zoomOrthographicCamera = (direction: number) => {
         if (!world?.camera || !(world.camera instanceof OBC.OrthoPerspectiveCamera)) return;
-        
+
         // Get current speed multiplier from camera settings
         const currentSpeed = getCurrentSpeed();
         const speedMultiplier = currentSpeed / baseSpeed; // Normalize against base speed
-        
+
         // Apply speed to zoom
         const baseZoomSpeed = 0.1;
         const adjustedZoomSpeed = baseZoomSpeed * speedMultiplier;
-        
+
         const currentZoom = (world.camera.three as THREE.OrthographicCamera).zoom || 1;
         const zoomDelta = direction * adjustedZoomSpeed;
-        
+
         const newZoom = Math.max(0.001, Math.min(100, currentZoom + zoomDelta)); // Reduced from 0.01 to 0.001
         (world.camera.three as THREE.OrthographicCamera).zoom = newZoom;
         world.camera.three.updateProjectionMatrix();
-        
+
         console.log('Orthographic UI zoom (speed x' + speedMultiplier.toFixed(1) + '):', newZoom);
     };
 
@@ -140,7 +140,7 @@ export default (world: OBC.World) => {
         if (isOrthographic && (direction === 'up' || direction === 'down')) {
             // Copy exact implementation from EnhancedKeyboardControls.ts arrow key behavior
             // In orthographic mode: Up arrow = zoom in, Down arrow = zoom out
-            
+
             if (direction === 'up') {
                 // Exact copy: zoomOrthographicCamera(1); // Zoom in
                 zoomOrthographicCamera(1);
@@ -150,20 +150,20 @@ export default (world: OBC.World) => {
                 zoomOrthographicCamera(-1);
                 console.log('Orthographic DOWN button - Zoom OUT (like down arrow)');
             }
-            
+
             // DISABLED: Frustum manager updates removed - using static clipping planes
             // Trigger frustum update after zoom to prevent clipping
             // if ((window as any).frustumManager) {
             //     (window as any).frustumManager.updateOrthographicFrustum();
             // }
-            
+
             return; // Exit early for orthographic up/down
         }
 
         // For forward/backward movement in orthographic mode, use zoom behavior
         if (isOrthographic && (direction === 'forward' || direction === 'backward')) {
             // Forward = zoom in, Backward = zoom out (like the zoom buttons)
-            
+
             if (direction === 'forward') {
                 zoomOrthographicCamera(1); // Zoom in
                 console.log('Orthographic FORWARD button - Zoom IN (like zoom in button)');
@@ -171,7 +171,7 @@ export default (world: OBC.World) => {
                 zoomOrthographicCamera(-1); // Zoom out
                 console.log('Orthographic BACKWARD button - Zoom OUT (like zoom out button)');
             }
-            
+
             return; // Exit early for orthographic forward/backward
         }
 
@@ -207,7 +207,7 @@ export default (world: OBC.World) => {
                 newPosition.y -= movementAmount;
                 break;
         }
-        
+
         // Apply restrictions only in perspective mode
         if (isPerspective) {
             // Only clamp Y position for explicit up/down movement, not for horizontal movement
@@ -217,22 +217,22 @@ export default (world: OBC.World) => {
             }
         }
         // In orthographic mode: No restrictions, allow free movement in all directions
-        
+
         camera3js.position.copy(newPosition);
-        
+
         // Get current projection mode for NaviCube filtering
         const projectionMode = camera3js.type === 'OrthographicCamera' ? 'orthographic' : 'perspective';
-        
+
         // Notify NaviCube of camera change with movement type information
         window.dispatchEvent(new CustomEvent('cameraChanged', {
-            detail: { 
-                source: 'camera-settings-movement', 
+            detail: {
+                source: 'camera-settings-movement',
                 position: newPosition,
                 movementType: 'position-movement', // This is position movement (left/right/up/down/forward/backward)
                 projectionMode: projectionMode      // Include projection mode for filtering
             }
         }));
-        
+
         console.log(`${currentProjection} mode - New position:`, newPosition);
     };
 
@@ -258,7 +258,7 @@ export default (world: OBC.World) => {
         }
 
         const camera3js = world.camera.three;
-        
+
         // Get current projection mode to determine rotation style
         const currentProjection = getCurrentProjection();
         const isOrthographic = currentProjection === "Orthographic";
@@ -278,16 +278,16 @@ export default (world: OBC.World) => {
 
             // Calculate camera position relative to model center
             const relativePosition = camera3js.position.clone().sub(target);
-            
+
             // Convert to spherical coordinates
             const spherical = new THREE.Spherical();
             spherical.setFromVector3(relativePosition);
-            
+
             // Apply rotation based on direction (like NaviCube)
             // Apply speed multiplier to rotation step
             const baseRotationStep = 0.2; // Base rotation step for button controls  
             const rotationStep = baseRotationStep * currentMultiplier;
-            
+
             switch (direction) {
                 case 'left':
                     spherical.theta -= rotationStep; // Orbit left (model appears to rotate right)
@@ -306,26 +306,26 @@ export default (world: OBC.World) => {
                     spherical.phi = Math.min(Math.PI - epsilon, spherical.phi + rotationStep); // Orbit down
                     break;
             }
-            
+
             // Normalize theta to prevent accumulation errors
             spherical.theta = spherical.theta % (2 * Math.PI);
-            
+
             // Ensure radius stays consistent (maintain distance)
             if (spherical.radius <= 0) {
                 spherical.radius = 10; // Fallback distance
             }
-            
+
             // Convert back to Cartesian coordinates relative to model center
             const newPosition = new THREE.Vector3();
             newPosition.setFromSpherical(spherical);
             newPosition.add(target); // Add model center back to get world position
-            
+
             // Update camera position
             camera3js.position.copy(newPosition);
-            
+
             // Check if camera state preservation is active (during projection switching)
             const isCameraStateBeingPreserved = (window as any).isCameraStateBeingPreserved?.() || false;
-            
+
             if (!isCameraStateBeingPreserved) {
                 // Always look at the model center (like NaviCube)
                 camera3js.lookAt(target);
@@ -335,9 +335,9 @@ export default (world: OBC.World) => {
 
             // Notify NaviCube of camera change with rotation movement type
             window.dispatchEvent(new CustomEvent('cameraChanged', {
-                detail: { 
-                    source: 'camera-settings-orbit-rotation', 
-                    rotation: camera3js.quaternion, 
+                detail: {
+                    source: 'camera-settings-orbit-rotation',
+                    rotation: camera3js.quaternion,
                     position: camera3js.position,
                     movementType: 'rotation-movement', // This is rotation movement (orbit controls)
                     projectionMode: currentProjection
@@ -390,9 +390,9 @@ export default (world: OBC.World) => {
 
             // Notify NaviCube of camera change with rotation movement type
             window.dispatchEvent(new CustomEvent('cameraChanged', {
-                detail: { 
-                    source: 'camera-settings-fps-rotation', 
-                    rotation: camera3js.quaternion, 
+                detail: {
+                    source: 'camera-settings-fps-rotation',
+                    rotation: camera3js.quaternion,
                     position: camera3js.position,
                     movementType: 'rotation-movement', // FPS rotation changes view direction
                     projectionMode: currentProjection
@@ -465,19 +465,22 @@ export default (world: OBC.World) => {
 
     const component = BUI.Component.create<BUI.PanelSection>(() => {
         const t = (key: string, options?: any) => i18n.t(key, options);
-        
+
         // Call initialization after component is rendered
         setTimeout(initializeSpeedDisplay, 100);
-        // TEMPORARILY HIDDEN: Projection controls (code kept for potential future use)
+        // Projection controls restored
         // Initialize projection controls component
-        // const projectionControlsComponent = projectionControls(world);
-        
+        const projectionControlsComponent = projectionControls(world);
+
         return BUI.html`
       <bim-toolbar-section label="${t('cameraSettings')}" icon="ph:camera-fill" style="pointer-events: auto">
         
         <!-- Horizontal Container for all control sections -->
         <div style="display: flex; gap: 10px; margin: 10px 0; align-items: flex-start;">
-          
+       <!-- Projection Controls Section -->
+        <div style="margin: 10px 0;">
+          ${projectionControlsComponent}
+        </div>
           <!-- Position Controls (Left) -->
           <div style="display: flex; flex-direction: column; gap: 5px; padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 4px; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px); flex: 1;">
             <div style="font-size: 12px; font-weight: bold; color: #ccc; text-align: center;">${t('positionControls')}</div>
@@ -635,6 +638,9 @@ export default (world: OBC.World) => {
           </div>
           
         </div>
+        
+
+        
       </bim-toolbar-section>
     `;
     });

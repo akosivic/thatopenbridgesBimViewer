@@ -278,11 +278,53 @@ export default (world: OBC.World) => {
                     camera3js.updateMatrixWorld();
                     console.log("Complete camera state restored - no orientation override");
                 } else {
-                    // First time perspective: preserve complete current camera state
-                    console.log("Seamless transition to perspective mode");
-                    console.log("Preserving complete camera orientation without lookAt override");
+                    // First time perspective: preserve current camera state but enforce eye level
+                    console.log("Seamless transition to perspective mode with eye level enforcement");
+                    console.log("Preserving camera orientation but setting Y position to eye level (1.6m)");
                     // Don't call lookAt - preserve the current camera transformation completely
                     cameraMemory.isFirstTimePerspective = false;
+                }
+                
+                // ALWAYS enforce eye level (1.6m) for perspective mode
+                const EYE_LEVEL_HEIGHT = 1.6; // Standard eye level height in meters
+                if (Math.abs(camera3js.position.y - EYE_LEVEL_HEIGHT) > 0.01) {
+                    console.log(`Adjusting camera Y position from ${camera3js.position.y.toFixed(3)}m to eye level (${EYE_LEVEL_HEIGHT}m)`);
+                    camera3js.position.y = EYE_LEVEL_HEIGHT;
+                    camera3js.updateMatrixWorld();
+                    console.log("Camera positioned at eye level for perspective mode");
+                    
+                    // Update memory with eye-level adjusted position
+                    if (!cameraMemory.isFirstTimePerspective) {
+                        cameraMemory.perspective = {
+                            position: camera3js.position.clone(),
+                            up: camera3js.up.clone(),
+                            quaternion: camera3js.quaternion.clone()
+                        };
+                        console.log("Updated perspective memory with eye-level adjusted position");
+                    }
+                }
+                
+                // Set forward-looking orientation for natural perspective view
+                console.log("Setting forward-looking orientation for perspective mode");
+                const euler = new THREE.Euler().setFromQuaternion(camera3js.quaternion, 'YXZ');
+                
+                // Set pitch to 0° (horizontal forward look) instead of looking down
+                euler.x = 0; // No pitch - looking straight ahead
+                
+                // Keep current yaw (horizontal rotation) - preserve left/right orientation
+                // euler.y remains unchanged to preserve horizontal direction
+                
+                // Keep roll at 0 (no head tilt)
+                euler.z = 0;
+                
+                camera3js.quaternion.setFromEuler(euler);
+                camera3js.updateMatrixWorld();
+                console.log("Camera orientation set to forward-looking (pitch = 0°)");
+                
+                // Update memory with the forward-looking orientation
+                if (cameraMemory.perspective) {
+                    cameraMemory.perspective.quaternion = camera3js.quaternion.clone();
+                    console.log("Updated perspective memory with forward-looking orientation");
                 }
                 
                 // DETAILED POST-SWITCH DEBUGGING FOR PERSPECTIVE
