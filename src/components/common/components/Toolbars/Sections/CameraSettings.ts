@@ -475,24 +475,40 @@ export default (world: OBC.World) => {
         return BUI.html`
       <bim-toolbar-section label="${t('cameraSettings')}" icon="ph:camera-fill" style="pointer-events: auto">
         
-        <!-- Horizontal Container for all control sections -->
-        <div style="display: flex; gap: 10px; margin: 10px 0; align-items: flex-start;">
-       <!-- Projection Controls Section -->
-        <div style="margin: 10px 0;">
+        <!-- Grid Container for all control sections -->
+        <div style="
+          display: grid; 
+          grid-template-columns: repeat(4, 1fr); 
+          gap: 10px; 
+          margin: 10px 0; 
+          align-items: stretch;
+          min-height: 120px;
+        ">
+          <!-- Projection Controls Section -->
           ${projectionControlsComponent}
-        </div>
-          <!-- Position Controls (Left) -->
-          <div style="display: flex; flex-direction: column; gap: 5px; padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 4px; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px); flex: 1;">
+          <!-- Position Controls -->
+          <div style="
+            display: flex; 
+            flex-direction: column; 
+            gap: 8px; 
+            padding: 12px; 
+            border: 1px solid rgba(255, 255, 255, 0.2); 
+            border-radius: 6px; 
+            background: rgba(0, 0, 0, 0.6); 
+            backdrop-filter: blur(4px);
+            min-height: 120px;
+            justify-content: space-between;
+          ">
             <div style="font-size: 12px; font-weight: bold; color: #ccc; text-align: center;">${t('positionControls')}</div>
-            <!-- Horizontal Movement -->
-            <div style="display: grid; grid-template-columns: 1fr auto 1fr; grid-template-rows: auto auto auto; gap: 2px; align-items: center;">
+            <!-- Movement Grid -->
+            <div style="display: grid; grid-template-columns: 1fr auto 1fr; grid-template-rows: auto auto auto; gap: 3px; align-items: center; flex: 1; align-content: center;">
               <div></div>
               <bim-button 
                 icon="material-symbols:keyboard-arrow-up" 
                 @mousedown=${() => startContinuousMovement('forward')} 
                 @mouseup=${stopContinuousMovement}
                 @mouseleave=${stopContinuousMovement}
-                style="width: 30px; height: 30px;" 
+                style="width: 32px; height: 32px;" 
                 title="${t('moveForward')}">
               </bim-button>
               <div></div>
@@ -501,7 +517,7 @@ export default (world: OBC.World) => {
                 @mousedown=${() => startContinuousMovement('left')} 
                 @mouseup=${stopContinuousMovement}
                 @mouseleave=${stopContinuousMovement}
-                style="width: 30px; height: 30px;" 
+                style="width: 32px; height: 32px;" 
                 title="${t('moveLeft')}">
               </bim-button>
               <bim-button 
@@ -509,7 +525,7 @@ export default (world: OBC.World) => {
                 @mousedown=${() => startContinuousMovement('backward')} 
                 @mouseup=${stopContinuousMovement}
                 @mouseleave=${stopContinuousMovement}
-                style="width: 30px; height: 30px;" 
+                style="width: 32px; height: 32px;" 
                 title="${t('moveBackward')}">
               </bim-button>
               <bim-button 
@@ -517,16 +533,27 @@ export default (world: OBC.World) => {
                 @mousedown=${() => startContinuousMovement('right')} 
                 @mouseup=${stopContinuousMovement}
                 @mouseleave=${stopContinuousMovement}
-                style="width: 30px; height: 30px;" 
+                style="width: 32px; height: 32px;" 
                 title="${t('moveRight')}"
               </bim-button>
             </div>
           </div>
 
-          <!-- Movement Speed (Middle) -->
-          <div style="display: flex; flex-direction: column; gap: 5px; padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 4px; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px); flex: 1;">
+          <!-- Movement Speed -->
+          <div style="
+            display: flex; 
+            flex-direction: column; 
+            gap: 8px; 
+            padding: 12px; 
+            border: 1px solid rgba(255, 255, 255, 0.2); 
+            border-radius: 6px; 
+            background: rgba(0, 0, 0, 0.6); 
+            backdrop-filter: blur(4px);
+            min-height: 120px;
+            justify-content: space-between;
+          ">
             <div style="font-size: 12px; font-weight: bold; color: #ccc; text-align: center;">${t('movementSpeed')}</div>
-            <div style="display: flex; gap: 8px; justify-content: center;">
+            <div style="display: flex; gap: 6px; justify-content: center; flex: 1; align-items: center;">
               <button 
                 class="camera-speed-button"
                 data-speed="1"
@@ -536,10 +563,10 @@ export default (world: OBC.World) => {
                   background: #6528d7;
                   color: white;
                   border: none;
-                  border-radius: 4px;
-                  padding: 6px 12px;
+                  border-radius: 6px;
+                  padding: 8px 12px;
                   font-weight: 600;
-                  min-width: 40px;
+                  min-width: 42px;
                   cursor: pointer;
                   transition: all 0.2s ease;
                   font-size: 11px;
@@ -555,10 +582,10 @@ export default (world: OBC.World) => {
                   background: rgba(255, 255, 255, 0.2);
                   color: white;
                   border: none;
-                  border-radius: 4px;
-                  padding: 6px 12px;
+                  border-radius: 6px;
+                  padding: 8px 12px;
                   font-weight: 600;
-                  min-width: 40px;
+                  min-width: 42px;
                   cursor: pointer;
                   transition: all 0.2s ease;
                   font-size: 11px;
@@ -574,10 +601,10 @@ export default (world: OBC.World) => {
                   background: rgba(255, 255, 255, 0.2);
                   color: white;
                   border: none;
-                  border-radius: 4px;
-                  padding: 6px 12px;
+                  border-radius: 6px;
+                  padding: 8px 12px;
                   font-weight: 600;
-                  min-width: 40px;
+                  min-width: 42px;
                   cursor: pointer;
                   transition: all 0.2s ease;
                   font-size: 11px;
@@ -589,23 +616,33 @@ export default (world: OBC.World) => {
               font-size: 10px;
               color: rgba(255, 255, 255, 0.7);
               text-align: center;
-              margin-top: 4px;
             " id="camera-speed-display">
               ${t('currentSpeed', { speed: 1 })}
             </div>
           </div>
 
-          <!-- Rotation Controls (Right) -->
-          <div style="display: flex; flex-direction: column; gap: 5px; padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 4px; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px); flex: 1;">
+          <!-- Rotation Controls -->
+          <div style="
+            display: flex; 
+            flex-direction: column; 
+            gap: 8px; 
+            padding: 12px; 
+            border: 1px solid rgba(255, 255, 255, 0.2); 
+            border-radius: 6px; 
+            background: rgba(0, 0, 0, 0.6); 
+            backdrop-filter: blur(4px);
+            min-height: 120px;
+            justify-content: space-between;
+          ">
             <div style="font-size: 12px; font-weight: bold; color: #ccc; text-align: center;">${t('rotationControls')}</div>
-            <div style="display: grid; grid-template-columns: 1fr auto 1fr; grid-template-rows: auto auto; gap: 2px; align-items: center;">
+            <div style="display: grid; grid-template-columns: 1fr auto 1fr; grid-template-rows: auto auto; gap: 3px; align-items: center; flex: 1; align-content: center;">
               <div></div>
               <bim-button 
                 icon="material-symbols:keyboard-arrow-up" 
                 @mousedown=${() => startContinuousRotation('down')} 
                 @mouseup=${stopContinuousRotation}
                 @mouseleave=${stopContinuousRotation}
-                style="width: 30px; height: 30px;" 
+                style="width: 32px; height: 32px;" 
                 title="${t('lookUp')}">
               </bim-button>
               <div></div>
@@ -615,7 +652,7 @@ export default (world: OBC.World) => {
                 @mousedown=${() => startContinuousRotation('right')} 
                 @mouseup=${stopContinuousRotation}
                 @mouseleave=${stopContinuousRotation}
-                style="width: 30px; height: 30px;" 
+                style="width: 32px; height: 32px;" 
                 title="${t('turnLeft')}">
               </bim-button>
               <bim-button 
@@ -623,7 +660,7 @@ export default (world: OBC.World) => {
                 @mousedown=${() => startContinuousRotation('up')} 
                 @mouseup=${stopContinuousRotation}
                 @mouseleave=${stopContinuousRotation}
-                style="width: 30px; height: 30px;" 
+                style="width: 32px; height: 32px;" 
                 title="${t('lookDown')}">
               </bim-button>
               <bim-button 
@@ -631,7 +668,7 @@ export default (world: OBC.World) => {
                 @mousedown=${() => startContinuousRotation('left')} 
                 @mouseup=${stopContinuousRotation}
                 @mouseleave=${stopContinuousRotation}
-                style="width: 30px; height: 30px;" 
+                style="width: 32px; height: 32px;" 
                 title="${t('turnRight')}">
               </bim-button>
             </div>
@@ -639,6 +676,23 @@ export default (world: OBC.World) => {
           
         </div>
         
+        <style>
+          .camera-speed-button.active {
+            background: #6528d7 !important;
+            transform: scale(1.05);
+          }
+          .camera-speed-button:hover {
+            background: rgba(255, 255, 255, 0.3) !important;
+            transform: scale(1.02);
+          }
+          .camera-speed-button.active:hover {
+            background: #7c3aed !important;
+          }
+          bim-button:hover {
+            transform: scale(1.05);
+            transition: transform 0.2s ease;
+          }
+        </style>
 
         
       </bim-toolbar-section>

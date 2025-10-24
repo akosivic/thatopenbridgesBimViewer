@@ -421,58 +421,65 @@ export default (world: OBC.World) => {
         const t = (key: string) => i18n.t(key);
         
         return BUI.html`
-            <bim-toolbar-section  style="pointer-events: auto">
-                <!-- Current Mode Display -->
-                <div style="display: flex; flex-direction: column; gap: 8px; margin: 10px 0; padding: 12px; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 4px; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px);">
-                    <div style="font-size: 12px; font-weight: bold; color: #ccc; text-align: center;">${t('projection')}</div>
-                    <div style="display: flex; gap: 6px;">
-                        <button 
-                            class="projection-mode-button"
-                            data-mode="Perspective"
-                            onclick="window.setProjectionMode('Perspective')"
-                            title="${t('switchToPerspective')}"
-                            style="
-                                flex: 1;
-                                background: rgba(255, 255, 255, 0.2);
-                                color: white;
-                                border: none;
-                                border-radius: 4px;
-                                padding: 8px 12px;
-                                font-weight: 600;
-                                cursor: pointer;
-                                transition: all 0.2s ease;
-                                font-size: 11px;
-                            ">
-                            ${t('perspective')}
-                        </button>
-                        <button 
-                            class="projection-mode-button"
-                            data-mode="Orthographic"
-                            onclick="window.setProjectionMode('Orthographic')"
-                            title="${t('switchToOrthographic')}"
-                            style="
-                                flex: 1;
-                                background: rgba(255, 255, 255, 0.2);
-                                color: white;
-                                border: none;
-                                border-radius: 4px;
-                                padding: 8px 12px;
-                                font-weight: 600;
-                                cursor: pointer;
-                                transition: all 0.2s ease;
-                                font-size: 11px;
-                            ">
-                            ${t('orthographic')}
-                        </button>
-                    </div>
-                    <div style="
-                        font-size: 10px;
-                        color: rgba(255, 255, 255, 0.7);
-                        text-align: center;
-                        margin-top: 4px;
-                    " id="current-projection-mode">
-                        ${t(currentProjection.toLowerCase())}
-                    </div>
+            <div style="
+              display: flex; 
+              flex-direction: column; 
+              gap: 8px; 
+              padding: 12px; 
+              border: 1px solid rgba(255, 255, 255, 0.2); 
+              border-radius: 6px; 
+              background: rgba(0, 0, 0, 0.6); 
+              backdrop-filter: blur(4px);
+              min-height: 120px;
+              justify-content: space-between;
+            ">
+                <div style="font-size: 12px; font-weight: bold; color: #ccc; text-align: center;">${t('projection')}</div>
+                <div style="display: flex; gap: 6px; flex: 1; align-items: center;">
+                    <button 
+                        class="projection-mode-button"
+                        data-mode="Perspective"
+                        onclick="window.setProjectionMode('Perspective')"
+                        title="${t('switchToPerspective')}"
+                        style="
+                            flex: 1;
+                            background: rgba(255, 255, 255, 0.2);
+                            color: white;
+                            border: none;
+                            border-radius: 6px;
+                            padding: 8px 12px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            transition: all 0.2s ease;
+                            font-size: 11px;
+                        ">
+                        ${t('perspective')}
+                    </button>
+                    <button 
+                        class="projection-mode-button"
+                        data-mode="Orthographic"
+                        onclick="window.setProjectionMode('Orthographic')"
+                        title="${t('switchToOrthographic')}"
+                        style="
+                            flex: 1;
+                            background: rgba(255, 255, 255, 0.2);
+                            color: white;
+                            border: none;
+                            border-radius: 6px;
+                            padding: 8px 12px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            transition: all 0.2s ease;
+                            font-size: 11px;
+                        ">
+                        ${t('orthographic')}
+                    </button>
+                </div>
+                <div style="
+                    font-size: 10px;
+                    color: rgba(255, 255, 255, 0.7);
+                    text-align: center;
+                " id="current-projection-mode">
+                    ${t(currentProjection.toLowerCase())}
                 </div>
 
                 <style>
@@ -488,7 +495,7 @@ export default (world: OBC.World) => {
                         background: #7c3aed !important;
                     }
                 </style>
-            </bim-toolbar-section>
+            </div>
         `;
     });
 };
