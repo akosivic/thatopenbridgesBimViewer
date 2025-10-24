@@ -149,9 +149,14 @@ export default (world: OBC.World) => {
     // Update camera position
     camera3js.position.copy(newPos);
 
-    // Notify NaviCube of camera change
+    // Notify NaviCube of camera change with movement type
     window.dispatchEvent(new CustomEvent('cameraChanged', {
-      detail: { source: 'fps-movement', position: camera3js.position }
+      detail: { 
+        source: 'fps-movement', 
+        position: camera3js.position,
+        movementType: 'position-movement', // FPS movement is position movement
+        projectionMode: camera3js.type === 'OrthographicCamera' ? 'orthographic' : 'perspective'
+      }
     }));
 
     console.log('New position:', newPos);
@@ -254,9 +259,15 @@ export default (world: OBC.World) => {
         console.log("🔒 Skipping lookAt during camera state preservation");
       }
 
-      // Notify NaviCube of camera change
+      // Notify NaviCube of camera change with rotation movement type
       window.dispatchEvent(new CustomEvent('cameraChanged', {
-        detail: { source: 'orbit-rotation', rotation: camera3js.quaternion, position: camera3js.position }
+        detail: { 
+          source: 'orbit-rotation', 
+          rotation: camera3js.quaternion, 
+          position: camera3js.position,
+          movementType: 'rotation-movement', // Orbit rotation changes view direction
+          projectionMode: camera3js.type === 'OrthographicCamera' ? 'orthographic' : 'perspective'
+        }
       }));
 
       console.log('Orbit rotation:', {
@@ -307,9 +318,15 @@ export default (world: OBC.World) => {
       // Apply rotation to camera
       camera3js.setRotationFromEuler(euler);
 
-      // Notify NaviCube of camera change
+      // Notify NaviCube of camera change with rotation movement type
       window.dispatchEvent(new CustomEvent('cameraChanged', {
-        detail: { source: 'fps-rotation', rotation: camera3js.quaternion, position: camera3js.position }
+        detail: { 
+          source: 'fps-rotation', 
+          rotation: camera3js.quaternion, 
+          position: camera3js.position,
+          movementType: 'rotation-movement', // FPS rotation changes view direction
+          projectionMode: camera3js.type === 'OrthographicCamera' ? 'orthographic' : 'perspective'
+        }
       }));
 
       console.log('FPS rotation (degrees):', {

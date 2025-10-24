@@ -220,9 +220,17 @@ export default (world: OBC.World) => {
         
         camera3js.position.copy(newPosition);
         
-        // Notify NaviCube of camera change
+        // Get current projection mode for NaviCube filtering
+        const projectionMode = camera3js.type === 'OrthographicCamera' ? 'orthographic' : 'perspective';
+        
+        // Notify NaviCube of camera change with movement type information
         window.dispatchEvent(new CustomEvent('cameraChanged', {
-            detail: { source: 'camera-settings-movement', position: newPosition }
+            detail: { 
+                source: 'camera-settings-movement', 
+                position: newPosition,
+                movementType: 'position-movement', // This is position movement (left/right/up/down/forward/backward)
+                projectionMode: projectionMode      // Include projection mode for filtering
+            }
         }));
         
         console.log(`${currentProjection} mode - New position:`, newPosition);
@@ -325,9 +333,15 @@ export default (world: OBC.World) => {
                 console.log("🔒 Skipping lookAt during camera state preservation");
             }
 
-            // Notify NaviCube of camera change
+            // Notify NaviCube of camera change with rotation movement type
             window.dispatchEvent(new CustomEvent('cameraChanged', {
-                detail: { source: 'camera-settings-orbit-rotation', rotation: camera3js.quaternion, position: camera3js.position }
+                detail: { 
+                    source: 'camera-settings-orbit-rotation', 
+                    rotation: camera3js.quaternion, 
+                    position: camera3js.position,
+                    movementType: 'rotation-movement', // This is rotation movement (orbit controls)
+                    projectionMode: currentProjection
+                }
             }));
 
             console.log('Orbit rotation:', {
@@ -374,9 +388,15 @@ export default (world: OBC.World) => {
             // Apply rotation to camera
             camera3js.setRotationFromEuler(euler);
 
-            // Notify NaviCube of camera change
+            // Notify NaviCube of camera change with rotation movement type
             window.dispatchEvent(new CustomEvent('cameraChanged', {
-                detail: { source: 'camera-settings-fps-rotation', rotation: camera3js.quaternion, position: camera3js.position }
+                detail: { 
+                    source: 'camera-settings-fps-rotation', 
+                    rotation: camera3js.quaternion, 
+                    position: camera3js.position,
+                    movementType: 'rotation-movement', // FPS rotation changes view direction
+                    projectionMode: currentProjection
+                }
             }));
 
             console.log('FPS rotation (degrees):', {

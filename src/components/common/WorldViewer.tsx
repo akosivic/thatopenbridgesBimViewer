@@ -980,7 +980,7 @@ export class WorldViewer extends HTMLElement {
       /** Toggles the hover functionality. */
       hoverEnabled: isDebugMode,
       /** Color used for selection. */
-      selectionColor: new THREE.Color(1, 1, 0), // Base yellow color
+      selectionColor: new THREE.Color(0.8, 0.1, 0.1), // Red color instead of yellow
       /** Color used for hover. */
       hoverColor: new THREE.Color(1, 1, 1),
       /** Whether to automatically highlight fragments on click. */
@@ -1004,7 +1004,7 @@ export class WorldViewer extends HTMLElement {
         // Create a pulsing effect using sine wave (0.3 to 1.0 intensity)
         const intensity = 0.3 + 0.7 * Math.abs(Math.sin(time));
         
-        // Apply the pulsing effect to all highlighted materials
+        // Apply the pulsing effect to all highlighted materials with red color
         flashlightMaterials.forEach((_, mesh) => {
           if (mesh && 'material' in mesh) {
             const meshObj = mesh as THREE.Mesh;
@@ -1013,7 +1013,8 @@ export class WorldViewer extends HTMLElement {
                 meshObj.material.forEach((mat: THREE.Material) => {
                   if (mat && 'emissive' in mat) {
                     const emissiveMaterial = mat as THREE.MeshStandardMaterial;
-                    emissiveMaterial.emissive.setRGB(intensity * 0.8, intensity * 0.8, 0);
+                    // Red emissive glow instead of yellow
+                    emissiveMaterial.emissive.setRGB(intensity * 0.8, 0, 0);
                     emissiveMaterial.emissiveIntensity = intensity * 0.5;
                     emissiveMaterial.needsUpdate = true;
                   }
@@ -1022,7 +1023,8 @@ export class WorldViewer extends HTMLElement {
                 const mat = meshObj.material as THREE.Material;
                 if (mat && 'emissive' in mat) {
                   const emissiveMaterial = mat as THREE.MeshStandardMaterial;
-                  emissiveMaterial.emissive.setRGB(intensity * 0.8, intensity * 0.8, 0);
+                  // Red emissive glow instead of yellow
+                  emissiveMaterial.emissive.setRGB(intensity * 0.8, 0, 0);
                   emissiveMaterial.emissiveIntensity = intensity * 0.5;
                   emissiveMaterial.needsUpdate = true;
                 }

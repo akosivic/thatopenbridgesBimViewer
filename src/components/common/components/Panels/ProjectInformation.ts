@@ -1,7 +1,6 @@
 import * as BUI from "@thatopen/ui";
 import * as OBC from "@thatopen/components";
 import * as CUI from "@thatopen/ui-obc";
-import * as THREE from "three";
 import groupings from "./Sections/Groupings";
 import { Highlighter } from "@thatopen/components-front";
 import { FragmentsGroup } from "@thatopen/fragments";
@@ -99,117 +98,6 @@ export default async (components: OBC.Components, isDebug: boolean, highlighter:
     return [];
   };
 
-  // Helper function to color all lights in all groups red on initial load
-  const colorAllLightsRed = async () => {
-    try {
-      console.log('🔴 Starting to color all lights red...');
-      
-      // Get all light groups from the server
-      const groupsResponse = await fetch('/ws/node/api/getAllLightGroups');
-      if (!groupsResponse.ok) {
-        console.warn('⚠️ Could not fetch light groups, using fallback method');
-        // Fallback: try common group keys
-        const fallbackGroups = ['L1', 'L2', 'O1', 'O2', 'O3', 'O4'];
-        for (const groupKey of fallbackGroups) {
-          await colorLightGroupRed(groupKey);
-        }
-        return;
-      }
-      
-      const lightGroups = await groupsResponse.json();
-      
-      // Color each group red
-      for (const groupKey of Object.keys(lightGroups)) {
-        await colorLightGroupRed(groupKey);
-      }
-      
-      console.log('✅ All lights colored red successfully');
-      
-    } catch (error) {
-      console.error('❌ Error coloring lights red:', error);
-    }
-  };
-
-  // Helper function to color a specific light group red
-  const colorLightGroupRed = async (groupKey: string) => {
-    try {
-      const lightDataResponse = await fetch(`/ws/node/api/getDataPoint?key=${groupKey}`);
-      if (lightDataResponse.ok) {
-        const lightData: [{ key: string; name: string }] = await lightDataResponse.json();
-        
-        for (const element of lightData) {
-          const targetKey = Object.keys(element)[0];
-          getByQuery(targetKey);
-          await relationsTree.requestUpdate();
-          await relationsTree.updateComplete;
-          
-          relationsTree.expanded = true;
-          
-          // Find the BIM elements
-          const findItemsByName = (items: any[], name: string): any[] => {
-            let results: any[] = [];
-            for (const item of items) {
-              if (!item || !item.data) continue;
-              if ((item.data.Tag === name) || (item.data?.Name && typeof item.data.Name === 'string' && item.data.Name.includes(name))) {
-                results.push(item);
-              }
-
-              if (item.children) {
-                if (Array.isArray(item.children)) {
-                  results = [...results, ...findItemsByName(item.children, name)];
-                }
-              }
-            }
-            return results;
-          };
-
-          const foundItems = findItemsByName(relationsTree.data, targetKey);
-          if (foundItems.length > 0 && model) {
-            const fragmentIdMap = model.getFragmentMap([foundItems[0].data.expressID]);
-            
-            // Apply red color directly to the materials instead of highlighting
-            await applyRedColorToFragments(fragmentIdMap);
-            console.log(`🔴 Colored elements red for ${targetKey}`);
-          }
-        }
-      }
-    } catch (error) {
-      console.error(`❌ Error coloring group ${groupKey} red:`, error);
-    }
-  };
-
-  // Helper function to apply red color directly to fragment materials
-  const applyRedColorToFragments = async (fragmentIdMap: any) => {
-    const fragmentsManager = components.get(OBC.FragmentsManager);
-    
-    for (const fragmentId in fragmentIdMap) {
-      const fragment = fragmentsManager.list.get(fragmentId);
-      if (fragment && fragment.mesh) {
-        const mesh = fragment.mesh;
-        
-        // Apply red color to the material
-        if (mesh.material) {
-          if (Array.isArray(mesh.material)) {
-            mesh.material.forEach((mat: THREE.Material) => {
-              if (mat && 'color' in mat) {
-                const colorMaterial = mat as THREE.MeshStandardMaterial;
-                colorMaterial.color.setRGB(0.8, 0.1, 0.1); // Red color
-                colorMaterial.needsUpdate = true;
-              }
-            });
-          } else {
-            const material = mesh.material as THREE.Material;
-            if (material && 'color' in material) {
-              const colorMaterial = material as THREE.MeshStandardMaterial;
-              colorMaterial.color.setRGB(0.8, 0.1, 0.1); // Red color
-              colorMaterial.needsUpdate = true;
-            }
-          }
-        }
-      }
-    }
-  };
-
   // Helper function to re-highlight all currently ON groups
   const reHighlightAllOnGroups = async () => {
     try {
@@ -268,10 +156,10 @@ export default async (components: OBC.Components, isDebug: boolean, highlighter:
 
           const foundItems = findItemsByName(relationsTree.data, targetKey);
           if (foundItems.length > 0 && model) {
-            // Temporarily disabled yellow highlighting as requested
-            // const fragmentIdMap = model.getFragmentMap([foundItems[0].data.expressID]);
-            // highlighter.highlightByID("select", fragmentIdMap, false, false, undefined, undefined, false);
-            console.log(`🎨 Found elements for ${targetKey} (highlighting disabled)`);
+            const fragmentIdMap = model.getFragmentMap([foundItems[0].data.expressID]);
+            // Re-enabled red highlighting
+            highlighter.highlightByID("select", fragmentIdMap, false, false, undefined, undefined, false);
+            console.log(`🔴 Highlighted elements in red for ${targetKey}`);
           }
         }
       }
@@ -495,8 +383,10 @@ export default async (components: OBC.Components, isDebug: boolean, highlighter:
   // Listen for the modelLoadedForLighting event as a fallback
   const handleModelLoadedForLighting = () => {
     console.log('📡 Received modelLoadedForLighting event');
-    // Color all lights red on initial load instead of highlighting
-    colorAllLightsRed();
+    // Re-enable initial highlighting based on button states
+    if ((panel as any).triggerInitialHighlighting) {
+      (panel as any).triggerInitialHighlighting();
+    }
   };
   
   window.addEventListener('modelLoadedForLighting', handleModelLoadedForLighting);

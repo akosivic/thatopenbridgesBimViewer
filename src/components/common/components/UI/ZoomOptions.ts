@@ -134,7 +134,13 @@ export default (world: OBC.World) => {
                     zoomModelWithMargin(center, size, camera3js, 2.0);
                     // Notify NaviCube to sync after zoom animation completes
                     setTimeout(() => {
-                        window.dispatchEvent(new CustomEvent('cameraChanged'));
+                        window.dispatchEvent(new CustomEvent('cameraChanged', {
+                            detail: {
+                                source: 'zoom-to-fit-orthographic',
+                                movementType: 'view-change', // This is a view change that should update NaviCube
+                                projectionMode: 'orthographic'
+                            }
+                        }));
                     }, 850); // Wait for animation to complete (duration is 800ms)
                 } else {
                     // Perspective mode: Close for tight detail
@@ -148,7 +154,13 @@ export default (world: OBC.World) => {
                     animateCameraTransition(camera3js, newPosition, center);
                     // Notify NaviCube to sync after zoom animation completes
                     setTimeout(() => {
-                        window.dispatchEvent(new CustomEvent('cameraChanged'));
+                        window.dispatchEvent(new CustomEvent('cameraChanged', {
+                            detail: {
+                                source: 'zoom-to-fit-perspective',
+                                movementType: 'view-change', // This is a view change that should update NaviCube
+                                projectionMode: 'perspective'
+                            }
+                        }));
                     }, 850);
                 }
                 console.log('Zoom to Fit: Close framing for maximum detail');
@@ -187,7 +199,13 @@ export default (world: OBC.World) => {
                 animateCameraLookAt(camera3js, targetPosition, center);
                 // Notify NaviCube to sync after zoom animation completes
                 setTimeout(() => {
-                    window.dispatchEvent(new CustomEvent('cameraChanged'));
+                    window.dispatchEvent(new CustomEvent('cameraChanged', {
+                        detail: {
+                            source: 'zoom-to-center',
+                            movementType: 'view-change', // This is a view change that should update NaviCube
+                            projectionMode: world.camera.three.type === 'OrthographicCamera' ? 'orthographic' : 'perspective'
+                        }
+                    }));
                 }, 450); // Wait for animation to complete (duration is 400ms)
                 console.log('Zoom to Center: Camera pointed toward model center (minimal movement)');
             }

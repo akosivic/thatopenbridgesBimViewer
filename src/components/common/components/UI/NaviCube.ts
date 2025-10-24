@@ -147,7 +147,7 @@ export default (world: OBC.World) => {
     let lastCameraPosition = new THREE.Vector3();
     let lastCameraQuaternion = new THREE.Quaternion();
     let lastCameraMatrix = new THREE.Matrix4();
-    let cameraUpdateInterval: NodeJS.Timeout | null = null;
+    let cameraUpdateInterval: number | null = null;
     let lastUpdateTime = 0;
     let isMonitoringActive = false;
 
@@ -158,8 +158,30 @@ export default (world: OBC.World) => {
     let lastMouseY = 0;
 
     // Global camera change listener for integration with other control systems
-    const handleGlobalCameraChange = () => {
+    const handleGlobalCameraChange = (event: Event) => {
         if (!isUpdatingFromCamera && world.camera.three) {
+            // Check if this is a position movement in orthographic mode that should be ignored
+            const customEvent = event as CustomEvent;
+            if (customEvent && customEvent.detail) {
+                const { movementType, projectionMode } = customEvent.detail;
+                
+                // In orthographic mode, ignore position-only movements (left/right/up/down/forward/backward)
+                if (projectionMode === 'orthographic' && movementType === 'position-movement') {
+                    if (isDebugMode) {
+                        console.log('NaviCube: Ignoring position movement in orthographic mode', customEvent.detail);
+                    }
+                    return; // Don't update NaviCube for position-only movements in orthographic mode
+                }
+                
+                if (isDebugMode) {
+                    console.log('NaviCube: Processing camera change', {
+                        movementType,
+                        projectionMode,
+                        source: customEvent.detail.source
+                    });
+                }
+            }
+            
             updateNaviCubeFromCamera();
         }
     };
