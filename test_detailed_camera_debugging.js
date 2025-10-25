@@ -1,7 +1,12 @@
-// Comprehensive Camera State Debugging Script
+﻿// Comprehensive Camera State Debugging Script
 // This script helps identify what's really causing the model flipping issue
 
-console.log("🔍 COMPREHENSIVE CAMERA DEBUGGING SCRIPT LOADED");
+// Debug utility - only logs when ?debug parameter is in URL
+const isDebugMode = () => typeof window !== 'undefined' && window.location?.search?.toLowerCase().includes('debug') || false;
+const debugLog = (...args) => isDebugMode() && debugLog(...args);
+
+
+debugLog("ðŸ” COMPREHENSIVE CAMERA DEBUGGING SCRIPT LOADED");
 
 // Global variables to track camera state changes
 let previousCameraState = null;
@@ -38,13 +43,13 @@ function compareCameraStates(state1, state2) {
     const quatDiff = state1.quaternion.angleTo(state2.quaternion);
     const directionDiff = state1.direction.angleTo(state2.direction);
     
-    console.log(`📊 CAMERA CHANGE ANALYSIS: ${state1.label} → ${state2.label}`);
-    console.log(`   Position change: ${positionDiff.toFixed(6)} units`);
-    console.log(`   Rotation change: ${(quatDiff * 180/Math.PI).toFixed(2)}°`);
-    console.log(`   Direction change: ${(directionDiff * 180/Math.PI).toFixed(2)}°`);
-    console.log(`   Up vector change: ${state1.up.distanceTo(state2.up).toFixed(6)}`);
-    console.log(`   Matrix changed: ${!state1.matrix.equals(state2.matrix)}`);
-    console.log(`   World matrix changed: ${!state1.matrixWorld.equals(state2.matrixWorld)}`);
+    debugLog(`ðŸ“Š CAMERA CHANGE ANALYSIS: ${state1.label} â†’ ${state2.label}`);
+    debugLog(`   Position change: ${positionDiff.toFixed(6)} units`);
+    debugLog(`   Rotation change: ${(quatDiff * 180/Math.PI).toFixed(2)}Â°`);
+    debugLog(`   Direction change: ${(directionDiff * 180/Math.PI).toFixed(2)}Â°`);
+    debugLog(`   Up vector change: ${state1.up.distanceTo(state2.up).toFixed(6)}`);
+    debugLog(`   Matrix changed: ${!state1.matrix.equals(state2.matrix)}`);
+    debugLog(`   World matrix changed: ${!state1.matrixWorld.equals(state2.matrixWorld)}`);
     
     return {
         positionDiff,
@@ -59,16 +64,16 @@ function addDetailedProjectionMonitoring() {
     setTimeout(() => {
         const camera = window.viewer?.camera?.three;
         if (!camera) {
-            console.log("❌ Camera not found, retrying...");
+            debugLog("âŒ Camera not found, retrying...");
             setTimeout(addDetailedProjectionMonitoring, 1000);
             return;
         }
         
-        console.log("✅ Camera found, starting monitoring");
+        debugLog("âœ… Camera found, starting monitoring");
         
         // Capture initial state
         previousCameraState = captureCompleteState(camera, "INITIAL_STATE");
-        console.log("📸 Initial camera state captured");
+        debugLog("ðŸ“¸ Initial camera state captured");
         
         // Monitor matrix changes
         const originalUpdateMatrixWorld = camera.updateMatrixWorld;
@@ -79,7 +84,7 @@ function addDetailedProjectionMonitoring() {
             
             const changes = compareCameraStates(beforeState, afterState);
             if (changes && (changes.positionDiff > 0.001 || changes.quatDiff > 0.1)) {
-                console.log("🔄 Significant camera change during updateMatrixWorld");
+                debugLog("ðŸ”„ Significant camera change during updateMatrixWorld");
             }
             
             return result;
@@ -89,8 +94,8 @@ function addDetailedProjectionMonitoring() {
         const originalLookAt = camera.lookAt;
         camera.lookAt = function(...args) {
             const beforeState = captureCompleteState(this, `BEFORE_LOOKAT_${++cameraChangeCount}`);
-            console.log("🎯 LOOKAT CALLED with args:", args);
-            console.trace("🔍 Call stack for lookAt:");
+            debugLog("ðŸŽ¯ LOOKAT CALLED with args:", args);
+            console.trace("ðŸ” Call stack for lookAt:");
             
             const result = originalLookAt.apply(this, args);
             
@@ -102,7 +107,7 @@ function addDetailedProjectionMonitoring() {
         
         // Monitor camera controls if they exist
         if (window.viewer?.camera?.controls) {
-            console.log("📱 Camera controls found, monitoring...");
+            debugLog("ðŸ“± Camera controls found, monitoring...");
             
             const controls = window.viewer.camera.controls;
             
@@ -116,7 +121,7 @@ function addDetailedProjectionMonitoring() {
                     
                     const changes = compareCameraStates(beforeState, afterState);
                     if (changes && (changes.positionDiff > 0.001 || changes.quatDiff > 0.1)) {
-                        console.log("🕹️ Camera controls caused significant change");
+                        debugLog("ðŸ•¹ï¸ Camera controls caused significant change");
                     }
                     
                     return result;
@@ -126,19 +131,19 @@ function addDetailedProjectionMonitoring() {
         
         // Add projection switching monitor
         window.addEventListener('projectionChange', (event) => {
-            console.log("🔄 PROJECTION CHANGE EVENT:", event.detail);
+            debugLog("ðŸ”„ PROJECTION CHANGE EVENT:", event.detail);
             const currentState = captureCompleteState(camera, `PROJECTION_CHANGE_${event.detail.mode}`);
             
             if (previousCameraState) {
-                console.log("🔍 ANALYZING PROJECTION CHANGE IMPACT:");
+                debugLog("ðŸ” ANALYZING PROJECTION CHANGE IMPACT:");
                 compareCameraStates(previousCameraState, currentState);
             }
             
             previousCameraState = currentState;
         });
         
-        console.log("✅ Detailed camera monitoring activated");
-        console.log("📋 Try switching projection modes to see detailed analysis");
+        debugLog("âœ… Detailed camera monitoring activated");
+        debugLog("ðŸ“‹ Try switching projection modes to see detailed analysis");
         
     }, 2000);
 }
@@ -164,14 +169,14 @@ window.debugCamera = {
         const camera = window.viewer?.camera?.three;
         if (camera) {
             const state = captureCompleteState(camera, "CURRENT");
-            console.log("📊 CURRENT CAMERA STATE:", state);
+            debugLog("ðŸ“Š CURRENT CAMERA STATE:", state);
             return state;
         }
         return null;
     },
     
     testProjectionSwitch: () => {
-        console.log("🧪 TESTING PROJECTION SWITCH");
+        debugLog("ðŸ§ª TESTING PROJECTION SWITCH");
         const before = window.debugCamera.capture();
         
         // Try to find and click the projection button
@@ -184,9 +189,10 @@ window.debugCamera = {
                 window.debugCamera.compare(before, after);
             }, 100);
         } else {
-            console.log("❌ Could not find projection button");
+            debugLog("âŒ Could not find projection button");
         }
     }
 };
 
-console.log("🛠️ Debug tools available: window.debugCamera.getCurrentState(), window.debugCamera.testProjectionSwitch()");
+debugLog("ðŸ› ï¸ Debug tools available: window.debugCamera.getCurrentState(), window.debugCamera.testProjectionSwitch()");
+

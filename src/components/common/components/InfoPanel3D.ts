@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { InfoPanelData } from "../types/InfoPanelTypes";
 import i18n from "../utils/i18n";
+import { debugLog, debugError } from "../../../utils/debugLogger";
 
 export class InfoPanel3D {
   private static panelCount = 0;
@@ -50,7 +51,7 @@ export class InfoPanel3D {
     this.scene = scene;
     this.onPositionChange = onPositionChange;
     
-    console.log('🎨 [InfoPanel3D] Creating panel:', this.id, 'at position:', this.data.position);
+    debugLog('🎨 [InfoPanel3D] Creating panel:', this.id, 'at position:', this.data.position);
 
     // Create 3D group for the panel marker
     this.group = new THREE.Group();
@@ -79,7 +80,7 @@ export class InfoPanel3D {
     }
     (window as any).infoPanels.set(this.id, this);
     
-    console.log('✅ [InfoPanel3D] Panel fully created:', this.id, 'HTML added to body');
+    debugLog('✅ [InfoPanel3D] Panel fully created:', this.id, 'HTML added to body');
   }
 
   /**
@@ -233,14 +234,14 @@ export class InfoPanel3D {
       // If in inline title edit mode, disable edit mode
       this.isInlineTitleEdit = false;
       this.updatePanelContent();
-      console.log(`🛠️ [InfoPanel3D] Panel ${this.id} edit mode disabled`);
+      debugLog(`🛠️ [InfoPanel3D] Panel ${this.id} edit mode disabled`);
     } else {
       // If not in inline edit mode, enable inline title edit mode directly
       this.isEditMode = false; // Ensure position edit mode is off
       this.setEditMode(false);
       this.isInlineTitleEdit = true;
       this.updatePanelContent();
-      console.log(`✏️ [InfoPanel3D] Panel ${this.id} inline title edit mode enabled`);
+      debugLog(`✏️ [InfoPanel3D] Panel ${this.id} inline title edit mode enabled`);
     }
   }
 
@@ -367,7 +368,7 @@ export class InfoPanel3D {
           <div class="point-list-item-coords">x: ${point.x}, y: ${point.y}, z: ${point.z}</div>
         </div>
         <div class="point-list-actions">
-          <button class="content-edit-button" onclick="console.log('Add point: ${point.name}')">${i18n.t('addPoint')}</button>
+          <button class="content-edit-button" onclick="debugLog('Add point: ${point.name}')">${i18n.t('addPoint')}</button>
         </div>
       </div>
     `).join('');
@@ -377,7 +378,7 @@ export class InfoPanel3D {
    * Add a new point (placeholder for DPAL integration)
    */
   private addNewPoint(): void {
-    console.log('🔗 [InfoPanel3D] Add new point - DPAL integration placeholder');
+    debugLog('🔗 [InfoPanel3D] Add new point - DPAL integration placeholder');
     // TODO: Implement DPAL device communication
   }
 
@@ -409,13 +410,13 @@ export class InfoPanel3D {
       });
 
       if (response.ok) {
-        console.log(`✅ [InfoPanel3D] Panel ${this.id} title updated to "${newTitle}"`);
+        debugLog(`✅ [InfoPanel3D] Panel ${this.id} title updated to "${newTitle}"`);
       } else {
-        console.error(`❌ [InfoPanel3D] Failed to update panel ${this.id} title`);
+        debugError(`❌ [InfoPanel3D] Failed to update panel ${this.id} title`);
         // Could revert the local change here if needed
       }
     } catch (error) {
-      console.error(`❌ [InfoPanel3D] Error updating panel ${this.id} title:`, error);
+      debugError(`❌ [InfoPanel3D] Error updating panel ${this.id} title:`, error);
     }
   }
 
@@ -449,7 +450,7 @@ export class InfoPanel3D {
     }, 200);
     this.iconElement.style.background = 'linear-gradient(135deg, #0078D4 0%, #005a9e 100%)';
     this.iconElement.style.boxShadow = '0 4px 12px rgba(0, 120, 212, 0.4), 0 2px 4px rgba(0, 0, 0, 0.2)';
-    console.log(`❌ [InfoPanel3D] Panel ${this.id} closed`);
+    debugLog(`❌ [InfoPanel3D] Panel ${this.id} closed`);
   }
 
   /**
@@ -481,7 +482,7 @@ export class InfoPanel3D {
     // THREE.js uses x,y,z where y is height and z is depth (negative)
     const { x, y, z } = this.data.position;
     
-    console.log(`📍 [InfoPanel3D] Positioning panel ${this.id} at config coords: x=${x}, y=${y}, z=${z}`);
+    debugLog(`📍 [InfoPanel3D] Positioning panel ${this.id} at config coords: x=${x}, y=${y}, z=${z}`);
     
     this.group.position.set(
       x,      // X stays the same
@@ -489,7 +490,7 @@ export class InfoPanel3D {
       -y      // Config Y becomes negative THREE.js Z (depth, inverted)
     );
     
-    console.log(`📍 [InfoPanel3D] THREE.js position set to: x=${this.group.position.x}, y=${this.group.position.y}, z=${this.group.position.z}`);
+    debugLog(`📍 [InfoPanel3D] THREE.js position set to: x=${this.group.position.x}, y=${this.group.position.y}, z=${this.group.position.z}`);
     
     this.group.updateMatrixWorld();
   }
@@ -500,7 +501,7 @@ export class InfoPanel3D {
   public updateHTMLPosition(camera: THREE.Camera, renderer: THREE.WebGLRenderer): void {
     if (!this.data.visible) {
       this.htmlContainer.style.visibility = 'hidden';
-      console.log(`👁️ [InfoPanel3D] Panel ${this.id} is not visible (data.visible = false)`);
+      debugLog(`👁️ [InfoPanel3D] Panel ${this.id} is not visible (data.visible = false)`);
       return;
     }
 
@@ -516,7 +517,7 @@ export class InfoPanel3D {
       this.htmlContainer.style.visibility = 'hidden';
       // Reduce console spam - only log occasionally
       if (Math.random() < 0.01) {
-        console.log(`� [InfoPanel3D] Panel ${this.id} hidden - too far (${distance.toFixed(1)} > ${this.MAX_VISIBILITY_DISTANCE})`);
+        debugLog(`� [InfoPanel3D] Panel ${this.id} hidden - too far (${distance.toFixed(1)} > ${this.MAX_VISIBILITY_DISTANCE})`);
       }
       return;
     }
@@ -526,7 +527,7 @@ export class InfoPanel3D {
       this.htmlContainer.style.visibility = 'hidden';
       // Reduce console spam - only log occasionally  
       if (Math.random() < 0.01) {
-        console.log(`� [InfoPanel3D] Panel ${this.id} hidden - too close (${distance.toFixed(1)} < ${this.VISIBILITY_DISTANCE})`);
+        debugLog(`� [InfoPanel3D] Panel ${this.id} hidden - too close (${distance.toFixed(1)} < ${this.VISIBILITY_DISTANCE})`);
       }
       return;
     }
@@ -556,7 +557,7 @@ export class InfoPanel3D {
     
     // Reduce console spam - only log occasionally for visible panels
     if (Math.random() < 0.005) {
-      console.log(`✅ [InfoPanel3D] Panel ${this.id} visible at distance: ${distance.toFixed(1)} (range: ${this.VISIBILITY_DISTANCE}-${this.MAX_VISIBILITY_DISTANCE})`);
+      debugLog(`✅ [InfoPanel3D] Panel ${this.id} visible at distance: ${distance.toFixed(1)} (range: ${this.VISIBILITY_DISTANCE}-${this.MAX_VISIBILITY_DISTANCE})`);
     }
 
     // Apply distance-based scaling and opacity with smooth transitions
@@ -856,7 +857,7 @@ export class InfoPanel3D {
     (this as any).MAX_VISIBILITY_DISTANCE = maxDistance;
     (this as any).FADE_START_DISTANCE = fadeStartDistance || minDistance + ((maxDistance - minDistance) * 0.7);
     
-    console.log(`🔧 [InfoPanel3D] Panel ${this.id} visibility updated: min=${minDistance}, max=${maxDistance}, fade=${(this as any).FADE_START_DISTANCE}`);
+    debugLog(`🔧 [InfoPanel3D] Panel ${this.id} visibility updated: min=${minDistance}, max=${maxDistance}, fade=${(this as any).FADE_START_DISTANCE}`);
   }
 
   /**

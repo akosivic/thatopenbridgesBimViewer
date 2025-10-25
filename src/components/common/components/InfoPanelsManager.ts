@@ -2,6 +2,7 @@ import * as THREE from "three";
 import * as BUI from "@thatopen/ui";
 import { InfoPanel3D } from "./InfoPanel3D";
 import { InfoPanelsConfig, InfoPanelData, defaultInfoPanelsConfig } from "../types/InfoPanelTypes";
+import { debugLog, debugWarn, debugError } from "../../../utils/debugLogger";
 
 export class InfoPanelsManager {
   private panels: Map<string, InfoPanel3D> = new Map();
@@ -30,7 +31,7 @@ export class InfoPanelsManager {
     renderer: THREE.WebGLRenderer,
     onConfigChange?: (config: InfoPanelsConfig) => void
   ) {
-    console.log('🚀 InfoPanelsManager (New) constructor called');
+    debugLog('🚀 InfoPanelsManager (New) constructor called');
     this.scene = scene;
     this.camera = camera;
     this.renderer = renderer;
@@ -38,7 +39,7 @@ export class InfoPanelsManager {
     this.onConfigChange = onConfigChange;
     
     this.setupEventListeners();
-    console.log('✅ InfoPanelsManager (New) initialized');
+    debugLog('✅ InfoPanelsManager (New) initialized');
   }
 
   /**
@@ -147,7 +148,7 @@ export class InfoPanelsManager {
    */
   public toggleEditMode(): void {
     this.isEditMode = !this.isEditMode;
-    console.log('Edit mode toggled:', this.isEditMode);
+    debugLog('Edit mode toggled:', this.isEditMode);
     
     // Update all panels
     for (const panel of this.panels.values()) {
@@ -181,7 +182,7 @@ export class InfoPanelsManager {
       panel.setEditMode(true);
     }
     
-    console.log(`Added panel ${panel.id} at position:`, data.position);
+    debugLog(`Added panel ${panel.id} at position:`, data.position);
     this.saveConfig();
     return panel;
   }
@@ -198,7 +199,7 @@ export class InfoPanelsManager {
       // Remove from config
       this.config.panels = this.config.panels.filter(p => p.id !== id);
       this.saveConfig();
-      console.log(`Removed panel ${id}`);
+      debugLog(`Removed panel ${id}`);
       return true;
     }
     return false;
@@ -208,7 +209,7 @@ export class InfoPanelsManager {
    * Configure distance-based visibility for all panels
    */
   public setVisibilityDistance(minDistance: number = 2, maxDistance: number = 15, fadeStartDistance?: number): void {
-    console.log(`🔧 [InfoPanelsManager] Setting visibility distances: min=${minDistance}, max=${maxDistance}, fade=${fadeStartDistance || 'auto'}`);
+    debugLog(`🔧 [InfoPanelsManager] Setting visibility distances: min=${minDistance}, max=${maxDistance}, fade=${fadeStartDistance || 'auto'}`);
     
     for (const panel of this.panels.values()) {
       panel.updateVisibilitySettings(minDistance, maxDistance, fadeStartDistance);
@@ -280,16 +281,16 @@ export class InfoPanelsManager {
    * Load configuration from server
    */
   public async loadConfig(): Promise<boolean> {
-    console.log('🔄 [InfoPanelsManager] Attempting to load info panels config from:', this.configFilePath);
+    debugLog('🔄 [InfoPanelsManager] Attempting to load info panels config from:', this.configFilePath);
     
     try {
       const response = await fetch(this.configFilePath);
-      console.log('Fetch response status:', response.status, response.statusText);
+      debugLog('Fetch response status:', response.status, response.statusText);
       
       if (response.ok) {
         const config: InfoPanelsConfig = await response.json();
-        console.log('✅ [InfoPanelsManager] Config loaded successfully:', config);
-        console.log('📊 [InfoPanelsManager] Number of panels to create:', config.panels.length);
+        debugLog('✅ [InfoPanelsManager] Config loaded successfully:', config);
+        debugLog('📊 [InfoPanelsManager] Number of panels to create:', config.panels.length);
         
         this.config = config;
         this.hasValidConfig = true;
@@ -304,11 +305,11 @@ export class InfoPanelsManager {
           return bEast - aEast; // Sort descending (easternmost first)
         });
         
-        console.log('🧭 [InfoPanelsManager] Loading panels from east to west:', 
+        debugLog('🧭 [InfoPanelsManager] Loading panels from east to west:', 
           sortedPanels.map(p => ({ id: p.id, east: p.realWorldPosition?.east })));
         
         for (const panelData of sortedPanels) {
-          console.log('🎯 [InfoPanelsManager] Creating panel from config:', panelData);
+          debugLog('🎯 [InfoPanelsManager] Creating panel from config:', panelData);
           
           // Ensure dates are properly converted
           const enrichedPanelData: InfoPanelData = {
@@ -325,21 +326,21 @@ export class InfoPanelsManager {
           );
           
           this.panels.set(panel.id, panel);
-          console.log('✨ [InfoPanelsManager] Panel added to collection:', panel.id, 'Total panels:', this.panels.size);
+          debugLog('✨ [InfoPanelsManager] Panel added to collection:', panel.id, 'Total panels:', this.panels.size);
           
           if (this.isEditMode) {
             panel.setEditMode(true);
           }
         }
         
-        console.log(`✅ Successfully loaded ${config.panels.length} info panels from config`);
-        console.log('🔍 [InfoPanelsManager] Final panel count in collection:', this.panels.size);
+        debugLog(`✅ Successfully loaded ${config.panels.length} info panels from config`);
+        debugLog('🔍 [InfoPanelsManager] Final panel count in collection:', this.panels.size);
         
         // Config loaded successfully
         
         return true;
       } else {
-        console.warn('Failed to load config:', response.status, response.statusText);
+        debugWarn('Failed to load config:', response.status, response.statusText);
         this.hasValidConfig = false;
         
 
@@ -347,7 +348,7 @@ export class InfoPanelsManager {
         return false;
       }
     } catch (error) {
-      console.error('Error loading info panels config:', error);
+      debugError('Error loading info panels config:', error);
       this.hasValidConfig = false;
       
 
@@ -362,7 +363,7 @@ export class InfoPanelsManager {
   public async saveConfig(): Promise<boolean> {
     // For now, just log the config that would be saved
     // In a real implementation, this would send to a server endpoint
-    console.log('Would save config:', JSON.stringify(this.config, null, 2));
+    debugLog('Would save config:', JSON.stringify(this.config, null, 2));
     
     if (this.onConfigChange) {
       this.onConfigChange(this.config);
@@ -385,7 +386,7 @@ export class InfoPanelsManager {
    * Create management UI panel
    */
   public createManagementPanel(): BUI.TemplateResult {
-    console.log('🎨 Creating management panel - hasValidConfig:', this.hasValidConfig, 'panels count:', this.panels.size);
+    debugLog('🎨 Creating management panel - hasValidConfig:', this.hasValidConfig, 'panels count:', this.panels.size);
     
     if (!this.hasValidConfig) {
       return BUI.html`
@@ -488,6 +489,6 @@ export class InfoPanelsManager {
     
     // UI cleanup complete
     
-    console.log('InfoPanelsManager disposed');
+    debugLog('InfoPanelsManager disposed');
   }
 }

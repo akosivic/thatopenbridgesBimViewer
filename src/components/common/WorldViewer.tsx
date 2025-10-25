@@ -37,6 +37,7 @@ import ZoomOptions, { getMinZoomLimit } from "./components/UI/ZoomOptions";
 import NaviCube from "./components/UI/NaviCube";
 import { getCurrentProjection } from "./components/Toolbars/Sections/ProjectionControls";
 // import OrthographicFrustumManager from "./utils/OrthographicFrustumManager"; // DISABLED
+import { debugLog, debugWarn, debugError, isDebugMode } from "../../utils/debugLogger";
 
 
 interface State {
@@ -63,10 +64,7 @@ export class WorldViewer extends HTMLElement {
 
   disconnectedCallback() {
     // Clean up resources when the element is removed from DOM
-    const isDebugMode = new URLSearchParams(window.location.search).has('debug');
-    if (isDebugMode) {
-        console.log('WorldViewer disconnecting - cleaning up resources...');
-    }
+    debugLog('WorldViewer disconnecting - cleaning up resources...');
     
     // if (this.infoPanelsManager) {
     //   this.infoPanelsManager.dispose();
@@ -84,9 +82,7 @@ export class WorldViewer extends HTMLElement {
       const renderer = (window as any).worldRenderer;
       if (renderer && renderer.dispose) {
         renderer.dispose();
-        if (isDebugMode) {
-            console.log('WebGL renderer disposed');
-        }
+        debugLog('WebGL renderer disposed');
       }
       
       // Clear any remaining textures or geometries
@@ -112,44 +108,29 @@ export class WorldViewer extends HTMLElement {
             }
           }
         });
-        if (isDebugMode) {
-            console.log('Scene resources cleaned up');
-        }
+        debugLog('Scene resources cleaned up');
       }
     } catch (error) {
-      if (isDebugMode) {
-          console.warn('Error during cleanup:', error);
-      }
+      debugWarn('Error during cleanup:', error);
     }
   }
   async connectedCallback() {
-    // Check if debug mode is enabled via URL parameter
-    const isDebugMode = window.location.search.toLowerCase().includes('debug');
-    
     try {
       // Initialize WASM modules first
-      if (isDebugMode) {
-          console.log('Pre-loading WebAssembly modules...');
-      }
+      debugLog('Pre-loading WebAssembly modules...');
 
       // Pre-initialize web-ifc WASM module
       try {
         await import('web-ifc');
-        if (isDebugMode) {
-            console.log('web-ifc WASM module loaded successfully');
-        }
+        debugLog('web-ifc WASM module loaded successfully');
       } catch (wasmError) {
-        if (isDebugMode) {
-            console.warn('Failed to pre-load web-ifc WASM module:', wasmError);
-        }
+        debugWarn('Failed to pre-load web-ifc WASM module:', wasmError);
         // Continue with initialization even if pre-loading fails
       }
 
       await this.initializeWorldViewer();
     } catch (error) {
-      if (isDebugMode) {
-          console.error('Failed to initialize WorldViewer:', error);
-      }
+      debugError('Failed to initialize WorldViewer:', error);
     }
   }
 
@@ -157,11 +138,8 @@ export class WorldViewer extends HTMLElement {
     // Show loading overlay immediately when app initializes
     const loadingOverlay = showLoadingOverlay('initializing');
 
-    // Check if debug mode is enabled via URL parameter
-    const isDebugMode = window.location.search.toLowerCase().includes('debug');
-    if (isDebugMode) {
-      console.log('Debug mode detected:', isDebugMode, 'URL:', window.location.search);
-    }
+    // Log debug mode status
+    debugLog('Debug mode detected - WorldViewer initializing...');
 
     Manager.init();
 
@@ -198,16 +176,12 @@ export class WorldViewer extends HTMLElement {
     const canvas = world.renderer.three.domElement;
     
     canvas.addEventListener('webglcontextlost', (event) => {
-      if (isDebugMode) {
-        console.warn('WebGL context lost. Preventing default behavior...');
-      }
+      debugWarn('WebGL context lost. Preventing default behavior...');
       event.preventDefault();
       
       // Pause any animations or rendering loops
       if (world.renderer) {
-        if (isDebugMode) {
-            console.log('Pausing renderer due to context loss');
-        }
+        debugLog('Pausing renderer due to context loss');
       }
       
       // Show a user-friendly message
@@ -241,9 +215,7 @@ export class WorldViewer extends HTMLElement {
     }, false);
 
     canvas.addEventListener('webglcontextrestored', () => {
-      if (isDebugMode) {
-        console.log('WebGL context restored. Reinitializing renderer...');
-      }
+      debugLog('WebGL context restored. Reinitializing renderer...');
       
       // Remove the overlay
       const overlay = document.getElementById('webgl-context-lost-overlay');
@@ -255,18 +227,14 @@ export class WorldViewer extends HTMLElement {
         // Reinitialize the renderer
         if (world.renderer) {
           world.renderer.update();
-          if (isDebugMode) {
-            console.log('Renderer reinitialized successfully');
-          }
+          debugLog('Renderer reinitialized successfully');
         }
         
         // Reinitialize postproduction effects
         if (postproduction) {
           postproduction.enabled = true;
           postproduction.setPasses({ custom: true, ao: true, gamma: true });
-          if (isDebugMode) {
-            console.log('Postproduction effects restored');
-          }
+          debugLog('Postproduction effects restored');
         }
         
         // Force a render update
@@ -277,9 +245,7 @@ export class WorldViewer extends HTMLElement {
         }, 100);
         
       } catch (error) {
-        if (isDebugMode) {
-            console.error('Error reinitializing after context restore:', error);
-        }
+        debugError('Error reinitializing after context restore:', error);
         
         // Show reload suggestion if reinitialization fails
         const reloadOverlay = document.createElement('div');
@@ -317,9 +283,7 @@ export class WorldViewer extends HTMLElement {
 
     // Initialize camera projection to match the default setting (Orthographic)
     setTimeout(() => {
-      if (isDebugMode) {
-        console.log('Setting initial projection to Orthographic...');
-      }
+      debugLog('Setting initial projection to Orthographic...');
       if (world.camera instanceof OrthoPerspectiveCamera) {
         world.camera.projection.set("Orthographic");
         
@@ -344,15 +308,15 @@ export class WorldViewer extends HTMLElement {
           // this.frustumManager = new OrthographicFrustumManager(world);
           // this.frustumManager.enableAutomaticUpdates();
           
-          if (isDebugMode) {
-            console.log('Orthographic camera frustum configured:', {
+          if (isDebugMode()) {
+            debugLog('Orthographic camera frustum configured:', {
               left: orthoCam.left,
               right: orthoCam.right,
               top: orthoCam.top,
               bottom: orthoCam.bottom,
               zoom: orthoCam.zoom
             });
-            // console.log('🔧 OrthographicFrustumManager initialized to fix clipping issues');
+            // debugLog('🔧 OrthographicFrustumManager initialized to fix clipping issues');
           }
           
           // Expose frustum manager for debugging
@@ -366,9 +330,9 @@ export class WorldViewer extends HTMLElement {
           world.camera.controls.camera.updateProjectionMatrix();
         }
         
-        if (isDebugMode) {
-          console.log('Camera projection initialized to Orthographic mode');
-          console.log('Camera ready for model-triggered view positioning');
+        if (isDebugMode()) {
+          debugLog('Camera projection initialized to Orthographic mode');
+          debugLog('Camera ready for model-triggered view positioning');
         }
       }
     }, 100);
@@ -401,16 +365,12 @@ export class WorldViewer extends HTMLElement {
       // Enable context loss and restoration handling
       const loseContext = gl.getExtension('WEBGL_lose_context');
       if (loseContext) {
-        if (isDebugMode) {
-            console.log('WebGL lose context extension available');
-        }
+        debugLog('WebGL lose context extension available');
         
         // Add periodic context validation (optional)
         setInterval(() => {
           if (gl.isContextLost()) {
-            if (isDebugMode) {
-                console.warn('WebGL context lost detected during periodic check');
-            }
+            debugWarn('WebGL context lost detected during periodic check');
           }
         }, 10000); // Check every 10 seconds
       }
@@ -423,16 +383,12 @@ export class WorldViewer extends HTMLElement {
       renderer.dispose = (() => {
         const originalDispose = renderer.dispose.bind(renderer);
         return () => {
-          if (isDebugMode) {
-              console.log('Disposing WebGL renderer resources...');
-          }
+          debugLog('Disposing WebGL renderer resources...');
           originalDispose();
         };
       })();
       
-      if (isDebugMode) {
-          console.log('WebGL optimization settings applied');
-      }
+      debugLog('WebGL optimization settings applied');
     }
 
     // Initialize pointer lock controls
@@ -445,16 +401,12 @@ export class WorldViewer extends HTMLElement {
     // Initialize orthographic mouse controls
     const { initializeOrthographicControls } = await import('./components/Toolbars/Sections/OrthographicMouseControls');
     initializeOrthographicControls(world, viewport);
-    if (isDebugMode) {
-        console.log('Orthographic mouse controls initialized');
-    }
+    debugLog('Orthographic mouse controls initialized');
 
     // DISABLE the original orbit controls to prevent conflicts
     if (world.camera.controls) {
       world.camera.controls.enabled = false;
-      if (isDebugMode) {
-          console.log('Original orbit controls disabled');
-      }
+      debugLog('Original orbit controls disabled');
     }
 
     // Override the original camera controls with first-person controls
@@ -500,9 +452,7 @@ export class WorldViewer extends HTMLElement {
       mouseDownOnToolbar = isToolbarButton(e.target);
 
       if (mouseDownOnToolbar) {
-        if (isDebugMode) {
-            console.log('Mouse down on toolbar element, FPS blocked');
-        }
+        debugLog('Mouse down on toolbar element, FPS blocked');
         return;
       }
 
@@ -515,24 +465,18 @@ export class WorldViewer extends HTMLElement {
           // Perspective mode: Use FPS controls (left mouse activates pointer lock)
           isMousePressed = true;
           fpControls.lock();
-          if (isDebugMode) {
-              console.log('Mouse pressed - FPS mode ACTIVATED');
-          }
+          debugLog('Mouse pressed - FPS mode ACTIVATED');
         } else if (currentProjection === "Orthographic") {
           // Orthographic mode: OrthographicMouseControls handles all mouse events
-          if (isDebugMode) {
-              console.log('Mouse event handled by orthographic controls');
-          }
+          debugLog('Mouse event handled by orthographic controls');
         }
       } catch (error) {
-        if (isDebugMode) {
-            console.warn('Could not determine projection mode, defaulting to perspective behavior');
-        }
+        debugWarn('Could not determine projection mode, defaulting to perspective behavior');
         if (fpControls && e.button === 0) {
           isMousePressed = true;
           fpControls.lock();
-          if (isDebugMode) {
-              console.log('Mouse pressed - FPS mode ACTIVATED (fallback)');
+          if (isDebugMode()) {
+              debugLog('Mouse pressed - FPS mode ACTIVATED (fallback)');
           }
         }
       }
@@ -545,9 +489,7 @@ export class WorldViewer extends HTMLElement {
       if (mouseDownOnToolbar || currentTargetIsToolbar) {
         // Reset tracking variables
         mouseDownOnToolbar = false;
-        if (isDebugMode) {
-            console.log('Mouse up on/from toolbar element, FPS remains blocked');
-        }
+        debugLog('Mouse up on/from toolbar element, FPS remains blocked');
         return;
       }
 
@@ -560,20 +502,16 @@ export class WorldViewer extends HTMLElement {
           // Perspective mode: Deactivate FPS controls
           isMousePressed = false;
           fpControls.unlock();
-          if (isDebugMode) {
-              console.log('Mouse released - FPS mode DEACTIVATED');
-          }
+          debugLog('Mouse released - FPS mode DEACTIVATED');
         }
         // Orthographic mode: OrthographicMouseControls handles mouse up
       } catch (error) {
-        if (isDebugMode) {
-            console.warn('Could not determine projection mode, using fallback behavior');
-        }
+        debugWarn('Could not determine projection mode, using fallback behavior');
         if (fpControls && e.button === 0 && isMousePressed) {
           isMousePressed = false;
           fpControls.unlock();
-          if (isDebugMode) {
-              console.log('Mouse released - FPS mode DEACTIVATED (fallback)');
+          if (isDebugMode()) {
+              debugLog('Mouse released - FPS mode DEACTIVATED (fallback)');
           }
         }
       }
@@ -587,23 +525,17 @@ export class WorldViewer extends HTMLElement {
       if (fpControls && isMousePressed) {
         isMousePressed = false;
         fpControls.unlock();
-        if (isDebugMode) {
-            console.log('Mouse left viewport - FPS mode DEACTIVATED');
-        }
+        debugLog('Mouse left viewport - FPS mode DEACTIVATED');
       }
     });
 
     // Handle pointer lock events
     fpControls.addEventListener('lock', () => {
-      if (isDebugMode) {
-          console.log('First-person controls locked - mouse look active');
-      }
+      debugLog('First-person controls locked - mouse look active');
     });
 
     fpControls.addEventListener('unlock', () => {
-      if (isDebugMode) {
-          console.log('First-person controls unlocked - mouse look inactive');
-      }
+      debugLog('First-person controls unlocked - mouse look inactive');
     });
 
     // Set default camera properties
@@ -613,11 +545,9 @@ export class WorldViewer extends HTMLElement {
     }
 
     
-    if (isDebugMode) {
-        console.log('First-person camera initialized at position:', world.camera.three.position);
-    }    // Create camera position display only in debug mode
+    debugLog('First-person camera initialized at position:', world.camera.three.position);    // Create camera position display only in debug mode
     let positionDisplay: HTMLElement | null = null;
-    if (isDebugMode) {
+    if (isDebugMode()) {
       positionDisplay = document.createElement('div');
       positionDisplay.id = 'fps-position-display';
       positionDisplay.style.cssText = `
@@ -641,9 +571,7 @@ export class WorldViewer extends HTMLElement {
       `;
       positionDisplay.innerHTML = `<div style="font-weight: bold; color: #00ff00;">🎮 DEBUG</div><div>Initializing...</div>`;
       document.body.appendChild(positionDisplay);
-      if (isDebugMode) {
-          console.log('Position display created and added to BOTTOM RIGHT');
-      }
+      debugLog('Position display created and added to BOTTOM RIGHT');
     }
 
     // FPS-style movement controls
@@ -661,22 +589,16 @@ export class WorldViewer extends HTMLElement {
       // Update keyboard controls with new speed if available
       if (keyboardControlsUpdate) {
         keyboardControlsUpdate(moveSpeed);
-        if (isDebugMode) {
-          console.log(`🎯 Updated keyboard controls context with new moveSpeed: ${moveSpeed}`);
-        }
+        debugLog(`🎯 Updated keyboard controls context with new moveSpeed: ${moveSpeed}`);
       }
       
-      if (isDebugMode) {
-          console.log(`WorldViewer moveSpeed updated to: ${moveSpeed}`);
-      }
+      debugLog(`WorldViewer moveSpeed updated to: ${moveSpeed}`);
     });
 
     // Listen for manual movement events from SpeedControls direction buttons
     window.addEventListener('manualMovement', async (event: any) => {
       const { direction, speed } = event.detail;
-      if (isDebugMode) {
-          console.log(`Manual movement triggered: ${direction} at speed ${speed}`);
-      }
+      debugLog(`Manual movement triggered: ${direction} at speed ${speed}`);
 
       if (!fpControls) return;
 
@@ -713,29 +635,27 @@ export class WorldViewer extends HTMLElement {
         if (currentProjection === "Perspective") {
           // FORCE Y position to always be at eye level (1.6 meters) - perspective mode only
           world.camera.three.position.y = 1.6;
-          if (isDebugMode) {
-              console.log(`Moved ${direction} (Perspective mode - Y locked at 1.6m):`, world.camera.three.position);
+          if (isDebugMode()) {
+              debugLog(`Moved ${direction} (Perspective mode - Y locked at 1.6m):`, world.camera.three.position);
           }
         } else {
           // Orthographic mode: No Y-axis restrictions, allow free movement
-          if (isDebugMode) {
-              console.log(`Moved ${direction} (Orthographic mode - no restrictions):`, world.camera.three.position);
+          if (isDebugMode()) {
+              debugLog(`Moved ${direction} (Orthographic mode - no restrictions):`, world.camera.three.position);
           }
         }
       } catch (error) {
-        if (isDebugMode) {
-            console.warn('Could not determine projection mode, applying default restrictions:', error);
-        }
+        debugWarn('Could not determine projection mode, applying default restrictions:', error);
         world.camera.three.position.y = 1.6; // Fallback to perspective behavior
-        if (isDebugMode) {
-            console.log(`Moved ${direction} (fallback behavior):`, world.camera.three.position);
+        if (isDebugMode()) {
+            debugLog(`Moved ${direction} (fallback behavior):`, world.camera.three.position);
         }
       }
     });
 
     // Create enhanced position display update function for debug mode
     const updatePositionDisplay = async () => {
-      if (isDebugMode && positionDisplay && fpControls) {
+      if (isDebugMode() && positionDisplay && fpControls) {
         const pos = world.camera.three.position;
         const rot = world.camera.three.rotation;
         const isLocked = fpControls.isLocked;
@@ -772,16 +692,14 @@ export class WorldViewer extends HTMLElement {
           positionDisplay.style.visibility = 'visible';
 
         } catch (error) {
-          if (isDebugMode) {
-              console.error('Error updating position display:', error);
-          }
+          debugError('Error updating position display:', error);
         }
       }
       requestAnimationFrame(updatePositionDisplay);
     };
 
     // Start position display update loop
-    if (isDebugMode) {
+    if (isDebugMode()) {
       updatePositionDisplay();
     }
 
@@ -797,9 +715,7 @@ export class WorldViewer extends HTMLElement {
       setKeyboardControlsContext(fpControls, world, newSpeed);
     };
     
-    if (isDebugMode) {
-        console.log('Enhanced keyboard controls initialized with projection-specific bindings');
-    }
+    debugLog('Enhanced keyboard controls initialized with projection-specific bindings');
 
     // Enable scroll wheel: zoom in orthographic mode, movement in perspective mode
     viewport.addEventListener('wheel', async (event: WheelEvent) => {
@@ -807,10 +723,10 @@ export class WorldViewer extends HTMLElement {
 
       event.preventDefault(); // Prevent default scroll behavior
 
-      if (isDebugMode) {
-          console.log('=== MOUSEWHEEL EVENT ===');
-          console.log('Delta:', event.deltaY);
-          console.log('Camera type:', world.camera.three.type);
+      if (isDebugMode()) {
+          debugLog('=== MOUSEWHEEL EVENT ===');
+          debugLog('Delta:', event.deltaY);
+          debugLog('Camera type:', world.camera.three.type);
       }
 
       // Check if we're in orthographic mode
@@ -824,17 +740,15 @@ export class WorldViewer extends HTMLElement {
           const newZoom = Math.min(5, currentZoom * 1.2);
           orthoCam.zoom = newZoom;
           orthoCam.updateProjectionMatrix();
-          if (isDebugMode) {
-              console.log('Orthographic: Zoomed IN to', newZoom);
-          }
+          debugLog('Orthographic: Zoomed IN to', newZoom);
         } else if (event.deltaY > 0) {
           // Scroll down = Zoom out
           const minZoom = getMinZoomLimit(); // Get dynamic minimum from zoom-to-fit
           const newZoom = Math.max(minZoom, currentZoom * 0.8);
           orthoCam.zoom = newZoom;
           orthoCam.updateProjectionMatrix();
-          if (isDebugMode) {
-              console.log('Orthographic: Zoomed OUT to', newZoom, '(min:', minZoom + ')');
+          if (isDebugMode()) {
+              debugLog('Orthographic: Zoomed OUT to', newZoom, '(min:', minZoom + ')');
           }
         }
         
@@ -852,22 +766,18 @@ export class WorldViewer extends HTMLElement {
         if (event.deltaY < 0) {
           // Scroll up = move forward
           world.camera.three.position.addScaledVector(direction, moveDistance);
-          if (isDebugMode) {
-              console.log('Perspective: Moving FORWARD');
-          }
+          debugLog('Perspective: Moving FORWARD');
         } else if (event.deltaY > 0) {
           // Scroll down = move backward
           world.camera.three.position.addScaledVector(direction, -moveDistance);
-          if (isDebugMode) {
-              console.log('Perspective: Moving BACKWARD');
-          }
+          debugLog('Perspective: Moving BACKWARD');
         }
 
         // FORCE Y position to always be at eye level (1.6 meters) in perspective mode
         world.camera.three.position.y = 1.6;
-        if (isDebugMode) {
-            console.log('Perspective mode: Y position locked to 1.6m');
-            console.log('New position:', world.camera.three.position);
+        if (isDebugMode()) {
+            debugLog('Perspective mode: Y position locked to 1.6m');
+            debugLog('New position:', world.camera.three.position);
         }
       }
     });
@@ -892,36 +802,36 @@ export class WorldViewer extends HTMLElement {
     postproduction.customEffects.lineColor = 0x17191c;
 
     // Initialize InfoPanelsManager for 3D information panels - DISABLED
-    // if (isDebugMode) {
-    //     console.log('🔧 Initializing InfoPanelsManager...');
+    // if (isDebugMode()) {
+    //     debugLog('🔧 Initializing InfoPanelsManager...');
     // }
     // this.infoPanelsManager = new InfoPanelsManager(
     //   world.scene.three,
     //   world.camera.three,
     //   world.renderer.three,
     //   (config) => {
-    //     if (isDebugMode) {
-    //         console.log('Info panels configuration updated:', config);
+    //     if (isDebugMode()) {
+    //         debugLog('Info panels configuration updated:', config);
     //     }
     //   }
     // );
 
     // // Load info panels configuration
-    // if (isDebugMode) {
-    //     console.log('📁 Loading info panels configuration...');
+    // if (isDebugMode()) {
+    //     debugLog('📁 Loading info panels configuration...');
     // }
     // const configLoaded = await this.infoPanelsManager.loadConfig();
-    // if (isDebugMode) {
-    //     console.log('Config loading result:', configLoaded);
+    // if (isDebugMode()) {
+    //     debugLog('Config loading result:', configLoaded);
     // }
 
     // // Expose InfoPanelsManager to window for debugging distance settings
     // (window as any).infoPanelsManager = this.infoPanelsManager;
-    // if (isDebugMode) {
-    //     console.log('🔧 InfoPanelsManager exposed to window.infoPanelsManager for debugging');
-    //     console.log('💡 Use window.infoPanelsManager.setVisibilityDistance(min, max) to adjust distance thresholds');
-    //     console.log('💡 Current settings: Show when 2-8 units away, fade 8-15 units, hide beyond 15 units');
-    //     console.log('💡 Use window.infoPanelsManager.getDistanceInfo() to see current distances');
+    // if (isDebugMode()) {
+    //     debugLog('🔧 InfoPanelsManager exposed to window.infoPanelsManager for debugging');
+    //     debugLog('💡 Use window.infoPanelsManager.setVisibilityDistance(min, max) to adjust distance thresholds');
+    //     debugLog('💡 Current settings: Show when 2-8 units away, fade 8-15 units, hide beyond 15 units');
+    //     debugLog('💡 Use window.infoPanelsManager.getDistanceInfo() to see current distances');
     // }
 
     const appManager = components.get(AppManager);
@@ -947,7 +857,7 @@ export class WorldViewer extends HTMLElement {
     };
     ifcLoader.settings.webIfc.COORDINATE_TO_ORIGIN = true;
 
-    console.log('IFC Loader optimized for performance');
+    debugLog('IFC Loader optimized for performance');
 
     const tilesLoader = components.get(IfcStreamer);
     tilesLoader.world = world;
@@ -967,24 +877,24 @@ export class WorldViewer extends HTMLElement {
     // Calculate zoom factor based on the distance from light to eye and ground
     // This creates a proportional zoom effect based on the viewing geometry
     const zoomDistance = distanceFromLight / (eyeElevationZ - groundLevelZ);
-    console.log('Zoom distance calculated:', zoomDistance);
+    debugLog('Zoom distance calculated:', zoomDistance);
     highlighter.zoomFactor = zoomDistance;
 
     // Set up HighlighterConfig according to the type definition
     highlighter.config = {
       selectName: "select",
       /** Toggles the select functionality. */
-      selectEnabled: isDebugMode, // Re-enabled after removing pulsating effect
+      selectEnabled: isDebugMode(), // Re-enabled after removing pulsating effect
       /** Name of the hover event. */
       hoverName: "hover",
       /** Toggles the hover functionality. */
-      hoverEnabled: isDebugMode,
+      hoverEnabled: isDebugMode(),
       /** Color used for selection. */
       selectionColor: new THREE.Color(1, 0, 0), // Red color (not used)
       /** Color used for hover. */
       hoverColor: new THREE.Color(1, 1, 1),
       /** Whether to automatically highlight fragments on click. */
-      autoHighlightOnClick: isDebugMode, // Keep this debug-only
+      autoHighlightOnClick: isDebugMode(), // Keep this debug-only
       /** The world in which the highlighter operates. */
       world: world
     };
@@ -1013,36 +923,36 @@ export class WorldViewer extends HTMLElement {
     checkCameraMovement();
 
     fragments.onFragmentsLoaded.add(async (model) => {
-      console.log('Fragment loading started for model:', model);
+      debugLog('Fragment loading started for model:', model);
 
       try {
         // Check WebGL context before proceeding
         if (!world.renderer) {
-          console.warn('Renderer not available during fragment loading');
+          debugWarn('Renderer not available during fragment loading');
           return;
         }
         
         const gl = world.renderer.three.getContext();
         if (gl.isContextLost()) {
-          console.warn('WebGL context lost during fragment loading, skipping...');
+          debugWarn('WebGL context lost during fragment loading, skipping...');
           return;
         }
 
         if (model.hasProperties) {
-          console.log('Processing model properties...');
+          debugLog('Processing model properties...');
           await indexer.process(model);
           classifier.byEntity(model);
-          console.log('Model properties processed');
+          debugLog('Model properties processed');
         }
 
         if (!model.isStreamed) {
-          console.log('Adding model fragments to scene...');
+          debugLog('Adding model fragments to scene...');
           let fragmentCount = 0;
           for (const fragment of model.items) {
             try {
               // Check context again for each fragment
               if (gl.isContextLost()) {
-                console.warn('WebGL context lost during fragment processing, stopping...');
+                debugWarn('WebGL context lost during fragment processing, stopping...');
                 break;
               }
 
@@ -1068,7 +978,7 @@ export class WorldViewer extends HTMLElement {
                       (fragment.mesh.material as THREE.Material).needsUpdate = true;
                     }
                   } catch (materialError) {
-                    console.warn('Error updating material for fragment:', materialError);
+                    debugWarn('Error updating material for fragment:', materialError);
                   }
                 }
 
@@ -1080,37 +990,37 @@ export class WorldViewer extends HTMLElement {
                 }
               }
             } catch (fragmentError) {
-              console.warn('Error processing fragment:', fragmentError);
+              debugWarn('Error processing fragment:', fragmentError);
               // Continue with next fragment
             }
           }
-          console.log(`Added ${fragmentCount} fragments to scene`);
+          debugLog(`Added ${fragmentCount} fragments to scene`);
         }
 
         // Add model to scene with error handling
         try {
           world.scene.three.add(model);
-          console.log('Model added to Three.js scene');
+          debugLog('Model added to Three.js scene');
         } catch (sceneError) {
-          console.warn('Error adding model to scene:', sceneError);
+          debugWarn('Error adding model to scene:', sceneError);
         }
 
         // Force renderer update with error handling
         try {
           if (world.renderer && !gl.isContextLost()) {
             world.renderer.update();
-            console.log('Renderer updated');
+            debugLog('Renderer updated');
           }
         } catch (renderError) {
-          console.warn('Error updating renderer:', renderError);
+          debugWarn('Error updating renderer:', renderError);
         }
       } catch (overallError) {
-        console.error('Overall error in fragment loading:', overallError);
+        debugError('Overall error in fragment loading:', overallError);
       }
 
       if (!model.isStreamed) {
         // FPS camera positioning removed - NaviCube handles initial view
-        console.log('Model fragments loaded - letting NaviCube handle camera positioning');
+        debugLog('Model fragments loaded - letting NaviCube handle camera positioning');
       }
     });
 
@@ -1123,12 +1033,12 @@ export class WorldViewer extends HTMLElement {
       }
     });
 
-    const projectInformationPanel = await projectInformation(components, isDebugMode);
-    const elementDataPanel = elementData(components, isDebugMode);
+    const projectInformationPanel = await projectInformation(components, isDebugMode());
+    const elementDataPanel = elementData(components, isDebugMode());
 
     const [toolbar, updateToolbar] = Component.create<HTMLElement, State>((state) => {
-      console.log('Updating toolbar with state:', state);
-      if (isDebugMode) {
+      debugLog('Updating toolbar with state:', state);
+      if (isDebugMode()) {
         return html`
         <bim-tabs floating style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); border-radius: 0.5rem; padding: 30px; z-index: 100000; pointer-events: auto;">
           <bim-tab label="${i18n.t('import')}">
@@ -1160,11 +1070,11 @@ export class WorldViewer extends HTMLElement {
 
     // Create the ZoomOptions component
     const zoomOptionsComponent = ZoomOptions(world);
-    console.log('ZoomOptions component created:', zoomOptionsComponent);
+    debugLog('ZoomOptions component created:', zoomOptionsComponent);
 
     // Create the NaviCube component
     const naviCubeComponent = NaviCube(world);
-    console.log('NaviCube component created:', naviCubeComponent);
+    debugLog('NaviCube component created:', naviCubeComponent);
 
     // Create a function to update the panel when language changes
     const updatePanelOnLanguageChange = () => {
@@ -1180,7 +1090,7 @@ export class WorldViewer extends HTMLElement {
 
     // Create the left panel component first
     const [leftPanel, updateLeftPanelFn] = Component.create<HTMLElement, State>((state) => {
-      console.log('Updating left panel with state:', state, 'Active tab:', currentActiveTab);
+      debugLog('Updating left panel with state:', state, 'Active tab:', currentActiveTab);
 
       // Custom tab switcher function
       const switchTab = (newTab: string) => {
@@ -1189,7 +1099,7 @@ export class WorldViewer extends HTMLElement {
       };
 
       // Create custom tab buttons and content area
-      const tabButtons = isDebugMode ? [
+      const tabButtons = isDebugMode() ? [
         { name: 'project', label: i18n.t('project'), icon: 'ph:building-fill' },
         { name: 'settings', label: i18n.t('settings'), icon: 'solar:settings-bold' },
         { name: 'help', label: i18n.t('help'), icon: 'material-symbols:help' }
@@ -1288,7 +1198,7 @@ export class WorldViewer extends HTMLElement {
         if (expandButton) expandButton.style.display = 'none';
       }
 
-      console.log('Panel toggled instantly. Minimized:', dataState.leftPanelMinimized);
+      debugLog('Panel toggled instantly. Minimized:', dataState.leftPanelMinimized);
     };
 
     const app = document.getElementsByTagName("world-viewer")[0];
@@ -1354,12 +1264,12 @@ export class WorldViewer extends HTMLElement {
       if (currentMode === 'Orthographic') {
         if (!existingZoomPanel) {
           document.body.appendChild(zoomOptionsComponent);
-          console.log('ZoomOptions component added to DOM body for orthographic mode');
+          debugLog('ZoomOptions component added to DOM body for orthographic mode');
         }
       } else {
         if (existingZoomPanel) {
           document.body.removeChild(existingZoomPanel);
-          console.log('ZoomOptions component removed from DOM body for perspective mode');
+          debugLog('ZoomOptions component removed from DOM body for perspective mode');
         }
       }
     };
@@ -1369,13 +1279,13 @@ export class WorldViewer extends HTMLElement {
     
     // Listen for projection changes and update zoom options visibility
     window.addEventListener('projectionChanged', (event: any) => {
-      console.log('Projection changed event received:', event.detail.mode);
+      debugLog('Projection changed event received:', event.detail.mode);
       updateZoomOptionsVisibility();
     });
 
     // Add the NaviCube component to the body
     document.body.appendChild(naviCubeComponent);
-    console.log('NaviCube component added to DOM body:', document.getElementById('navi-cube'));
+    debugLog('NaviCube component added to DOM body:', document.getElementById('navi-cube'));
 
     // Add event listeners after all elements are created
     setTimeout(() => {
@@ -1478,7 +1388,7 @@ export class WorldViewer extends HTMLElement {
     viewportGrid.layout = "main";
     updateLoadingText('Loading IFC model...');
     const model = await loadIfc(components);
-    console.log('Model loaded:', model);
+    debugLog('Model loaded:', model);
     if (model) {
       setModel(model);
       
@@ -1486,7 +1396,7 @@ export class WorldViewer extends HTMLElement {
       setTimeout(() => {
         const projectInfoPanel = document.querySelector('[data-panel="project"]');
         if (projectInfoPanel && (projectInfoPanel as any).triggerInitialHighlighting) {
-          console.log('🔥 Triggering initial light highlighting after model load...');
+          debugLog('🔥 Triggering initial light highlighting after model load...');
           (projectInfoPanel as any).triggerInitialHighlighting();
         } else {
           // Fallback: Dispatch custom event
@@ -1496,8 +1406,8 @@ export class WorldViewer extends HTMLElement {
     }
 
     // Debug: Check if fragments were added
-    console.log('Fragments count:', fragments.list.size);
-    console.log('Fragments list:', Array.from(fragments.list.keys()));
+    debugLog('Fragments count:', fragments.list.size);
+    debugLog('Fragments list:', Array.from(fragments.list.keys()));
 
     // Position camera to see the model if it exists
     if (model && fragments.list.size > 0) {
@@ -1506,18 +1416,18 @@ export class WorldViewer extends HTMLElement {
         if (!this.hasTriggeredInitialView) {
           this.hasTriggeredInitialView = true;
           
-          console.log('Model loaded - triggering NaviCube TOP view initialization...');
+          debugLog('Model loaded - triggering NaviCube TOP view initialization...');
           
           // Wait a moment for all fragments to be fully processed
           setTimeout(() => {
             // Find and trigger NaviCube initialization to TOP view
             const naviCubeElement = document.getElementById('navi-cube');
             if (naviCubeElement && (naviCubeElement as any).triggerTopView) {
-              console.log('Triggering NaviCube TOP view via exposed method');
+              debugLog('Triggering NaviCube TOP view via exposed method');
               (naviCubeElement as any).triggerTopView();
             } else {
               // Fallback: Dispatch custom event for NaviCube to handle
-              console.log('Dispatching modelLoaded event for NaviCube');
+              debugLog('Dispatching modelLoaded event for NaviCube');
               window.dispatchEvent(new CustomEvent('modelLoaded', {
                 detail: { 
                   modelBounds: {
@@ -1536,22 +1446,22 @@ export class WorldViewer extends HTMLElement {
                 const zoomOptionsElement = document.getElementById('zoom-options-panel');
                 const zoomOptionsWithMethod = zoomOptionsElement as unknown as { zoomToCenter: () => void } | null;
                 if (zoomOptionsWithMethod?.zoomToCenter) {
-                  console.log('Triggering initial zoom to center for orthographic mode...');
+                  debugLog('Triggering initial zoom to center for orthographic mode...');
                   zoomOptionsWithMethod.zoomToCenter();
                 } else {
-                  console.warn('ZoomOptions component or zoomToCenter method not found');
+                  debugWarn('ZoomOptions component or zoomToCenter method not found');
                 }
               }
             }, 500); // Additional delay to ensure camera position is set
           }, 300); // Small delay to ensure fragments are fully processed
         } else {
-          console.log('Initial view already triggered - skipping NaviCube view change');
+          debugLog('Initial view already triggered - skipping NaviCube view change');
         }
       } catch (error) {
-        console.error('Error triggering NaviCube view change:', error);
+        debugError('Error triggering NaviCube view change:', error);
       }
     } else {
-      console.warn('No model or fragments loaded - cannot trigger NaviCube view change');
+      debugWarn('No model or fragments loaded - cannot trigger NaviCube view change');
     }
 
     // Speed controls are now handled by the SpeedControls component
@@ -1563,3 +1473,4 @@ export class WorldViewer extends HTMLElement {
 }
 
 customElements.define("world-viewer", WorldViewer);
+

@@ -1,4 +1,5 @@
 import * as BUI from "@thatopen/ui";
+import { debugLog } from "../../../../../utils/debugLogger";
 
 // Global variables to track speed
 let baseSpeed = 5.0; // Default base speed from WorldViewer
@@ -7,7 +8,7 @@ let currentMultiplier = 1; // Current speed multiplier
 // Function to set the base speed from WorldViewer
 export const setBaseSpeed = (speed: number) => {
   baseSpeed = speed;
-  console.log(`Base speed set to: ${speed}`);
+  debugLog(`Base speed set to: ${speed}`);
 };
 
 // Function to get current effective speed
@@ -19,7 +20,7 @@ export const getCurrentMultiplier = () => currentMultiplier;
 export default function speedControls() {
   // Set up global functions immediately
   (window as any).setSpeed = (multiplier: number) => {
-    console.log(`Setting movement speed multiplier to: x${multiplier}`);
+    debugLog(`Setting movement speed multiplier to: x${multiplier}`);
     currentMultiplier = multiplier;
     const effectiveSpeed = getCurrentSpeed();
     
@@ -52,7 +53,7 @@ export default function speedControls() {
   };
 
   (window as any).moveDirection = (direction: string) => {
-    console.log(`Manual movement: ${direction}`);
+    debugLog(`Manual movement: ${direction}`);
     
     // Dispatch custom event to trigger movement in WorldViewer
     const moveEvent = new CustomEvent('manualMovement', { 
@@ -278,3 +279,4 @@ export default function speedControls() {
     </bim-toolbar-group>
   `;
 }
+

@@ -6,6 +6,7 @@ import i18n from "../../../utils/i18n";
 // Projection controls restored
 import projectionControls from "./ProjectionControls";
 import { getCurrentProjection } from "./ProjectionControls";
+import { debugLog, debugWarn } from "../../../../../utils/debugLogger";
 
 // Global reference to FPS controls - will be set from WorldViewer
 export let fpControls: PointerLockControls | null = null;
@@ -20,7 +21,7 @@ let currentMultiplier = 1; // Current speed multiplier
 // Function to set the base speed from WorldViewer
 export const setBaseSpeed = (speed: number) => {
     baseSpeed = speed;
-    console.log(`Base speed set to: ${speed}`);
+    debugLog(`Base speed set to: ${speed}`);
 };
 
 // Function to get current effective speed
@@ -114,20 +115,20 @@ export default (world: OBC.World) => {
         (world.camera.three as THREE.OrthographicCamera).zoom = newZoom;
         world.camera.three.updateProjectionMatrix();
 
-        console.log('Orthographic UI zoom (speed x' + speedMultiplier.toFixed(1) + '):', newZoom);
+        debugLog('Orthographic UI zoom (speed x' + speedMultiplier.toFixed(1) + '):', newZoom);
     };
 
     const moveCamera = (direction: 'forward' | 'backward' | 'left' | 'right' | 'up' | 'down') => {
         if (!fpControls) {
-            console.log('FPS controls not initialized');
+            debugLog('FPS controls not initialized');
             return;
         }
 
         const camera3js = world.camera.three;
         const currentPos = camera3js.position.clone();
 
-        console.log(`=== UI CAMERA MOVEMENT: ${direction.toUpperCase()} ===`);
-        console.log('Current position:', currentPos);
+        debugLog(`=== UI CAMERA MOVEMENT: ${direction.toUpperCase()} ===`);
+        debugLog('Current position:', currentPos);
 
         // Get current projection mode to determine movement behavior
         const currentProjection = getCurrentProjection();
@@ -144,11 +145,11 @@ export default (world: OBC.World) => {
             if (direction === 'up') {
                 // Exact copy: zoomOrthographicCamera(1); // Zoom in
                 zoomOrthographicCamera(1);
-                console.log('Orthographic UP button - Zoom IN (like up arrow)');
+                debugLog('Orthographic UP button - Zoom IN (like up arrow)');
             } else {
                 // Exact copy: zoomOrthographicCamera(-1); // Zoom out  
                 zoomOrthographicCamera(-1);
-                console.log('Orthographic DOWN button - Zoom OUT (like down arrow)');
+                debugLog('Orthographic DOWN button - Zoom OUT (like down arrow)');
             }
 
             // DISABLED: Frustum manager updates removed - using static clipping planes
@@ -166,10 +167,10 @@ export default (world: OBC.World) => {
 
             if (direction === 'forward') {
                 zoomOrthographicCamera(1); // Zoom in
-                console.log('Orthographic FORWARD button - Zoom IN (like zoom in button)');
+                debugLog('Orthographic FORWARD button - Zoom IN (like zoom in button)');
             } else {
                 zoomOrthographicCamera(-1); // Zoom out
-                console.log('Orthographic BACKWARD button - Zoom OUT (like zoom out button)');
+                debugLog('Orthographic BACKWARD button - Zoom OUT (like zoom out button)');
             }
 
             return; // Exit early for orthographic forward/backward
@@ -233,7 +234,7 @@ export default (world: OBC.World) => {
             }
         }));
 
-        console.log(`${currentProjection} mode - New position:`, newPosition);
+        debugLog(`${currentProjection} mode - New position:`, newPosition);
     };
 
     // Get the model center for consistent rotation target (same as NaviCube)
@@ -253,7 +254,7 @@ export default (world: OBC.World) => {
     // Rotation controls - Mode-specific behavior
     const rotateCamera = (direction: 'left' | 'right' | 'up' | 'down') => {
         if (!fpControls) {
-            console.log('FPS controls not initialized');
+            debugLog('FPS controls not initialized');
             return;
         }
 
@@ -266,8 +267,8 @@ export default (world: OBC.World) => {
         if (isOrthographic) {
             // ORTHOGRAPHIC MODE: Use orbit-style rotation (like NaviCube)
             const target = getModelCenter();
-            console.log(`=== ORBIT CAMERA ROTATION (ORTHOGRAPHIC): ${direction.toUpperCase()} ===`);
-            console.log(`Using speed multiplier: ${currentMultiplier} (base step: 0.2, adjusted step: ${0.2 * currentMultiplier})`);
+            debugLog(`=== ORBIT CAMERA ROTATION (ORTHOGRAPHIC): ${direction.toUpperCase()} ===`);
+            debugLog(`Using speed multiplier: ${currentMultiplier} (base step: 0.2, adjusted step: ${0.2 * currentMultiplier})`);
 
             /*
              * ORBIT ROTATION SYSTEM (NaviCube-style):
@@ -330,7 +331,7 @@ export default (world: OBC.World) => {
                 // Always look at the model center (like NaviCube)
                 camera3js.lookAt(target);
             } else {
-                console.log("🔒 Skipping lookAt during camera state preservation");
+                debugLog("🔒 Skipping lookAt during camera state preservation");
             }
 
             // Notify NaviCube of camera change with rotation movement type
@@ -344,7 +345,7 @@ export default (world: OBC.World) => {
                 }
             }));
 
-            console.log('Orbit rotation:', {
+            debugLog('Orbit rotation:', {
                 direction,
                 theta: spherical.theta * 180 / Math.PI,
                 phi: spherical.phi * 180 / Math.PI,
@@ -355,8 +356,8 @@ export default (world: OBC.World) => {
             });
         } else {
             // PERSPECTIVE MODE: Use FPS-style rotation (original behavior)
-            console.log(`=== FPS CAMERA ROTATION (PERSPECTIVE): ${direction.toUpperCase()} ===`);
-            console.log(`Using speed multiplier: ${currentMultiplier} (base step: 0.1, adjusted step: ${0.1 * currentMultiplier})`);
+            debugLog(`=== FPS CAMERA ROTATION (PERSPECTIVE): ${direction.toUpperCase()} ===`);
+            debugLog(`Using speed multiplier: ${currentMultiplier} (base step: 0.1, adjusted step: ${0.1 * currentMultiplier})`);
 
             /*
              * FPS ROTATION SYSTEM:
@@ -399,7 +400,7 @@ export default (world: OBC.World) => {
                 }
             }));
 
-            console.log('FPS rotation (degrees):', {
+            debugLog('FPS rotation (degrees):', {
                 x: euler.x * 180 / Math.PI,
                 y: euler.y * 180 / Math.PI,
                 z: euler.z * 180 / Math.PI,
@@ -412,7 +413,7 @@ export default (world: OBC.World) => {
 
     // Speed control functions
     const setSpeed = (multiplier: number) => {
-        console.log(`🎯 Setting movement speed multiplier to: x${multiplier}`);
+        debugLog(`🎯 Setting movement speed multiplier to: x${multiplier}`);
         currentMultiplier = multiplier;
         const effectiveSpeed = getCurrentSpeed();
 
@@ -442,9 +443,9 @@ export default (world: OBC.World) => {
             const display = document.getElementById('camera-speed-display');
             if (display) {
                 display.textContent = `Current: x${multiplier}`;
-                console.log(`Updated display to: Current: x${multiplier}`);
+                debugLog(`Updated display to: Current: x${multiplier}`);
             } else {
-                console.warn('camera-speed-display element not found');
+                debugWarn('camera-speed-display element not found');
             }
         }, 10);
     };
@@ -458,7 +459,7 @@ export default (world: OBC.World) => {
             const display = document.getElementById('camera-speed-display');
             if (display) {
                 display.textContent = `Current: x${currentMultiplier}`;
-                console.log(`Initialized speed display to: Current: x${currentMultiplier}`);
+                debugLog(`Initialized speed display to: Current: x${currentMultiplier}`);
             }
         }, 50); // Slightly longer delay to ensure DOM is fully rendered
     };

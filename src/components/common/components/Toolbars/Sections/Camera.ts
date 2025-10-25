@@ -4,6 +4,7 @@ import * as THREE from "three";
 import { PointerLockControls } from "three/examples/jsm/Addons.js";
 import i18n from "../../../utils/i18n";
 import { getCurrentProjection } from "./ProjectionControls";
+import { debugLog, debugWarn } from "../../../../../utils/debugLogger";
 
 // Global reference to FPS controls - will be set from WorldViewer
 export let fpControls: PointerLockControls | null = null;
@@ -15,7 +16,7 @@ export const setFPControls = (controls: PointerLockControls | null) => {
 let speedMultiplier = 1.0;
 export const setMovementSpeedMultiplier = (multiplier: number) => {
   speedMultiplier = multiplier;
-  console.log(`Movement speed multiplier set to: ${multiplier}`);
+  debugLog(`Movement speed multiplier set to: ${multiplier}`);
 };
 
 export const getMovementSpeedMultiplier = () => speedMultiplier;
@@ -24,7 +25,7 @@ export const getMovementSpeedMultiplier = () => speedMultiplier;
 window.addEventListener('moveSpeedChange', (event: any) => {
   const { multiplier } = event.detail;
   speedMultiplier = multiplier;
-  console.log(`Camera rotation speed multiplier updated to: ${multiplier}`);
+  debugLog(`Camera rotation speed multiplier updated to: ${multiplier}`);
 });
 
 export default (world: OBC.World) => {
@@ -51,15 +52,15 @@ export default (world: OBC.World) => {
 
   const moveCamera = (direction: 'forward' | 'backward' | 'left' | 'right' | 'up' | 'down') => {
     if (!fpControls) {
-      console.log('FPS controls not initialized');
+      debugLog('FPS controls not initialized');
       return;
     }
 
     const camera3js = world.camera.three;
     const currentPos = camera3js.position.clone();
 
-    console.log(`=== FPS CAMERA MOVEMENT: ${direction.toUpperCase()} ===`);
-    console.log('Current position:', currentPos);
+    debugLog(`=== FPS CAMERA MOVEMENT: ${direction.toUpperCase()} ===`);
+    debugLog('Current position:', currentPos);
 
     // Get current projection mode to determine movement behavior
     const currentProjection = getCurrentProjection();
@@ -68,7 +69,7 @@ export default (world: OBC.World) => {
     // In orthographic mode: forward/backward should be zoom in/zoom out
     if (isOrthographic && (direction === 'forward' || direction === 'backward')) {
       if (!camera.controls?.camera) {
-        console.log('Camera controls not available for zoom');
+        debugLog('Camera controls not available for zoom');
         return;
       }
 
@@ -84,9 +85,9 @@ export default (world: OBC.World) => {
       camera.controls.camera.zoom = newZoom;
       camera.controls.camera.updateProjectionMatrix();
 
-      console.log(`=== ORTHOGRAPHIC ZOOM: ${direction.toUpperCase()} ===`);
-      console.log(`Using speed multiplier: ${speedMultiplier} (base step: ${baseZoomStep}, adjusted step: ${zoomStep})`);
-      console.log('Zoom changed from', currentZoom, 'to', newZoom);
+      debugLog(`=== ORTHOGRAPHIC ZOOM: ${direction.toUpperCase()} ===`);
+      debugLog(`Using speed multiplier: ${speedMultiplier} (base step: ${baseZoomStep}, adjusted step: ${zoomStep})`);
+      debugLog('Zoom changed from', currentZoom, 'to', newZoom);
       return;
     }
 
@@ -159,8 +160,8 @@ export default (world: OBC.World) => {
       }
     }));
 
-    console.log('New position:', newPos);
-    console.log('===================================');
+    debugLog('New position:', newPos);
+    debugLog('===================================');
   };
 
   // Get the model center for consistent rotation target (same as NaviCube)
@@ -179,7 +180,7 @@ export default (world: OBC.World) => {
 
   const rotateCamera = (direction: 'left' | 'right' | 'up' | 'down') => {
     if (!fpControls) {
-      console.log('FPS controls not initialized');
+      debugLog('FPS controls not initialized');
       return;
     }
 
@@ -192,8 +193,8 @@ export default (world: OBC.World) => {
     if (isOrthographic) {
       // ORTHOGRAPHIC MODE: Use orbit-style rotation (like NaviCube)
       const target = getModelCenter();
-      console.log(`=== ORBIT CAMERA ROTATION (ORTHOGRAPHIC): ${direction.toUpperCase()} ===`);
-      console.log(`Using speed multiplier: ${speedMultiplier} (base step: 0.2, adjusted step: ${0.2 * speedMultiplier})`);
+      debugLog(`=== ORBIT CAMERA ROTATION (ORTHOGRAPHIC): ${direction.toUpperCase()} ===`);
+      debugLog(`Using speed multiplier: ${speedMultiplier} (base step: 0.2, adjusted step: ${0.2 * speedMultiplier})`);
 
       /*
        * ORBIT ROTATION SYSTEM (NaviCube-style):
@@ -256,7 +257,7 @@ export default (world: OBC.World) => {
         // Always look at the model center (like NaviCube)
         camera3js.lookAt(target);
       } else {
-        console.log("🔒 Skipping lookAt during camera state preservation");
+        debugLog("🔒 Skipping lookAt during camera state preservation");
       }
 
       // Notify NaviCube of camera change with rotation movement type
@@ -270,7 +271,7 @@ export default (world: OBC.World) => {
         }
       }));
 
-      console.log('Orbit rotation:', {
+      debugLog('Orbit rotation:', {
         direction,
         theta: spherical.theta * 180 / Math.PI,
         phi: spherical.phi * 180 / Math.PI,
@@ -281,8 +282,8 @@ export default (world: OBC.World) => {
       });
     } else {
       // PERSPECTIVE MODE: Use FPS-style rotation (original behavior)
-      console.log(`=== FPS CAMERA ROTATION (PERSPECTIVE): ${direction.toUpperCase()} ===`);
-      console.log(`Using speed multiplier: ${speedMultiplier} (base step: 0.1, adjusted step: ${0.1 * speedMultiplier})`);
+      debugLog(`=== FPS CAMERA ROTATION (PERSPECTIVE): ${direction.toUpperCase()} ===`);
+      debugLog(`Using speed multiplier: ${speedMultiplier} (base step: 0.1, adjusted step: ${0.1 * speedMultiplier})`);
 
       /*
        * FPS ROTATION SYSTEM:
@@ -329,7 +330,7 @@ export default (world: OBC.World) => {
         }
       }));
 
-      console.log('FPS rotation (degrees):', {
+      debugLog('FPS rotation (degrees):', {
         x: euler.x * 180 / Math.PI,
         y: euler.y * 180 / Math.PI,
         z: euler.z * 180 / Math.PI,
@@ -338,7 +339,7 @@ export default (world: OBC.World) => {
       });
     }
     
-    console.log('===================================');
+    debugLog('===================================');
   };
 
   const zoomCamera = (direction: 'in' | 'out') => {
@@ -353,17 +354,17 @@ export default (world: OBC.World) => {
     camera.controls.camera.zoom = newZoom;
     camera.controls.camera.updateProjectionMatrix();
 
-    console.log(`=== FPS CAMERA ZOOM: ${direction.toUpperCase()} ===`);
-    console.log('Zoom changed from', currentZoom, 'to', newZoom);
+    debugLog(`=== FPS CAMERA ZOOM: ${direction.toUpperCase()} ===`);
+    debugLog('Zoom changed from', currentZoom, 'to', newZoom);
   };
 
   const resetCamera = async () => {
     if (!fpControls) {
-      console.log('FPS controls not initialized');
+      debugLog('FPS controls not initialized');
       return;
     }
 
-    console.log('=== RESETTING CAMERA TO DEFAULT ===');
+    debugLog('=== RESETTING CAMERA TO DEFAULT ===');
 
     const camera3js = world.camera.three;
 
@@ -373,7 +374,7 @@ export default (world: OBC.World) => {
       const currentProjection = getCurrentProjection();
       
       if (currentProjection === "Perspective") {
-        console.log('Applying perspective mode defaults with restrictions');
+        debugLog('Applying perspective mode defaults with restrictions');
         // Reset to initial FPS position and orientation
         const defaultPosition = new THREE.Vector3(-1.29, 1.60, 1.14);
         const defaultLookAt = new THREE.Vector3(0, 1, 0);
@@ -383,11 +384,11 @@ export default (world: OBC.World) => {
         if (!(window as any).isCameraStateBeingPreserved || !(window as any).isCameraStateBeingPreserved()) {
           camera3js.lookAt(defaultLookAt);
         } else {
-          console.log("🔒 Camera: Skipping lookAt during camera state preservation");
+          debugLog("🔒 Camera: Skipping lookAt during camera state preservation");
         }
-        console.log('Perspective reset - Position:', defaultPosition, 'LookAt:', defaultLookAt);
+        debugLog('Perspective reset - Position:', defaultPosition, 'LookAt:', defaultLookAt);
       } else {
-        console.log('Applying orthographic mode defaults - no restrictions');
+        debugLog('Applying orthographic mode defaults - no restrictions');
         // Reset to orthographic-friendly defaults (allow free positioning)
         const defaultPosition = new THREE.Vector3(0, 5, 5); // Higher and more orthographic-appropriate
         const defaultLookAt = new THREE.Vector3(0, 0, 0);
@@ -397,12 +398,12 @@ export default (world: OBC.World) => {
         if (!(window as any).isCameraStateBeingPreserved || !(window as any).isCameraStateBeingPreserved()) {
           camera3js.lookAt(defaultLookAt);
         } else {
-          console.log("🔒 Camera: Skipping lookAt during camera state preservation");
+          debugLog("🔒 Camera: Skipping lookAt during camera state preservation");
         }
-        console.log('Orthographic reset - Position:', defaultPosition, 'LookAt:', defaultLookAt);
+        debugLog('Orthographic reset - Position:', defaultPosition, 'LookAt:', defaultLookAt);
       }
     } catch (error) {
-      console.warn('Could not determine projection mode, applying perspective defaults:', error);
+      debugWarn('Could not determine projection mode, applying perspective defaults:', error);
       // Fallback to perspective defaults
       const defaultPosition = new THREE.Vector3(-1.29, 1.60, 1.14);
       const defaultLookAt = new THREE.Vector3(0, 1, 0);
@@ -411,7 +412,7 @@ export default (world: OBC.World) => {
       if (!(window as any).isCameraStateBeingPreserved || !(window as any).isCameraStateBeingPreserved()) {
         camera3js.lookAt(defaultLookAt);
       } else {
-        console.log("🔒 Camera: Skipping lookAt during camera state preservation");
+        debugLog("🔒 Camera: Skipping lookAt during camera state preservation");
       }
     }
 
@@ -421,15 +422,15 @@ export default (world: OBC.World) => {
       camera.controls.camera.updateProjectionMatrix();
     }
 
-    console.log('Camera reset completed');
-    console.log('=====================================');
+    debugLog('Camera reset completed');
+    debugLog('=====================================');
   };
 
   const toggleProjection = () => {
     if (camera instanceof OBC.OrthoPerspectiveCamera) {
       const current = camera.projection.current;
       camera.projection.set(current === "Perspective" ? "Orthographic" : "Perspective");
-      console.log(`=== PROJECTION CHANGED TO: ${current === "Perspective" ? "Orthographic" : "Perspective"} ===`);
+      debugLog(`=== PROJECTION CHANGED TO: ${current === "Perspective" ? "Orthographic" : "Perspective"} ===`);
     }
   };
 
@@ -446,11 +447,11 @@ export default (world: OBC.World) => {
     if (!(window as any).isCameraStateBeingPreserved || !(window as any).isCameraStateBeingPreserved()) {
       camera3js.lookAt(currentPos.x, currentPos.y, currentPos.z);
     } else {
-      console.log("🔒 Camera: Skipping lookAt during camera state preservation");
+      debugLog("🔒 Camera: Skipping lookAt during camera state preservation");
     }
 
-    console.log('=== FPS TOP VIEW SET ===');
-    console.log('Position:', camera3js.position);
+    debugLog('=== FPS TOP VIEW SET ===');
+    debugLog('Position:', camera3js.position);
   };
 
   const setFrontView = () => {
@@ -464,10 +465,10 @@ export default (world: OBC.World) => {
     if (!(window as any).isCameraStateBeingPreserved || !(window as any).isCameraStateBeingPreserved()) {
       camera3js.lookAt(currentPos.x, currentPos.y, currentPos.z - 10);
     } else {
-      console.log("🔒 Camera: Skipping lookAt during camera state preservation");
+      debugLog("🔒 Camera: Skipping lookAt during camera state preservation");
     }
 
-    console.log('=== FPS FRONT VIEW SET ===');
+    debugLog('=== FPS FRONT VIEW SET ===');
   };
 
   const setSideView = () => {
@@ -481,10 +482,10 @@ export default (world: OBC.World) => {
     if (!(window as any).isCameraStateBeingPreserved || !(window as any).isCameraStateBeingPreserved()) {
       camera3js.lookAt(currentPos.x + 10, currentPos.y, currentPos.z);
     } else {
-      console.log("🔒 Camera: Skipping lookAt during camera state preservation");
+      debugLog("🔒 Camera: Skipping lookAt during camera state preservation");
     }
 
-    console.log('=== FPS SIDE VIEW SET ===');
+    debugLog('=== FPS SIDE VIEW SET ===');
   };
 
   return BUI.Component.create<BUI.PanelSection>(() => {
@@ -549,3 +550,4 @@ export default (world: OBC.World) => {
     `;
   });
 };
+

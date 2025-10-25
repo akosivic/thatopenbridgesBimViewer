@@ -1,5 +1,6 @@
 import * as OBC from "@thatopen/components";
 import * as THREE from "three";
+import { debugLog } from "../../../../utils/debugLogger";
 
 /*
  * NaviCube Component
@@ -28,7 +29,7 @@ export default (world: OBC.World) => {
     const isDebugMode = window.location.search.toLowerCase().includes('debug');
     
     if (isDebugMode) {
-        console.log('NaviCube component being created...');
+        debugLog('NaviCube component being created...');
     }
 
     // Get the model center for consistent reference (same as OrthographicMouseControls)
@@ -109,7 +110,7 @@ export default (world: OBC.World) => {
             startCameraMonitoring();
         }, 600); // Wait a bit longer than animation duration
 
-        console.log(`NaviCube: Set view to ${viewName}`, { position: newPosition, target: view.target });
+        debugLog(`NaviCube: Set view to ${viewName}`, { position: newPosition, target: view.target });
     };
 
     // Function to smoothly animate cube rotation to show the clicked face
@@ -168,13 +169,13 @@ export default (world: OBC.World) => {
                 // In orthographic mode, ignore position-only movements (left/right/up/down/forward/backward)
                 if (projectionMode === 'orthographic' && movementType === 'position-movement') {
                     if (isDebugMode) {
-                        console.log('NaviCube: Ignoring position movement in orthographic mode', customEvent.detail);
+                        debugLog('NaviCube: Ignoring position movement in orthographic mode', customEvent.detail);
                     }
                     return; // Don't update NaviCube for position-only movements in orthographic mode
                 }
                 
                 if (isDebugMode) {
-                    console.log('NaviCube: Processing camera change', {
+                    debugLog('NaviCube: Processing camera change', {
                         movementType,
                         projectionMode,
                         source: customEvent.detail.source
@@ -227,7 +228,7 @@ export default (world: OBC.World) => {
                 lastUpdateTime = now;
                 
                 if (isDebugMode) {
-                    console.log('NaviCube: Camera change detected', {
+                    debugLog('NaviCube: Camera change detected', {
                         positionChanged,
                         rotationChanged,
                         matrixChanged,
@@ -239,7 +240,7 @@ export default (world: OBC.World) => {
         }, 16); // Check every 16ms for 60fps responsiveness
         
         if (isDebugMode) {
-            console.log('NaviCube: Enhanced camera monitoring started');
+            debugLog('NaviCube: Enhanced camera monitoring started');
         }
     };
 
@@ -249,7 +250,7 @@ export default (world: OBC.World) => {
             cameraUpdateInterval = null;
             isMonitoringActive = false;
             if (isDebugMode) {
-                console.log('NaviCube: Enhanced camera monitoring stopped');
+                debugLog('NaviCube: Enhanced camera monitoring stopped');
             }
         }
     };
@@ -273,7 +274,7 @@ export default (world: OBC.World) => {
             }, 100);
             
             if (isDebugMode) {
-                console.log('NaviCube: Camera monitoring initialized with initial position:', world.camera.three.position);
+                debugLog('NaviCube: Camera monitoring initialized with initial position:', world.camera.three.position);
             }
         } else {
             // Retry until camera is available with exponential backoff
@@ -317,11 +318,11 @@ export default (world: OBC.World) => {
         if (!isCameraStateBeingPreserved) {
             camera3js.lookAt(target);
         } else {
-            console.log("🔒 NaviCube: Skipping lookAt during camera state preservation");
+            debugLog("🔒 NaviCube: Skipping lookAt during camera state preservation");
         }
         
         if (isDebugMode) {
-            console.log('NaviCube: Camera updated to:', newPosition, 'Rotation:', { x: cubeRotationX, y: cubeRotationY });
+            debugLog('NaviCube: Camera updated to:', newPosition, 'Rotation:', { x: cubeRotationX, y: cubeRotationY });
         }
     };
 
@@ -350,9 +351,9 @@ export default (world: OBC.World) => {
         if (newCubeRotationY > 180) newCubeRotationY -= 360;
         
         if (isDebugMode) {
-            console.log('NaviCube: Using model center:', target);
-            console.log('Camera position relative to model center:', relativePosition);
-            console.log('Spherical coordinates:', {
+            debugLog('NaviCube: Using model center:', target);
+            debugLog('Camera position relative to model center:', relativePosition);
+            debugLog('Spherical coordinates:', {
                 theta: spherical.theta * 180 / Math.PI,
                 phi: spherical.phi * 180 / Math.PI,
                 radius: spherical.radius
@@ -386,7 +387,7 @@ export default (world: OBC.World) => {
             }
             
             if (isDebugMode) {
-                console.log('NaviCube: Smooth update from camera', {
+                debugLog('NaviCube: Smooth update from camera', {
                     x: cubeRotationX.toFixed(1),
                     y: cubeRotationY.toFixed(1),
                     deltaX: deltaX.toFixed(1),
@@ -404,7 +405,7 @@ export default (world: OBC.World) => {
     // Mouse event handlers for cube rotation
     const handleMouseDown = (event: MouseEvent) => {
         if (isDebugMode) {
-            console.log('NaviCube: Mouse down detected', event.target);
+            debugLog('NaviCube: Mouse down detected', event.target);
         }
         
         const target = event.target as HTMLElement;
@@ -414,13 +415,13 @@ export default (world: OBC.World) => {
         
         if (!isOnNaviCube) {
             if (isDebugMode) {
-                console.log('NaviCube: Not on NaviCube, skipping drag');
+                debugLog('NaviCube: Not on NaviCube, skipping drag');
             }
             return;
         }
         
         if (isDebugMode) {
-            console.log('NaviCube: Starting potential drag');
+            debugLog('NaviCube: Starting potential drag');
         }
         isMouseDown = true;
         isDragging = false;
@@ -459,7 +460,7 @@ export default (world: OBC.World) => {
             isDragging = true;
             element.classList.add('dragging');
             if (isDebugMode) {
-                console.log('NaviCube: Drag started - rotating camera');
+                debugLog('NaviCube: Drag started - rotating camera');
             }
         }
         
@@ -497,7 +498,7 @@ export default (world: OBC.World) => {
 
     const handleMouseUp = () => {
         if (isDebugMode) {
-            console.log('NaviCube: Mouse up, was dragging:', isDragging, 'isMouseDown:', isMouseDown);
+            debugLog('NaviCube: Mouse up, was dragging:', isDragging, 'isMouseDown:', isMouseDown);
         }
         
         if (isMouseDown) {
@@ -526,7 +527,7 @@ export default (world: OBC.World) => {
             setTimeout(() => {
                 isDragging = false;
                 if (isDebugMode) {
-                    console.log('NaviCube: Drag state reset');
+                    debugLog('NaviCube: Drag state reset');
                 }
             }, 100);
         }
@@ -542,13 +543,13 @@ export default (world: OBC.World) => {
             
             if (!isOnNaviCube) {
                 if (isDebugMode) {
-                    console.log('NaviCube: Not on NaviCube, skipping touch drag');
+                    debugLog('NaviCube: Not on NaviCube, skipping touch drag');
                 }
                 return;
             }
             
             if (isDebugMode) {
-                console.log('NaviCube: Starting touch potential drag');
+                debugLog('NaviCube: Starting touch potential drag');
             }
             isMouseDown = true;
             isDragging = false;
@@ -578,7 +579,7 @@ export default (world: OBC.World) => {
             isDragging = true;
             element.classList.add('dragging');
             if (isDebugMode) {
-                console.log('NaviCube: Touch drag started - rotating camera');
+                debugLog('NaviCube: Touch drag started - rotating camera');
             }
         }
         
@@ -723,7 +724,7 @@ export default (world: OBC.World) => {
 
     // Add click event listeners to faces and corners (but allow dragging too)
     element.addEventListener('click', (event) => {
-        console.log('NaviCube: Click detected, was dragging:', isDragging);
+        debugLog('NaviCube: Click detected, was dragging:', isDragging);
         
         // If we were dragging, don't handle as a click
         if (isDragging) {
@@ -748,7 +749,7 @@ export default (world: OBC.World) => {
             const targetRotation = cubeRotationsForViews[viewName];
             if (targetRotation) {
                 animateCubeRotation(targetRotation);
-                console.log(`NaviCube: Rotating cube to show ${viewName} face`, targetRotation);
+                debugLog(`NaviCube: Rotating cube to show ${viewName} face`, targetRotation);
             }
         }
         
@@ -1063,13 +1064,13 @@ export default (world: OBC.World) => {
     // Initialize to TOP view on load
     const initializeTopView = () => {
         if (!world.camera.three) {
-            console.log('NaviCube: Camera not ready, retrying in 100ms...');
+            debugLog('NaviCube: Camera not ready, retrying in 100ms...');
             setTimeout(initializeTopView, 100);
             return;
         }
         
-        console.log('NaviCube: Initializing to TOP view...');
-        console.log('Current camera position before TOP view:', world.camera.three.position);
+        debugLog('NaviCube: Initializing to TOP view...');
+        debugLog('Current camera position before TOP view:', world.camera.three.position);
         
         // IMPORTANT: For orthographic mode, set position directly without scaling
         // to avoid the white screen issue - use exact orthographic position
@@ -1086,7 +1087,7 @@ export default (world: OBC.World) => {
         if (!isCameraStateBeingPreserved) {
             camera3js.lookAt(orthographicTarget);
         } else {
-            console.log("🔒 NaviCube: Skipping lookAt during camera state preservation");
+            debugLog("🔒 NaviCube: Skipping lookAt during camera state preservation");
         }
         
         // Ensure orthographic camera has proper frustum - critical for rendering
@@ -1104,7 +1105,7 @@ export default (world: OBC.World) => {
             orthoCam.zoom = 1;
             orthoCam.updateProjectionMatrix();
             
-            console.log('NaviCube: Orthographic camera frustum configured');
+            debugLog('NaviCube: Orthographic camera frustum configured');
         }
         
         // Update camera matrix for all camera types
@@ -1123,20 +1124,20 @@ export default (world: OBC.World) => {
                 cube.style.transform = `rotateX(${cubeRotationX}deg) rotateY(${cubeRotationY}deg)`;
             }
             
-            console.log('NaviCube: Initialized to TOP view with cube rotation:', topRotation);
-            console.log('Camera position after TOP view:', camera3js.position);
+            debugLog('NaviCube: Initialized to TOP view with cube rotation:', topRotation);
+            debugLog('Camera position after TOP view:', camera3js.position);
         }
     };
     
     // Add exposed methods for external triggering
     (element as any).triggerTopView = () => {
-        console.log('NaviCube: triggerTopView called externally');
+        debugLog('NaviCube: triggerTopView called externally');
         initializeTopView();
     };
     
     // Expose method to force immediate camera sync
     (element as any).syncWithCamera = () => {
-        console.log('NaviCube: syncWithCamera called externally');
+        debugLog('NaviCube: syncWithCamera called externally');
         if (world.camera.three && !isUpdatingFromCamera) {
             updateNaviCubeFromCamera();
         }
@@ -1144,7 +1145,7 @@ export default (world: OBC.World) => {
     
     // Expose method to restart monitoring
     (element as any).restartMonitoring = () => {
-        console.log('NaviCube: restartMonitoring called externally');
+        debugLog('NaviCube: restartMonitoring called externally');
         stopCameraMonitoring();
         setTimeout(() => {
             initializeCameraMonitoring();
@@ -1153,8 +1154,8 @@ export default (world: OBC.World) => {
     
     // Enhanced model loaded event handler for immediate camera sync
     const handleModelLoaded = (event: CustomEvent) => {
-        console.log('NaviCube: Received modelLoaded event:', event.detail);
-        console.log('NaviCube: Initializing camera sync after model load...');
+        debugLog('NaviCube: Received modelLoaded event:', event.detail);
+        debugLog('NaviCube: Initializing camera sync after model load...');
         
         // Ensure camera monitoring is active
         if (!isMonitoringActive) {
@@ -1169,7 +1170,7 @@ export default (world: OBC.World) => {
             // Then ensure immediate sync with camera state
             setTimeout(() => {
                 if (world.camera.three && !isUpdatingFromCamera) {
-                    console.log('NaviCube: Performing initial camera sync after model load');
+                    debugLog('NaviCube: Performing initial camera sync after model load');
                     updateNaviCubeFromCamera();
                 }
             }, 50);
@@ -1179,7 +1180,7 @@ export default (world: OBC.World) => {
     // Add event listeners
     window.addEventListener('modelLoaded', handleModelLoaded as EventListener);
     
-    console.log('NaviCube: Ready to respond to model load events');
+    debugLog('NaviCube: Ready to respond to model load events');
 
     // Enhanced cleanup function to handle all monitoring and events
     (element as any).cleanup = () => {
@@ -1207,10 +1208,10 @@ export default (world: OBC.World) => {
             style.parentNode.removeChild(style);
         }
         
-        console.log('NaviCube: Enhanced cleanup completed - all monitoring and events cleared');
+        debugLog('NaviCube: Enhanced cleanup completed - all monitoring and events cleared');
     };
 
-    console.log('NaviCube component created:', element);
+    debugLog('NaviCube component created:', element);
     
     return element;
 };

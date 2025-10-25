@@ -7,6 +7,7 @@
 
 import * as THREE from "three";
 import * as OBC from "@thatopen/components";
+import { debugLog, debugWarn } from "../../../utils/debugLogger";
 
 export class OrthographicFrustumManager {
     private world: OBC.World;
@@ -23,7 +24,7 @@ export class OrthographicFrustumManager {
      */
     public calculateModelBounds(): THREE.Box3 | null {
         if (this.world.meshes.size === 0) {
-            console.warn('No meshes found for frustum calculation');
+            debugWarn('No meshes found for frustum calculation');
             return null;
         }
 
@@ -33,7 +34,7 @@ export class OrthographicFrustumManager {
         });
 
         if (bbox.isEmpty()) {
-            console.warn('Model bounds are empty');
+            debugWarn('Model bounds are empty');
             return null;
         }
 
@@ -42,7 +43,7 @@ export class OrthographicFrustumManager {
         if (this.isDebugMode) {
             const size = bbox.getSize(new THREE.Vector3());
             const center = bbox.getCenter(new THREE.Vector3());
-            console.log('Model bounds calculated:', {
+            debugLog('Model bounds calculated:', {
                 center: center,
                 size: size,
                 min: bbox.min,
@@ -93,7 +94,7 @@ export class OrthographicFrustumManager {
         const finalFar = Math.max(finalNear + 1, far);
 
         if (this.isDebugMode) {
-            console.log('Frustum calculation:', {
+            debugLog('Frustum calculation:', {
                 cameraPosition: cameraPosition,
                 modelCenter: modelCenter,
                 distanceToCenter: distanceToCenter,
@@ -137,7 +138,7 @@ export class OrthographicFrustumManager {
             orthoCam.updateProjectionMatrix();
 
             if (this.isDebugMode) {
-                console.log('Orthographic frustum updated:', {
+                debugLog('Orthographic frustum updated:', {
                     near: near,
                     far: far,
                     nearDiff: nearDiff,
@@ -179,7 +180,7 @@ export class OrthographicFrustumManager {
         setTimeout(() => this.updateOrthographicFrustum(true), 1000);
 
         if (this.isDebugMode) {
-            console.log('Automatic orthographic frustum updates enabled');
+            debugLog('Automatic orthographic frustum updates enabled');
         }
     }
 

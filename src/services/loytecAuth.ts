@@ -1,6 +1,7 @@
 // Loytec Authentication Service - Server Proxy Implementation
 
 import { LoginCredentials, AuthResponse } from '../types/auth';
+import { debugLog, debugError } from "../utils/debugLogger";
 
 class LoytecAuthService {
   private apiBaseUrl: string;
@@ -27,7 +28,7 @@ class LoytecAuthService {
       const result = await response.json();
 
       if (!response.ok) {
-        console.error('Server authentication error:', result);
+        debugError('Server authentication error:', result);
         return {
           success: false,
           error: result.error || `Server error: ${response.status} ${response.statusText}`
@@ -43,7 +44,7 @@ class LoytecAuthService {
       }
 
       // Authentication successful
-      console.log('Authentication successful via server proxy');
+      debugLog('Authentication successful via server proxy');
       return {
         success: true,
         sessionId: result.sessionId,
@@ -60,7 +61,7 @@ class LoytecAuthService {
       };
 
     } catch (error) {
-      console.error('Authentication service error:', error);
+      debugError('Authentication service error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Authentication failed - network error'
@@ -92,7 +93,7 @@ class LoytecAuthService {
       return result.success && result.connected;
       
     } catch (error) {
-      console.error('Connection test error:', error);
+      debugError('Connection test error:', error);
       return false;
     }
   }
@@ -121,7 +122,7 @@ class LoytecAuthService {
       return result.success === true;
 
     } catch (error) {
-      console.error('Session validation error:', error);
+      debugError('Session validation error:', error);
       return false;
     }
   }
@@ -142,7 +143,7 @@ class LoytecAuthService {
         body: JSON.stringify({ sessionId })
       });
     } catch (error) {
-      console.error('Logout error:', error);
+      debugError('Logout error:', error);
     }
   }
 

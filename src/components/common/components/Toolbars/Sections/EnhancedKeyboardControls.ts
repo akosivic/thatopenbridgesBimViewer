@@ -3,6 +3,7 @@ import * as OBC from "@thatopen/components";
 import { PointerLockControls } from "three/examples/jsm/Addons.js";
 import { getCurrentProjection } from "./ProjectionControls";
 import { getCurrentSpeed } from "./CameraSettings";
+import { debugLog } from "../../../../../utils/debugLogger";
 
 // Global references
 let fpControls: PointerLockControls | null = null;
@@ -58,7 +59,7 @@ const zoomOrthographicCamera = (direction: number) => {
     (world.camera.three as THREE.OrthographicCamera).zoom = newZoom;
     world.camera.three.updateProjectionMatrix();
     
-    console.log('Orthographic keyboard zoom (speed x' + speedMultiplier.toFixed(1) + '):', newZoom);
+    debugLog('Orthographic keyboard zoom (speed x' + speedMultiplier.toFixed(1) + '):', newZoom);
 };
 
 const panOrthographicCamera = (deltaX: number, deltaY: number) => {
@@ -90,7 +91,7 @@ const panOrthographicCamera = (deltaX: number, deltaY: number) => {
     // Apply pan to camera position
     camera.position.add(panVector);
     
-    console.log('Orthographic keyboard pan (speed x' + speedMultiplier.toFixed(1) + '):', camera.position);
+    debugLog('Orthographic keyboard pan (speed x' + speedMultiplier.toFixed(1) + '):', camera.position);
 };
 
 // Enhanced movement function with projection-specific behavior
@@ -255,9 +256,9 @@ const updateMovement = () => {
 
     if (moved) {
         if (isPerspective) {
-            console.log(`${currentProjection} movement (FPS restrictions):`, camera.position);
+            debugLog(`${currentProjection} movement (FPS restrictions):`, camera.position);
         } else {
-            console.log(`${currentProjection} movement (no restrictions):`, camera.position);
+            debugLog(`${currentProjection} movement (no restrictions):`, camera.position);
         }
     }
 
@@ -315,7 +316,7 @@ const handleWheel = (event: WheelEvent) => {
         world.camera.three.zoom = newZoom;
         world.camera.three.updateProjectionMatrix();
         
-        console.log(`${currentProjection} zoom:`, newZoom);
+        debugLog(`${currentProjection} zoom:`, newZoom);
     }
 };
 
@@ -329,7 +330,7 @@ export const initializeKeyboardControls = () => {
     document.addEventListener('keyup', handleKeyUp);
     document.addEventListener('wheel', handleWheel, { passive: false });
     
-    console.log('Enhanced keyboard controls initialized with projection-specific bindings');
+    debugLog('Enhanced keyboard controls initialized with projection-specific bindings');
 };
 
 // Cleanup function
@@ -350,7 +351,7 @@ export const cleanupKeyboardControls = () => {
 // Listen for projection changes to adjust behavior
 window.addEventListener('projectionChanged', (event: any) => {
     const { mode } = event.detail;
-    console.log(`Keyboard controls adapted for ${mode} mode`);
+    debugLog(`Keyboard controls adapted for ${mode} mode`);
     
     // Reset any ongoing movement when switching modes
     Object.keys(keys).forEach(key => keys[key] = false);

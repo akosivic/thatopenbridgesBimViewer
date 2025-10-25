@@ -1,4 +1,5 @@
 import { html } from "@thatopen/ui";
+import { debugLog } from "../../../../../utils/debugLogger";
 
 // Speed multiplier state
 let currentSpeed = 1;
@@ -158,7 +159,7 @@ export function getCurrentSpeed(): number {
 export function setMovementSpeed(speed: number): void {
   if ([1, 2, 3].includes(speed)) {
     currentSpeed = speed;
-    console.log(`Movement speed set to: x${speed}`);
+    debugLog(`Movement speed set to: x${speed}`);
     
     // Update active button styling
     const buttons = document.querySelectorAll('.speed-button');
@@ -180,3 +181,4 @@ export function setMovementSpeed(speed: number): void {
     window.dispatchEvent(speedChangeEvent);
   }
 }
+

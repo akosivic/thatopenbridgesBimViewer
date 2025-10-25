@@ -1,5 +1,7 @@
 // Environment configuration for Loytec authentication
 
+import { debugLog, debugWarn, debugError } from "../utils/debugLogger";
+
 export interface AppConfig {
   loytecBaseUrl: string;
   isDevelopment: boolean;
@@ -15,9 +17,9 @@ export const getAppConfig = (): AppConfig => {
   
   // Log security status
   if (isDevelopment && skipAuthInDev) {
-    console.warn('🚧 DEVELOPMENT MODE: Authentication bypass is ENABLED');
+    debugWarn('🚧 DEVELOPMENT MODE: Authentication bypass is ENABLED');
   } else if (isDevelopment && !skipAuthInDev) {
-    console.log('🔒 DEVELOPMENT MODE: Authentication bypass is DISABLED');
+    debugLog('🔒 DEVELOPMENT MODE: Authentication bypass is DISABLED');
   }
   
   return {
@@ -31,14 +33,14 @@ export const getAppConfig = (): AppConfig => {
 // Validate configuration
 export const validateConfig = (config: AppConfig): boolean => {
   if (!config.loytecBaseUrl) {
-    console.error('VITE_LOYTEC_BASE_URL is not configured');
+    debugError('VITE_LOYTEC_BASE_URL is not configured');
     return false;
   }
   
   try {
     new URL(config.loytecBaseUrl);
   } catch {
-    console.error('VITE_LOYTEC_BASE_URL is not a valid URL');
+    debugError('VITE_LOYTEC_BASE_URL is not a valid URL');
     return false;
   }
   

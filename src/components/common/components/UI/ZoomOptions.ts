@@ -1,5 +1,6 @@
 import * as OBC from "@thatopen/components";
 import * as THREE from "three";
+import { debugLog } from "../../../../utils/debugLogger";
 
 // Global minimum zoom limit that can be accessed by other modules
 let globalMinZoomLimit = 0.8; // Default fallback
@@ -36,7 +37,7 @@ export default (world: OBC.World) => {
             const zoomForHeight = frustumHeight / fitHeight;
             const fitZoom = Math.min(zoomForWidth, zoomForHeight);
             
-            console.log('Calculated zoom-to-fit minimum:', fitZoom);
+            debugLog('Calculated zoom-to-fit minimum:', fitZoom);
             return Math.max(0.1, fitZoom); // Ensure it's not too small
         }
         
@@ -47,7 +48,7 @@ export default (world: OBC.World) => {
     const updateMinZoomLimit = (value: number) => {
         minZoomLimit = value;
         globalMinZoomLimit = value;
-        console.log('Updated global minimum zoom limit to:', globalMinZoomLimit);
+        debugLog('Updated global minimum zoom limit to:', globalMinZoomLimit);
     };
     
     // Helper for orthographic zoom with margin
@@ -79,7 +80,7 @@ export default (world: OBC.World) => {
     }
     const { camera } = world;
 
-    console.log('ZoomOptions component being created...');
+    debugLog('ZoomOptions component being created...');
     
     // Calculate initial minimum zoom limit based on model
     setTimeout(() => {
@@ -113,7 +114,7 @@ export default (world: OBC.World) => {
                     const newPosition = center.clone().sub(currentDirection.clone().multiplyScalar(optimalDistance));
                     animateCameraTransition(camera3js, newPosition, center);
                 }
-                console.log('Zoom to Extents: Wide overview with generous padding');
+                debugLog('Zoom to Extents: Wide overview with generous padding');
             }
         }
     };
@@ -163,7 +164,7 @@ export default (world: OBC.World) => {
                         }));
                     }, 850);
                 }
-                console.log('Zoom to Fit: Close framing for maximum detail');
+                debugLog('Zoom to Fit: Close framing for maximum detail');
             }
         }
     };
@@ -190,7 +191,7 @@ export default (world: OBC.World) => {
                 
                 // Only move if camera is dangerously close to the model
                 if (distanceToCenter < minSafeDistance) {
-                    console.log('Camera too close to model, adjusting position slightly');
+                    debugLog('Camera too close to model, adjusting position slightly');
                     const directionFromCenter = currentPosition.clone().sub(center).normalize();
                     targetPosition = center.clone().add(directionFromCenter.multiplyScalar(minSafeDistance));
                 }
@@ -207,7 +208,7 @@ export default (world: OBC.World) => {
                         }
                     }));
                 }, 450); // Wait for animation to complete (duration is 400ms)
-                console.log('Zoom to Center: Camera pointed toward model center (minimal movement)');
+                debugLog('Zoom to Center: Camera pointed toward model center (minimal movement)');
             }
         }
     };
@@ -219,7 +220,7 @@ export default (world: OBC.World) => {
             const newZoom = Math.min(5, currentZoom * 1.2);
             orthoCam.zoom = newZoom;
             orthoCam.updateProjectionMatrix();
-            console.log('Zoomed in:', newZoom);
+            debugLog('Zoomed in:', newZoom);
         }
     };
 
@@ -230,7 +231,7 @@ export default (world: OBC.World) => {
             const newZoom = Math.max(minZoomLimit, currentZoom * 0.8); // Minimum zoom limited to zoom-to-fit value
             orthoCam.zoom = newZoom;
             orthoCam.updateProjectionMatrix();
-            console.log('Zoomed out to:', newZoom, '(min limit:', minZoomLimit + ')');
+            debugLog('Zoomed out to:', newZoom, '(min limit:', minZoomLimit + ')');
         }
     };
 
@@ -272,7 +273,7 @@ export default (world: OBC.World) => {
                 if (!(window as any).isCameraStateBeingPreserved || !(window as any).isCameraStateBeingPreserved()) {
                     camera.lookAt(targetLookAt);
                 } else {
-                    console.log("🔒 ZoomOptions: Skipping lookAt during camera state preservation");
+                    debugLog("🔒 ZoomOptions: Skipping lookAt during camera state preservation");
                 }
                 if (onComplete) onComplete();
             }
@@ -464,7 +465,7 @@ export default (world: OBC.World) => {
 
     document.head.appendChild(style);
 
-    console.log('ZoomOptions component created (DOM version):', element);
+    debugLog('ZoomOptions component created (DOM version):', element);
     
     // Expose zoomToCenter for external use (e.g., initial load)
     (element as unknown as { zoomToCenter: () => void }).zoomToCenter = zoomToCenter;

@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import Button from '@mui/material/Button';
 import { login, useAuth } from '../components/common/authentication';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import LoginForm from './LoginForm';
+import { debugError } from "../utils/debugLogger";
 
 // Login button component with Loytec authentication
 const LoginButton: React.FC = () => {
@@ -26,7 +27,7 @@ const LoginButton: React.FC = () => {
       // Navigate to WorldViewer (App.tsx will handle this via Navigate component)
       navigate('/ws/node/bimviewer/worldviewer', { replace: true });
     } catch (error) {
-      console.error('Login success handling failed:', error);
+      debugError('Login success handling failed:', error);
     }
   };
 

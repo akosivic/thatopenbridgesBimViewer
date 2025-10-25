@@ -1,4 +1,5 @@
 import { html } from "@thatopen/ui";
+import { debugLog } from "../../../../../utils/debugLogger";
 
 // Speed multiplier state
 let currentSpeed = 1;
@@ -7,7 +8,7 @@ let currentSpeed = 1;
 export default function speedControls() {
   const setSpeedMultiplier = (multiplier: number) => {
     currentSpeed = multiplier;
-    console.log(`Movement speed set to: x${multiplier}`);
+    debugLog(`Movement speed set to: x${multiplier}`);
     
     // Update active button styling
     updateSpeedButtonStates(multiplier);
@@ -192,3 +193,4 @@ export function setMovementSpeed(speed: number): void {
     window.dispatchEvent(speedChangeEvent);
   }
 }
+

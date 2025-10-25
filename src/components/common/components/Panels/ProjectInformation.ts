@@ -5,6 +5,7 @@ import groupings from "./Sections/Groupings";
 import { FragmentsGroup } from "@thatopen/fragments";
 import * as THREE from "three";
 import i18n from "../../utils/i18n";
+import { debugLog, debugWarn, debugError } from "../../../../utils/debugLogger";
 
 interface DataPointState {
   keys: string[];
@@ -72,7 +73,7 @@ export default async (components: OBC.Components, isDebug: boolean) => {
         
         // Instead of modifying materials globally, let's use the fragment's built-in highlighting
         // by temporarily storing original colors and applying yellow to specific items
-        console.log(`🟡 Applying yellow highlight to fragment ${fragmentId} with expressIDs:`, expressIDs);
+        debugLog(`🟡 Applying yellow highlight to fragment ${fragmentId} with expressIDs:`, expressIDs);
         
         // For each expressID, find the corresponding geometry and apply yellow material
         expressIDs.forEach((expressID: number) => {
@@ -81,15 +82,15 @@ export default async (components: OBC.Components, isDebug: boolean) => {
             try {
               // Set yellow color (RGB: 255, 255, 0)
               fragment.setColor(new THREE.Color(1, 1, 0), [expressID]);
-              console.log(`🎨 Set yellow color for expressID ${expressID} using fragment.setColor`);
+              debugLog(`🎨 Set yellow color for expressID ${expressID} using fragment.setColor`);
             } catch (error) {
-              console.warn(`⚠️ Failed to use fragment.setColor for expressID ${expressID}:`, error);
+              debugWarn(`⚠️ Failed to use fragment.setColor for expressID ${expressID}:`, error);
               // Fallback to material modification
               applyYellowToMaterial(mesh);
             }
           } else {
             // Fallback: apply emissive to the whole mesh (less precise but works)
-            console.log(`🔧 Using fallback material modification for fragment ${fragmentId}`);
+            debugLog(`🔧 Using fallback material modification for fragment ${fragmentId}`);
             applyYellowToMaterial(mesh);
           }
         });
@@ -144,17 +145,17 @@ export default async (components: OBC.Components, isDebug: boolean) => {
     if (specificFragmentIds) {
       // Clear only specific fragment IDs
       fragmentsToClear = specificFragmentIds;
-      console.log(`🔄 Clearing yellow highlighting for specific fragments:`, specificFragmentIds);
+      debugLog(`🔄 Clearing yellow highlighting for specific fragments:`, specificFragmentIds);
     } else if (groupKey) {
       // Clear all fragments belonging to a specific group
       fragmentsToClear = Array.from(fragmentToGroupMap.entries())
         .filter(([, group]) => group === groupKey)
         .map(([fragmentId]) => fragmentId);
-      console.log(`🔄 Clearing yellow highlighting for group "${groupKey}" fragments:`, fragmentsToClear);
+      debugLog(`🔄 Clearing yellow highlighting for group "${groupKey}" fragments:`, fragmentsToClear);
     } else {
       // Clear all highlighted fragments (fallback to original behavior)
       fragmentsToClear = Array.from(yellowHighlightedFragments.keys());
-      console.log(`🔄 Clearing ALL yellow highlighting for ${fragmentsToClear.length} fragments`);
+      debugLog(`🔄 Clearing ALL yellow highlighting for ${fragmentsToClear.length} fragments`);
     }
     
     // Clear the specified fragments
@@ -173,15 +174,15 @@ export default async (components: OBC.Components, isDebug: boolean) => {
             Array.from(expressIDs).forEach((expressID: number) => {
               fragment.resetColor([expressID]);
             });
-            console.log(`🔄 Reset colors for fragment ${fragmentId} using fragment.resetColor`);
+            debugLog(`🔄 Reset colors for fragment ${fragmentId} using fragment.resetColor`);
           } catch (error) {
-            console.warn(`⚠️ Failed to use fragment.resetColor for fragment ${fragmentId}:`, error);
+            debugWarn(`⚠️ Failed to use fragment.resetColor for fragment ${fragmentId}:`, error);
             // Fallback to material restoration
             restoreMaterialColors(mesh);
           }
         } else {
           // Fallback: restore material colors
-          console.log(`🔧 Using fallback material restoration for fragment ${fragmentId}`);
+          debugLog(`🔧 Using fallback material restoration for fragment ${fragmentId}`);
           restoreMaterialColors(mesh);
         }
       }
@@ -191,12 +192,12 @@ export default async (components: OBC.Components, isDebug: boolean) => {
       fragmentToGroupMap.delete(fragmentId);
     }
     
-    console.log(`✅ Cleared highlighting for ${fragmentsToClear.length} fragments`);
+    debugLog(`✅ Cleared highlighting for ${fragmentsToClear.length} fragments`);
   };
 
   // Helper function to clear highlights for a specific light group
   const clearGroupHighlighting = async (groupKey: string, components: OBC.Components) => {
-    console.log(`🔄 Clearing highlights for light group: ${groupKey}`);
+    debugLog(`🔄 Clearing highlights for light group: ${groupKey}`);
     
     try {
       // Get the individual lights for this group to find their fragment IDs
@@ -245,13 +246,13 @@ export default async (components: OBC.Components, isDebug: boolean) => {
         
         // Clear highlighting only for these specific fragments
         clearYellowHighlighting(components, fragmentIdsToClear);
-        console.log(`✅ Cleared highlights for ${fragmentIdsToClear.length} fragments in group ${groupKey}`);
+        debugLog(`✅ Cleared highlights for ${fragmentIdsToClear.length} fragments in group ${groupKey}`);
         
       } else {
-        console.error(`❌ Failed to fetch light data for group ${groupKey}`);
+        debugError(`❌ Failed to fetch light data for group ${groupKey}`);
       }
     } catch (error) {
-      console.error(`❌ Error clearing highlights for group ${groupKey}:`, error);
+      debugError(`❌ Error clearing highlights for group ${groupKey}:`, error);
     }
   };
 
@@ -304,35 +305,35 @@ export default async (components: OBC.Components, isDebug: boolean) => {
   const getAllDataPointKeys = async (forceRefresh = false): Promise<string[]> => {
     if (keysFetched && !forceRefresh) return dataPointState.keys;
     try {
-      console.log("🔍 Fetching datapoint keys from server...");
+      debugLog("🔍 Fetching datapoint keys from server...");
       const response = await fetch("/ws/node/api/GetDpsMapKeys");
-      console.log("📡 API Response status:", response.status);
+      debugLog("📡 API Response status:", response.status);
       if (!response.ok) throw new Error(`Failed to fetch datapoint keys: ${response.status}`);
       const data: DataPointKeysResponse = await response.json();
-      console.log("📊 Raw API data:", data);
+      debugLog("📊 Raw API data:", data);
       const keys = Object.keys(data);
-      console.log("🔑 Extracted keys:", keys);
+      debugLog("🔑 Extracted keys:", keys);
       if (keys && keys.length > 0) {
         dataPointState.keys = keys;
         
         // Initialize button states from backend instead of defaulting to false
-        console.log("🔄 Fetching initial button states from loytec-datapoints.json...");
+        debugLog("🔄 Fetching initial button states from loytec-datapoints.json...");
         try {
           const statesResponse = await fetch("/ws/node/api/getInitialButtonStates");
           if (statesResponse.ok) {
             const buttonStates = await statesResponse.json();
-            console.log("📊 Backend button states from JSON:", buttonStates);
+            debugLog("📊 Backend button states from JSON:", buttonStates);
             dataPointState.buttonStates = buttonStates;
-            console.log("✅ Button states synchronized with loytec-datapoints.json");
+            debugLog("✅ Button states synchronized with loytec-datapoints.json");
           } else {
-            console.warn("⚠️ Failed to fetch button states, using defaults");
+            debugWarn("⚠️ Failed to fetch button states, using defaults");
             dataPointState.buttonStates = {};
             keys.forEach((key) => {
               dataPointState.buttonStates[key] = false;
             });
           }
         } catch (stateError) {
-          console.error("❌ Error fetching button states:", stateError);
+          debugError("❌ Error fetching button states:", stateError);
           dataPointState.buttonStates = {};
           keys.forEach((key) => {
             dataPointState.buttonStates[key] = false;
@@ -340,14 +341,14 @@ export default async (components: OBC.Components, isDebug: boolean) => {
         }
         
         keysFetched = true;
-        console.log("✅ Successfully loaded", keys.length, "light groups:", keys);
-        console.log("🎯 Final button states:", dataPointState.buttonStates);
+        debugLog("✅ Successfully loaded", keys.length, "light groups:", keys);
+        debugLog("🎯 Final button states:", dataPointState.buttonStates);
         return dataPointState.keys;
       } else {
-        console.warn("⚠️ No keys found in API response");
+        debugWarn("⚠️ No keys found in API response");
       }
     } catch (error) {
-      console.error("❌ Error fetching datapoint keys:", error);
+      debugError("❌ Error fetching datapoint keys:", error);
     }
     return [];
   };
@@ -392,19 +393,19 @@ export default async (components: OBC.Components, isDebug: boolean) => {
             const fragmentIdMap = model.getFragmentMap([foundItems[0].data.expressID]);
             // Apply yellow highlighting using emissive materials, passing the groupKey for tracking
             applyYellowColorToFragments(fragmentIdMap, components, groupKey);
-            console.log(`🟡 Highlighted elements in yellow for ${targetKey} in group ${groupKey}`);
+            debugLog(`🟡 Highlighted elements in yellow for ${targetKey} in group ${groupKey}`);
           }
         }
       }
     } catch (error) {
-      console.error(`❌ Error highlighting group ${groupKey}:`, error);
+      debugError(`❌ Error highlighting group ${groupKey}:`, error);
     }
   };
 
   // Update datapoint by key - writes to loytec-datapoints.json
   const updateDataPoint = async (key: string) => {
     try {
-      console.log(`🔄 Toggling light group: ${key}`);
+      debugLog(`🔄 Toggling light group: ${key}`);
       
       // Call the backend to actually toggle the light group and update JSON file
       const response = await fetch('/ws/node/api/toggleLightGroup', {
@@ -421,7 +422,7 @@ export default async (components: OBC.Components, isDebug: boolean) => {
       }
 
       const result = await response.json();
-      console.log(`✅ Light group ${key} toggled successfully in loytec-datapoints.json:`, result);
+      debugLog(`✅ Light group ${key} toggled successfully in loytec-datapoints.json:`, result);
 
       // Update local button state based on the backend response
       const newState = result.newState === 'ON';
@@ -429,48 +430,48 @@ export default async (components: OBC.Components, isDebug: boolean) => {
       
       // Handle highlighting based on new state - selective approach
       if (!newState) {
-        console.log(`💡 Light group ${key} turned OFF - removing only its highlights`);
+        debugLog(`💡 Light group ${key} turned OFF - removing only its highlights`);
         // Use the new selective clearing to only clear this specific group
         await clearGroupHighlighting(key, components);
       } else {
-        console.log(`💡 Light group ${key} turned ON - adding its highlights`);
+        debugLog(`💡 Light group ${key} turned ON - adding its highlights`);
         // Just add highlights for this group (other groups remain highlighted)
         await highlightGroup(key);
       }
       
       // Re-fetch button states to ensure perfect sync with JSON file
-      console.log("🔄 Re-syncing all button states from loytec-datapoints.json...");
+      debugLog("🔄 Re-syncing all button states from loytec-datapoints.json...");
       try {
         const statesResponse = await fetch("/ws/node/api/getInitialButtonStates");
         if (statesResponse.ok) {
           const buttonStates = await statesResponse.json();
-          console.log("📊 Updated backend button states from JSON:", buttonStates);
+          debugLog("📊 Updated backend button states from JSON:", buttonStates);
           Object.assign(dataPointState.buttonStates, buttonStates);
-          console.log("✅ All button states re-synchronized with JSON file");
+          debugLog("✅ All button states re-synchronized with JSON file");
         }
       } catch (syncError) {
-        console.warn("⚠️ Failed to re-sync button states:", syncError);
+        debugWarn("⚠️ Failed to re-sync button states:", syncError);
       }
       
       await renderDataPointButtons();
       updateState({ ...dataPointState });
-      console.log(`Updated datapoint for key: ${key}`);
+      debugLog(`Updated datapoint for key: ${key}`);
     } catch (error) {
-      console.error(`Error updating datapoint for key: ${key}:`, error);
+      debugError(`Error updating datapoint for key: ${key}:`, error);
       // Don't revert state since we're syncing with backend
     }
   };
 
   // Render datapoint buttons with proper JSON state sync
   const renderDataPointButtons = async () => {
-    console.log("🎨 Starting renderDataPointButtons...");
+    debugLog("🎨 Starting renderDataPointButtons...");
     await getAllDataPointKeys();
-    console.log("🔢 Number of keys to render:", dataPointState.keys.length);
-    console.log("🎛️ Current button states from JSON:", dataPointState.buttonStates);
+    debugLog("🔢 Number of keys to render:", dataPointState.keys.length);
+    debugLog("🎛️ Current button states from JSON:", dataPointState.buttonStates);
     
     dataPointState.buttons = dataPointState.keys.map((key) => {
       const isActive = dataPointState.buttonStates[key] || false;
-      console.log(`🎯 Creating button for key: ${key}, active: ${isActive}, style: ${isActive ? 'GREEN' : 'RED'}`);
+      debugLog(`🎯 Creating button for key: ${key}, active: ${isActive}, style: ${isActive ? 'GREEN' : 'RED'}`);
       return BUI.html`
         <bim-button
           class="datapoint-button${isActive ? ' active' : ''}"
@@ -480,7 +481,7 @@ export default async (components: OBC.Components, isDebug: boolean) => {
         </bim-button>
       `;
     });
-    console.log("✨ Buttons created:", dataPointState.buttons.length);
+    debugLog("✨ Buttons created:", dataPointState.buttons.length);
   };
 
   await renderDataPointButtons();
@@ -520,10 +521,10 @@ export default async (components: OBC.Components, isDebug: boolean) => {
 
   // Add triggerInitialHighlighting function to the panel for WorldViewer to call
   (panel as any).triggerInitialHighlighting = async () => {
-    console.log('🔥 Starting initial highlighting based on Loytec datapoint states...');
+    debugLog('🔥 Starting initial highlighting based on Loytec datapoint states...');
     
     if (!model) {
-      console.log('⚠️ Model not available yet for initial highlighting');
+      debugLog('⚠️ Model not available yet for initial highlighting');
       return;
     }
 
@@ -534,17 +535,17 @@ export default async (components: OBC.Components, isDebug: boolean) => {
     try {
       const statesResponse = await fetch("/ws/node/api/getInitialButtonStates");
       if (!statesResponse.ok) {
-        console.error('❌ Failed to fetch initial button states for highlighting');
+        debugError('❌ Failed to fetch initial button states for highlighting');
         return;
       }
       
       const buttonStates = await statesResponse.json();
-      console.log('📊 Button states for initial highlighting:', buttonStates);
+      debugLog('📊 Button states for initial highlighting:', buttonStates);
       
       // For each group that is ON, highlight its lights
       for (const [groupKey, isOn] of Object.entries(buttonStates)) {
         if (isOn) {
-          console.log(`💡 Group ${groupKey} is ON - highlighting its lights...`);
+          debugLog(`💡 Group ${groupKey} is ON - highlighting its lights...`);
           
           try {
             // Get the individual lights for this group
@@ -562,7 +563,7 @@ export default async (components: OBC.Components, isDebug: boolean) => {
                 await relationsTree.updateComplete;
                 
                 relationsTree.expanded = true;
-                console.log(`🎯 Searching for element with key: ${targetKey}`);
+                debugLog(`🎯 Searching for element with key: ${targetKey}`);
 
                 // Recursive function to find items in the tree with matching name
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -586,35 +587,35 @@ export default async (components: OBC.Components, isDebug: boolean) => {
 
                 const foundItems = findItemsByName(relationsTree.data, targetKey);
                 if (foundItems.length > 0) {
-                  console.log(`✅ Found ${foundItems.length} items for key ${targetKey} - highlighting...`);
+                  debugLog(`✅ Found ${foundItems.length} items for key ${targetKey} - highlighting...`);
                   const fragmentIdMap = model.getFragmentMap([foundItems[0].data.expressID]);
                   applyYellowColorToFragments(fragmentIdMap, components, groupKey);
-                  console.log(`🟡 Highlighted elements in yellow for ${targetKey} in group ${groupKey}`);
+                  debugLog(`🟡 Highlighted elements in yellow for ${targetKey} in group ${groupKey}`);
                 } else {
-                  console.log(`⚠️ No items found for key ${targetKey} in relations tree`);
+                  debugLog(`⚠️ No items found for key ${targetKey} in relations tree`);
                 }
               }
             } else {
-              console.error(`❌ Failed to fetch light data for group ${groupKey}`);
+              debugError(`❌ Failed to fetch light data for group ${groupKey}`);
             }
           } catch (error) {
-            console.error(`❌ Error highlighting group ${groupKey}:`, error);
+            debugError(`❌ Error highlighting group ${groupKey}:`, error);
           }
         } else {
-          console.log(`💡 Group ${groupKey} is OFF - skipping highlighting`);
+          debugLog(`💡 Group ${groupKey} is OFF - skipping highlighting`);
         }
       }
       
-      console.log('✅ Initial highlighting complete based on Loytec datapoint states');
+      debugLog('✅ Initial highlighting complete based on Loytec datapoint states');
       
     } catch (error) {
-      console.error('❌ Error during initial highlighting:', error);
+      debugError('❌ Error during initial highlighting:', error);
     }
   };
 
   // Listen for the modelLoadedForLighting event as a fallback
   const handleModelLoadedForLighting = () => {
-    console.log('📡 Received modelLoadedForLighting event');
+    debugLog('📡 Received modelLoadedForLighting event');
     // Re-enable initial highlighting based on button states
     if ((panel as any).triggerInitialHighlighting) {
       (panel as any).triggerInitialHighlighting();

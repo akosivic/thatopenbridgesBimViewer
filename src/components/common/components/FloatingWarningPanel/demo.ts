@@ -1,5 +1,6 @@
 import { FloatingWarningPanel } from './FloatingWarningPanel';
 import * as THREE from 'three';
+import { debugLog } from "../../../../utils/debugLogger";
 
 /**
  * Demo/Test utility for the FloatingWarningPanel
@@ -49,7 +50,7 @@ export class FloatingWarningPanelDemo {
     // Demo warning 2 - on the other side
     this.warningPanel.addWarning(new THREE.Vector3(-2, -1, 0));
     
-    console.log('Demo warnings added. Total warnings:', this.warningPanel.getWarnings().length);
+    debugLog('Demo warnings added. Total warnings:', this.warningPanel.getWarnings().length);
   }
 
   private animate = (): void => {
@@ -81,3 +82,4 @@ export class FloatingWarningPanelDemo {
 
 // Export for global access in browser console
 (window as any).FloatingWarningPanelDemo = FloatingWarningPanelDemo;
+

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { debugLog, debugError } from "../../../../utils/debugLogger";
 
 export interface WarningConfig {
   id: string;
@@ -23,12 +24,12 @@ export class FloatingWarningPanel {
   private configMode: boolean = false;
 
   constructor(container: HTMLElement, camera: THREE.Camera) {
-    console.log('FloatingWarningPanel constructor called with container:', container, 'camera:', camera);
+    debugLog('FloatingWarningPanel constructor called with container:', container, 'camera:', camera);
     this.container = container;
     this.camera = camera;
     this.loadConfiguration();
     this.createWarningPanels();
-    console.log('FloatingWarningPanel initialized with', this.warnings.size, 'warnings');
+    debugLog('FloatingWarningPanel initialized with', this.warnings.size, 'warnings');
   }
 
   /**
@@ -54,7 +55,7 @@ export class FloatingWarningPanel {
         this.createDefaultWarning();
       }
     } catch (error) {
-      console.error('Error loading warning configuration:', error);
+      debugError('Error loading warning configuration:', error);
       this.createDefaultWarning();
     }
   }
@@ -69,9 +70,9 @@ export class FloatingWarningPanel {
         warnings: Array.from(this.warnings.values())
       };
       localStorage.setItem(FloatingWarningPanel.CONFIG_FILE, JSON.stringify(data, null, 2));
-      console.log('Warning configuration saved');
+      debugLog('Warning configuration saved');
     } catch (error) {
-      console.error('Error saving warning configuration:', error);
+      debugError('Error saving warning configuration:', error);
     }
   }
 
@@ -128,7 +129,7 @@ export class FloatingWarningPanel {
     // Save the sample configuration
     this.saveConfiguration();
     
-    console.log('Sample configuration loaded with', sampleWarnings.length, 'warnings');
+    debugLog('Sample configuration loaded with', sampleWarnings.length, 'warnings');
   }
 
   /**
@@ -497,7 +498,7 @@ export class FloatingWarningPanel {
       }
     });
 
-    console.log('Configuration mode:', this.configMode ? 'ON' : 'OFF');
+    debugLog('Configuration mode:', this.configMode ? 'ON' : 'OFF');
   }
 
   /**
@@ -561,7 +562,7 @@ export class FloatingWarningPanel {
       this.createWarningElement(warning);
     });
 
-    console.log('Configuration reset to sample data');
+    debugLog('Configuration reset to sample data');
   }
 
   /**
@@ -569,7 +570,7 @@ export class FloatingWarningPanel {
    */
   public onUpdate(callback: () => void): void {
     // Reserved for future use
-    console.log('Update callback set:', callback);
+    debugLog('Update callback set:', callback);
   }
 
   /**
@@ -585,3 +586,4 @@ export class FloatingWarningPanel {
     this.warnings.clear();
   }
 }
+

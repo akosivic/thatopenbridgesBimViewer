@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import loytecAuthService from '../../services/loytecAuth';
 import { UserProfile } from '../../types/auth';
 import { getAppConfig } from '../../config/appConfig';
+import { debugWarn, debugError } from "../../utils/debugLogger";
 
 // Storage keys for session management
 const SESSION_STORAGE_KEY = 'loytec_session_id';
@@ -16,8 +17,8 @@ export const checkAuthStatus = async (): Promise<{
   // Only bypass authentication in development mode when explicitly enabled
   // This provides a secure way to disable auth for local development
   if (config.isDevelopment && config.skipAuthInDev) {
-    console.warn('🚧 DEVELOPMENT MODE: Bypassing authentication for local development');
-    console.warn('⚠️  This bypass is automatically disabled in production builds');
+    debugWarn('ðŸš§ DEVELOPMENT MODE: Bypassing authentication for local development');
+    debugWarn('âš ï¸  This bypass is automatically disabled in production builds');
     return {
       isAuthenticated: true,
       userDetails: {
@@ -58,7 +59,7 @@ export const checkAuthStatus = async (): Promise<{
       return { isAuthenticated: false, userDetails: null };
     }
   } catch (error) {
-    console.error('Auth status check failed:', error);
+    debugError('Auth status check failed:', error);
     // Clear storage on error
     sessionStorage.removeItem(SESSION_STORAGE_KEY);
     sessionStorage.removeItem(USER_STORAGE_KEY);
@@ -95,7 +96,7 @@ export const logout = async (): Promise<void> => {
       await loytecAuthService.logout(sessionId);
     }
   } catch (error) {
-    console.error('Logout error:', error);
+    debugError('Logout error:', error);
   } finally {
     // Clear local storage regardless of logout success
     sessionStorage.removeItem(SESSION_STORAGE_KEY);

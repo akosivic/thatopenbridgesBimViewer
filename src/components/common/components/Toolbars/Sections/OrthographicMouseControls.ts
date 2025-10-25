@@ -2,6 +2,7 @@ import * as THREE from "three";
 import * as OBC from "@thatopen/components";
 import { getCurrentProjection } from "./ProjectionControls";
 import { getCurrentSpeed } from "./CameraSettings";
+import { debugLog } from "../../../../../utils/debugLogger";
 
 // Orthographic-specific mouse controls
 export class OrthographicMouseControls {
@@ -64,7 +65,7 @@ export class OrthographicMouseControls {
         this.viewport.addEventListener('dragstart', (e) => e.preventDefault());
         this.viewport.addEventListener('selectstart', (e) => e.preventDefault());
         
-        console.log('Text selection disabled for orthographic controls');
+        debugLog('Text selection disabled for orthographic controls');
     }
 
     private enableTextSelection() {
@@ -82,7 +83,7 @@ export class OrthographicMouseControls {
         enableSelection(this.viewport);
         enableSelection(document.body);
         
-        console.log('Text selection re-enabled for orthographic controls');
+        debugLog('Text selection re-enabled for orthographic controls');
     }
 
     private setupEventListeners() {
@@ -144,14 +145,14 @@ export class OrthographicMouseControls {
             this.viewport.style.cursor = 'grab';
             // Prevent text selection during rotation
             event.preventDefault();
-            console.log('Orthographic rotation started (left mouse, direct)');
+            debugLog('Orthographic rotation started (left mouse, direct)');
         } else if (event.button === 1) { // Middle mouse button - pan
             this.isMiddleMouseDown = true;
             this.lastMouseX = event.clientX;
             this.lastMouseY = event.clientY;
             this.viewport.style.cursor = 'move';
             event.preventDefault(); // Prevent browser scroll and text selection
-            console.log('Orthographic pan started (middle mouse)');
+            debugLog('Orthographic pan started (middle mouse)');
         }
     }
 
@@ -196,7 +197,7 @@ export class OrthographicMouseControls {
         // Only apply extreme clamping for truly unrealistic movements (mouse teleportation)
         // Increased threshold to 500px to avoid interfering with fast but normal movements
         if (magnitude > 500) {
-            console.log('EXTREME movement detected - likely mouse teleportation:', { magnitude, raw: { x: rawDeltaX, y: rawDeltaY } });
+            debugLog('EXTREME movement detected - likely mouse teleportation:', { magnitude, raw: { x: rawDeltaX, y: rawDeltaY } });
             // Instead of tiny movement, use moderate clamping to maintain responsiveness
             const maxReasonable = 50; // Allow up to 50px movement
             const scale = maxReasonable / magnitude;
@@ -228,10 +229,10 @@ export class OrthographicMouseControls {
 
         if (event.button === 0) {
             this.isLeftMouseDown = false;
-            console.log('Orthographic rotation ended (left mouse, direct)');
+            debugLog('Orthographic rotation ended (left mouse, direct)');
         } else if (event.button === 1) {
             this.isMiddleMouseDown = false;
-            console.log('Orthographic pan ended (middle mouse)');
+            debugLog('Orthographic pan ended (middle mouse)');
         }
 
         this.viewport.style.cursor = 'default';
@@ -305,7 +306,7 @@ export class OrthographicMouseControls {
             // Always look at the model center for consistency with projection switching
             camera.lookAt(modelCenter);
         } else {
-            console.log("🔒 Skipping lookAt during camera state preservation");
+            debugLog("🔒 Skipping lookAt during camera state preservation");
         }
         
         // Notify NaviCube of camera change
@@ -313,7 +314,7 @@ export class OrthographicMouseControls {
             detail: { source: 'orthographic-rotation-direct', position: camera.position, rotation: camera.quaternion }
         }));
         
-        console.log('Orthographic rotation DIRECT (speed x' + speedMultiplier.toFixed(1) + '):', {
+        debugLog('Orthographic rotation DIRECT (speed x' + speedMultiplier.toFixed(1) + '):', {
             theta: spherical.theta * 180 / Math.PI,
             phi: spherical.phi * 180 / Math.PI,
             phiClamped: spherical.phi >= epsilon && spherical.phi <= Math.PI - epsilon,
@@ -354,7 +355,7 @@ export class OrthographicMouseControls {
             detail: { source: 'orthographic-pan', position: camera.position }
         }));
         
-        console.log('Orthographic pan (speed x' + speedMultiplier.toFixed(1) + '):', camera.position);
+        debugLog('Orthographic pan (speed x' + speedMultiplier.toFixed(1) + '):', camera.position);
     }
 
     private zoomCamera(deltaY: number) {
@@ -377,7 +378,7 @@ export class OrthographicMouseControls {
             detail: { source: 'orthographic-zoom', zoom: newZoom }
         }));
         
-        console.log('Orthographic zoom (fixed speed):', newZoom);
+        debugLog('Orthographic zoom (fixed speed):', newZoom);
     }
 
     public cleanup() {
@@ -391,11 +392,11 @@ export class OrthographicMouseControls {
         // Clean up speed change listener
         window.removeEventListener('moveSpeedChange', this.onSpeedChange);
         
-        console.log('Orthographic mouse controls cleaned up');
+        debugLog('Orthographic mouse controls cleaned up');
     }
 
     private onSpeedChange = () => {
-        console.log('Speed changed - orthographic controls will use new speed setting');
+        debugLog('Speed changed - orthographic controls will use new speed setting');
     };
 }
 
@@ -408,7 +409,7 @@ export const initializeOrthographicControls = (world: OBC.World, viewport: HTMLE
     }
     
     orthographicMouseControls = new OrthographicMouseControls(world, viewport);
-    console.log('Orthographic mouse controls initialized');
+    debugLog('Orthographic mouse controls initialized');
     
     return orthographicMouseControls;
 };
