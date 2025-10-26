@@ -10,6 +10,11 @@ import { updateLoadingText } from "../../../utils/LoadingOverlay";
 import i18n from "../../../utils/i18n";
 import { debugLog, debugWarn, debugError } from "../../../../../utils/debugLogger";
 
+// Check if File System Access API is supported
+const isFileSystemAccessSupported = () => {
+  return 'showDirectoryPicker' in window && 'getFileHandle' in (window as any).FileSystemDirectoryHandle?.prototype;
+};
+
 const input = document.createElement("input");
 const askForFile = (extension: string) => {
   return new Promise<File | null>((resolve) => {
@@ -105,18 +110,34 @@ export default (components: OBC.Components) => {
   };
 
   streamer.fetch = async (path: string) => {
-    const name = path.substring(path.lastIndexOf("/") + 1);
-    const modelName = getStreamDirName(name);
-    const directory = streamedDirectories[modelName];
-    const fileHandle = await directory.getFileHandle(name);
-    return fileHandle.getFile();
+    try {
+      const name = path.substring(path.lastIndexOf("/") + 1);
+      const modelName = getStreamDirName(name);
+      const directory = streamedDirectories[modelName];
+      if (!directory) {
+        throw new Error(`Directory not found for model: ${modelName}`);
+      }
+      const fileHandle = await directory.getFileHandle(name);
+      return fileHandle.getFile();
+    } catch (error) {
+      debugError(`Error fetching file ${path}:`, error);
+      throw error;
+    }
   };
 
   FRAGS.FragmentsGroup.fetch = async (name: string) => {
-    const modelName = getStreamDirName(name);
-    const directory = streamedDirectories[modelName];
-    const fileHandle = await directory.getFileHandle(name);
-    return fileHandle.getFile();
+    try {
+      const modelName = getStreamDirName(name);
+      const directory = streamedDirectories[modelName];
+      if (!directory) {
+        throw new Error(`Directory not found for model: ${modelName}`);
+      }
+      const fileHandle = await directory.getFileHandle(name);
+      return fileHandle.getFile();
+    } catch (error) {
+      debugError(`Error fetching fragment ${name}:`, error);
+      throw error;
+    }
   };
 
   async function loadTiles() {
@@ -126,10 +147,18 @@ export default (components: OBC.Components) => {
       const directoryInitialized = false;
 
       try {
+        // Check if File System Access API is supported
+        if (!isFileSystemAccessSupported()) {
+          debugWarn('File System Access API not supported in this browser');
+          alert('File System Access API is not supported in this browser. Please use a modern browser like Chrome or Edge.');
+          return;
+        }
+
         updateLoadingText('Select tiles directory...');
         // @ts-ignore
         currentDirectory = await window.showDirectoryPicker();
       } catch (e) {
+        debugError('Error opening directory picker:', e);
         return;
       }
 
@@ -146,15 +175,20 @@ export default (components: OBC.Components) => {
           streamedDirectories[name] = currentDirectory;
         }
 
-        if (geometryFilePattern.test(entry.name)) {
-          const file = (await entry.getFile()) as File;
-          geometryData = await JSON.parse(await file.text());
-          continue;
-        }
+        try {
+          if (geometryFilePattern.test(entry.name)) {
+            const file = (await entry.getFile()) as File;
+            geometryData = await JSON.parse(await file.text());
+            continue;
+          }
 
-        if (propertiesFilePattern.test(entry.name)) {
-          const file = (await entry.getFile()) as File;
-          propertiesData = await JSON.parse(await file.text());
+          if (propertiesFilePattern.test(entry.name)) {
+            const file = (await entry.getFile()) as File;
+            propertiesData = await JSON.parse(await file.text());
+          }
+        } catch (error) {
+          debugError(`Error processing file ${entry.name}:`, error);
+          continue;
         }
       }
 
