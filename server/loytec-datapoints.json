@@ -155,7 +155,7 @@
       "name": "Favorites.Light.Lounge.01.ST",
       "status": "ON",
       "value": 1,
-      "timestamp": "2025-10-24T14:16:56.827Z",
+      "timestamp": "2025-10-25T14:23:37.204Z",
       "type": "digital",
       "description": "Lounge Area 01 Light Status"
     },
@@ -164,7 +164,7 @@
       "name": "Favorites.Light.Lounge.02.ST",
       "status": "ON",
       "value": 1,
-      "timestamp": "2025-10-24T14:16:56.827Z",
+      "timestamp": "2025-10-25T14:23:37.204Z",
       "type": "digital",
       "description": "Lounge Area 02 Light Status"
     },
@@ -173,7 +173,7 @@
       "name": "Favorites.Light.TestRM.ST",
       "status": "ON",
       "value": 1,
-      "timestamp": "2025-10-24T14:16:56.827Z",
+      "timestamp": "2025-10-25T14:23:37.204Z",
       "type": "digital",
       "description": "Test Room Light Status"
     },
@@ -182,7 +182,7 @@
       "name": "Favorites.Light.StockRM.ST",
       "status": "ON",
       "value": 1,
-      "timestamp": "2025-10-24T14:16:56.827Z",
+      "timestamp": "2025-10-25T14:23:37.204Z",
       "type": "digital",
       "description": "Stock Room Light Status"
     },
@@ -191,7 +191,7 @@
       "name": "Favorites.Light.Office.01.ST",
       "status": "ON",
       "value": 1,
-      "timestamp": "2025-10-24T14:16:56.827Z",
+      "timestamp": "2025-10-25T14:23:37.204Z",
       "type": "digital",
       "description": "Office 01 Light Status"
     },
@@ -200,7 +200,7 @@
       "name": "Favorites.Light.ConfRM.01.ST",
       "status": "ON",
       "value": 1,
-      "timestamp": "2025-10-24T14:16:56.827Z",
+      "timestamp": "2025-10-25T14:23:37.204Z",
       "type": "digital",
       "description": "Conference Room 01 Light Status"
     }
@@ -211,7 +211,7 @@
       "name": "Favorites.Light.Lounge.01.ST",
       "status": "ON",
       "value": 1,
-      "timestamp": "2025-10-24T14:23:27.079Z",
+      "timestamp": "2025-10-25T13:59:17.789Z",
       "type": "digital",
       "description": "Lounge Area 01 Light Status"
     },
@@ -220,7 +220,7 @@
       "name": "Favorites.Light.Lounge.02.ST",
       "status": "ON",
       "value": 1,
-      "timestamp": "2025-10-24T14:23:27.079Z",
+      "timestamp": "2025-10-25T13:59:17.789Z",
       "type": "digital",
       "description": "Lounge Area 02 Light Status"
     },
@@ -229,7 +229,7 @@
       "name": "Favorites.Light.TestRM.ST",
       "status": "ON",
       "value": 1,
-      "timestamp": "2025-10-24T14:23:27.079Z",
+      "timestamp": "2025-10-25T13:59:17.789Z",
       "type": "digital",
       "description": "Test Room Light Status"
     },
@@ -238,7 +238,7 @@
       "name": "Favorites.Light.StockRM.ST",
       "status": "ON",
       "value": 1,
-      "timestamp": "2025-10-24T14:23:27.079Z",
+      "timestamp": "2025-10-25T13:59:17.789Z",
       "type": "digital",
       "description": "Stock Room Light Status"
     },
@@ -247,7 +247,7 @@
       "name": "Favorites.Light.Office.01.ST",
       "status": "ON",
       "value": 1,
-      "timestamp": "2025-10-24T14:23:27.079Z",
+      "timestamp": "2025-10-25T13:59:17.789Z",
       "type": "digital",
       "description": "Office 01 Light Status"
     },
@@ -256,7 +256,63 @@
       "name": "Favorites.Light.ConfRM.01.ST",
       "status": "ON",
       "value": 1,
-      "timestamp": "2025-10-24T14:23:27.079Z",
+      "timestamp": "2025-10-25T13:59:17.789Z",
+      "type": "digital",
+      "description": "Conference Room 01 Light Status"
+    }
+  ],
+  "L2": [
+    {
+      "id": "728870",
+      "name": "Favorites.Light.Lounge.01.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-27T09:13:00.315Z",
+      "type": "digital",
+      "description": "Lounge Area 01 Light Status"
+    },
+    {
+      "id": "728871",
+      "name": "Favorites.Light.Lounge.02.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-27T09:13:00.315Z",
+      "type": "digital",
+      "description": "Lounge Area 02 Light Status"
+    },
+    {
+      "id": "728872",
+      "name": "Favorites.Light.TestRM.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-27T09:13:00.315Z",
+      "type": "digital",
+      "description": "Test Room Light Status"
+    },
+    {
+      "id": "729113",
+      "name": "Favorites.Light.StockRM.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-27T09:13:00.315Z",
+      "type": "digital",
+      "description": "Stock Room Light Status"
+    },
+    {
+      "id": "729114",
+      "name": "Favorites.Light.Office.01.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-27T09:13:00.315Z",
+      "type": "digital",
+      "description": "Office 01 Light Status"
+    },
+    {
+      "id": "729115",
+      "name": "Favorites.Light.ConfRM.01.ST",
+      "status": "ON",
+      "value": 1,
+      "timestamp": "2025-10-27T09:13:00.315Z",
       "type": "digital",
       "description": "Conference Room 01 Light Status"
     }
@@ -267,7 +323,7 @@
       "name": "Favorites.Light.Lounge.01.ST",
       "status": "ON",
       "value": 1,
-      "timestamp": "2025-10-24T14:23:27.402Z",
+      "timestamp": "2025-10-25T13:59:16.251Z",
       "type": "digital",
       "description": "Lounge Area 01 Light Status"
     },
@@ -276,7 +332,7 @@
       "name": "Favorites.Light.Lounge.02.ST",
       "status": "ON",
       "value": 1,
-      "timestamp": "2025-10-24T14:23:27.402Z",
+      "timestamp": "2025-10-25T13:59:16.251Z",
       "type": "digital",
       "description": "Lounge Area 02 Light Status"
     },
@@ -285,7 +341,7 @@
       "name": "Favorites.Light.TestRM.ST",
       "status": "ON",
       "value": 1,
-      "timestamp": "2025-10-24T14:23:27.402Z",
+      "timestamp": "2025-10-25T13:59:16.251Z",
       "type": "digital",
       "description": "Test Room Light Status"
     },
@@ -294,7 +350,7 @@
       "name": "Favorites.Light.StockRM.ST",
       "status": "ON",
       "value": 1,
-      "timestamp": "2025-10-24T14:23:27.402Z",
+      "timestamp": "2025-10-25T13:59:16.251Z",
       "type": "digital",
       "description": "Stock Room Light Status"
     },
@@ -303,7 +359,7 @@
       "name": "Favorites.Light.Office.01.ST",
       "status": "ON",
       "value": 1,
-      "timestamp": "2025-10-24T14:23:27.402Z",
+      "timestamp": "2025-10-25T13:59:16.251Z",
       "type": "digital",
       "description": "Office 01 Light Status"
     },
@@ -312,7 +368,7 @@
       "name": "Favorites.Light.ConfRM.01.ST",
       "status": "ON",
       "value": 1,
-      "timestamp": "2025-10-24T14:23:27.402Z",
+      "timestamp": "2025-10-25T13:59:16.251Z",
       "type": "digital",
       "description": "Conference Room 01 Light Status"
     }
@@ -556,7 +612,7 @@
       "name": "Favorites.Light.Lounge.01.ST",
       "status": "ON",
       "value": 1,
-      "timestamp": "2025-10-24T14:23:30.382Z",
+      "timestamp": "2025-10-25T14:23:32.928Z",
       "type": "digital",
       "description": "Lounge Area 01 Light Status"
     },
@@ -565,7 +621,7 @@
       "name": "Favorites.Light.Lounge.02.ST",
       "status": "ON",
       "value": 1,
-      "timestamp": "2025-10-24T14:23:30.382Z",
+      "timestamp": "2025-10-25T14:23:32.928Z",
       "type": "digital",
       "description": "Lounge Area 02 Light Status"
     },
@@ -574,7 +630,7 @@
       "name": "Favorites.Light.TestRM.ST",
       "status": "ON",
       "value": 1,
-      "timestamp": "2025-10-24T14:23:30.382Z",
+      "timestamp": "2025-10-25T14:23:32.928Z",
       "type": "digital",
       "description": "Test Room Light Status"
     },
@@ -583,7 +639,7 @@
       "name": "Favorites.Light.StockRM.ST",
       "status": "ON",
       "value": 1,
-      "timestamp": "2025-10-24T14:23:30.382Z",
+      "timestamp": "2025-10-25T14:23:32.928Z",
       "type": "digital",
       "description": "Stock Room Light Status"
     },
@@ -592,7 +648,7 @@
       "name": "Favorites.Light.Office.01.ST",
       "status": "ON",
       "value": 1,
-      "timestamp": "2025-10-24T14:23:30.382Z",
+      "timestamp": "2025-10-25T14:23:32.928Z",
       "type": "digital",
       "description": "Office 01 Light Status"
     },
@@ -601,7 +657,7 @@
       "name": "Favorites.Light.ConfRM.01.ST",
       "status": "ON",
       "value": 1,
-      "timestamp": "2025-10-24T14:23:30.382Z",
+      "timestamp": "2025-10-25T14:23:32.928Z",
       "type": "digital",
       "description": "Conference Room 01 Light Status"
     },
@@ -610,7 +666,7 @@
       "name": "Favorites.Light.Office.01.ST",
       "status": "ON",
       "value": 1,
-      "timestamp": "2025-10-24T14:23:30.382Z",
+      "timestamp": "2025-10-25T14:23:32.928Z",
       "type": "digital",
       "description": "Office 01 Light Status (Alt)"
     },
@@ -619,7 +675,7 @@
       "name": "Favorites.Light.ConfRM.01.ST",
       "status": "ON",
       "value": 1,
-      "timestamp": "2025-10-24T14:23:30.382Z",
+      "timestamp": "2025-10-25T14:23:32.928Z",
       "type": "digital",
       "description": "Conference Room 01 Light Status (Alt)"
     }
