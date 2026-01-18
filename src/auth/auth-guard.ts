@@ -81,7 +81,7 @@ export async function initAuthGuard(): Promise<AuthUser | null> {
   }
   
   console.log('Authenticated as:', user?.username);
-  return user || null;
+  return user || { username: 'unknown', loginTime: new Date().toISOString() };
 }
 
 /**

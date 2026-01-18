@@ -41,7 +41,7 @@ if (process.env.NODE_ENV !== 'production') {
 
 
 const app = express();
-const PORT = process.env.PORT || 8001;
+const PORT = process.env.PORT || 8003;
 
 // In-memory session store (for production, consider using Redis or database)
 const sessionStore = new Map();
