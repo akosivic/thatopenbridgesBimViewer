@@ -19,6 +19,12 @@ export default defineConfig({
           });
         },
       },
+      // Proxy auth routes to bridges-hub gateway
+      '/ws/node/auth': {
+        target: 'http://localhost:8001',
+        changeOrigin: true,
+        secure: false,
+      },
     },
     fs: {
       allow: ['..']
