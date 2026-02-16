@@ -3,10 +3,15 @@
  * Checks authentication status and redirects to portal if not logged in
  * 
  * Set VITE_DEV_SKIP_AUTH=true in .env.development.local to bypass auth in development
+ * Set VITE_HUB_URL in development to enable cross-origin SSO with bridges-hub
  */
 
-const PORTAL_URL = '/ws/node/';
-const AUTH_VALIDATE_URL = '/ws/node/auth/validate';
+// Hub URL for cross-origin SSO (development mode)
+const HUB_URL = import.meta.env.VITE_HUB_URL || '';
+
+// Portal and auth URLs - use absolute URLs in dev mode with hub URL
+const PORTAL_URL = HUB_URL ? `${HUB_URL}/ws/node/` : '/ws/node/';
+const AUTH_VALIDATE_URL = HUB_URL ? `${HUB_URL}/ws/node/auth/validate` : '/ws/node/auth/validate';
 
 // Check for dev mode auth bypass
 const DEV_SKIP_AUTH = import.meta.env.VITE_DEV_SKIP_AUTH === 'true';
@@ -61,9 +66,13 @@ export async function checkAuth(): Promise<AuthResult> {
  */
 export function redirectToLogin(): void {
   const currentUrl = window.location.href;
-  // Store intended destination for after login
+  // Store intended destination for after login (backup)
   sessionStorage.setItem('auth_redirect', currentUrl);
-  window.location.href = PORTAL_URL;
+  
+  // Pass returnUrl as query parameter to hub portal
+  const portalLoginUrl = `${PORTAL_URL}?returnUrl=${encodeURIComponent(currentUrl)}`;
+  console.log('[Auth] Redirecting to login:', portalLoginUrl);
+  window.location.href = portalLoginUrl;
 }
 
 /**
@@ -89,7 +98,8 @@ export async function initAuthGuard(): Promise<AuthUser | null> {
  */
 export async function logout(): Promise<void> {
   try {
-    await fetch('/ws/node/auth/logout', {
+    const logoutUrl = HUB_URL ? `${HUB_URL}/ws/node/auth/logout` : '/ws/node/auth/logout';
+    await fetch(logoutUrl, {
       method: 'POST',
       credentials: 'include',
     });

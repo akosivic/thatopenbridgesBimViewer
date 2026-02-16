@@ -38,7 +38,59 @@ npm run start
 
 **Access the application**: http://localhost:8001/ws/node/bimviewer/
 
-## 📁 Documentation
+## � SSO Development with bridges-hub
+
+When developing with SSO (Single Sign-On) integration with bridges-hub:
+
+### Setup Steps
+
+1. **Configure Environment**
+   ```bash
+   # In .env.development.local, set:
+   VITE_HUB_URL=http://localhost:8001
+   VITE_DEV_SKIP_AUTH=false
+   ```
+
+2. **Start bridges-hub First**
+   ```bash
+   cd ../bridges-hub
+   
+   # Option A: Auth server only (recommended for SSO testing)
+   npm run server
+   
+   # Option B: Auth server + hub frontend dev server (for hub development)
+   npm run dev:sso
+   ```
+
+3. **Start BIM Viewer**
+   ```bash
+   # In separate terminal
+   npm run dev
+   ```
+
+4. **Access and Login**
+   - Open: http://localhost:5173/ws/node/bimviewer/
+   - You'll be redirected to bridges-hub login (localhost:8001)
+   - After login, you'll be returned to BIM Viewer
+   - Subsequent visits won't require login (SSO active)
+
+### How It Works
+
+- **Development Mode**: BIM Viewer runs on port 5173, bridges-hub on port 8001
+- **Cookie Sharing**: Authentication cookies use `sameSite: 'lax'` for cross-origin navigation
+- **Return URL**: After login, hub redirects back to your original BIM Viewer URL
+- **Session Validation**: Each load checks authentication with bridges-hub
+
+### Bypass SSO for Faster Development
+
+```bash
+# Skip SSO and authentication entirely
+VITE_DEV_SKIP_AUTH=true npm run dev
+```
+
+**Note**: In production (unified deployment), SSO works seamlessly as all apps share the same origin.
+
+## �📁 Documentation
 
 Complete documentation is available in the [`docs/`](docs/) folder:
 
