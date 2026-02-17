@@ -1,12 +1,6 @@
 ﻿import { useEffect, useState } from 'react';
-import loytecAuthService from '../../services/loytecAuth';
-import { UserProfile } from '../../types/auth';
 import { getAppConfig } from '../../config/appConfig';
-import { debugWarn, debugError } from "../../utils/debugLogger";
-
-// Storage keys for session management
-const SESSION_STORAGE_KEY = 'loytec_session_id';
-const USER_STORAGE_KEY = 'loytec_user_profile';
+import { debugWarn } from "../../utils/debugLogger";
 
 export const checkAuthStatus = async (): Promise<{
   isAuthenticated: boolean;
@@ -30,83 +24,35 @@ export const checkAuthStatus = async (): Promise<{
     };
   }
 
-  const sessionId = sessionStorage.getItem(SESSION_STORAGE_KEY);
-  const userProfile = sessionStorage.getItem(USER_STORAGE_KEY);
-  
-  if (!sessionId || !userProfile) {
-    return { isAuthenticated: false, userDetails: null };
-  }
-
-  try {
-    // Validate the session with Loytec
-    const isValid = await loytecAuthService.validateSession(sessionId);
-    
-    if (isValid) {
-      const user = JSON.parse(userProfile) as UserProfile;
-      return {
-        isAuthenticated: true,
-        userDetails: {
-          userId: user.username,
-          userRoles: user.roles || ['authenticated', 'user'],
-          identityProvider: 'loytec',
-          userDetails: user.username
-        }
-      };
-    } else {
-      // Session is invalid, clear storage
-      sessionStorage.removeItem(SESSION_STORAGE_KEY);
-      sessionStorage.removeItem(USER_STORAGE_KEY);
-      return { isAuthenticated: false, userDetails: null };
+  // Trust hub SSO: If this code is running, the user is already authenticated
+  // The auth-guard.ts validates authentication via hub's /ws/node/auth/validate
+  // Hub gateway protects all routes with bridges_session cookie
+  // No need for separate session validation here
+  return {
+    isAuthenticated: true,
+    userDetails: {
+      userId: 'hub-authenticated-user',
+      userRoles: ['authenticated', 'user'],
+      identityProvider: 'bridges-hub-sso',
+      userDetails: 'Authenticated via Bridges Hub SSO'
     }
-  } catch (error) {
-    debugError('Auth status check failed:', error);
-    // Clear storage on error
-    sessionStorage.removeItem(SESSION_STORAGE_KEY);
-    sessionStorage.removeItem(USER_STORAGE_KEY);
-    return { isAuthenticated: false, userDetails: null };
-  }
+  };
 };
 
-export const login = async (sessionId: string, username: string, authResponse?: any): Promise<void> => {
-  const userProfile: UserProfile = {
-    username,
-    isAuthenticated: true,
-    sessionId,
-    roles: ['authenticated', 'user'],
-    loginState: authResponse?.loytecResponse?.loginState,
-    csrfToken: authResponse?.loytecResponse?.csrfToken
-  };
-
-  // Store session information
-  sessionStorage.setItem(SESSION_STORAGE_KEY, sessionId);
-  sessionStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userProfile));
-  
-  // Store CSRF token separately for easy access
-  if (userProfile.csrfToken) {
-    sessionStorage.setItem('loytec_csrf_token', userProfile.csrfToken);
-  }
+export const login = async (_sessionId: string, _username: string, _authResponse?: any): Promise<void> => {
+  // Login is now handled by Bridges Hub SSO
+  // This function is kept for backward compatibility but does nothing
+  debugWarn('Login called - authentication is now handled by Bridges Hub SSO');
 };
 
 export const logout = async (): Promise<void> => {
-  const sessionId = sessionStorage.getItem(SESSION_STORAGE_KEY);
+  // Clear all local storage
+  sessionStorage.clear();
+  localStorage.clear();
   
-  try {
-    // Logout from Loytec system if we have a session
-    if (sessionId) {
-      await loytecAuthService.logout(sessionId);
-    }
-  } catch (error) {
-    debugError('Logout error:', error);
-  } finally {
-    // Clear local storage regardless of logout success
-    sessionStorage.removeItem(SESSION_STORAGE_KEY);
-    sessionStorage.removeItem(USER_STORAGE_KEY);
-    sessionStorage.removeItem('loytec_csrf_token');
-    localStorage.clear(); // Clear any other stored data
-    
-    // Redirect to login page
-    window.location.href = '/ws/node/bimviewer/';
-  }
+  // Redirect to hub's logout endpoint
+  // This will invalidate the bridges_session cookie and redirect to login
+  window.location.href = '/ws/node/logout';
 };
 
 export const useAuth = () => {

@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const compression = require('compression');
+const cookieParser = require('cookie-parser');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
@@ -79,6 +80,7 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser()); // Cookie parser for hub session SSO
 
 // Logging middleware
 app.use((req, res, next) => {
@@ -391,15 +393,27 @@ app.post('/ws/node/api/auth/login', async (req, res) => {
   }
 });
 
-// Validate session endpoint
-app.post('/ws/node/api/auth/validate', (req, res) => {
-  console.log('Session validation request received');
+// Validate session endpoint (accepts hub's bridges_session cookie OR body sessionId)
+app.post('/ws/node/api/auth/validate', (req, res) => {  console.log('Session validation request received');
   
   try {
+    // PRIORITY 1: Check for hub's bridges_session cookie (SSO)
+    const hubSessionId = req.cookies.bridges_session;
+    if (hubSessionId) {
+      // Hub session exists - trust it (hub gateway already validated it)
+      console.log('Session validation successful via Bridges Hub SSO');
+      return res.status(200).json({
+        success: true,
+        source: 'hub-sso',
+        message: 'Authenticated via Bridges Hub SSO'
+      });
+    }
+
+    // PRIORITY 2: Fall back to BimViewer's own session (backward compatibility)
     const { sessionId } = req.body;
 
     if (!sessionId) {
-      console.log('Session validation failed: No session ID provided');
+      console.log('Session validation failed: No session ID provided and no hub session');
       return res.status(401).json({
         success: false,
         error: 'Invalid session'
@@ -431,7 +445,8 @@ app.post('/ws/node/api/auth/validate', (req, res) => {
     return res.status(200).json({
       success: true,
       username: sessionData.username,
-      loginState: sessionData.loginState
+      loginState: sessionData.loginState,
+      source: 'bimviewer-session'
     });
 
   } catch (error) {
