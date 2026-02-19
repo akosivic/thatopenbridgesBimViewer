@@ -2,17 +2,50 @@
 import { getAppConfig } from '../../config/appConfig';
 import { debugWarn } from "../../utils/debugLogger";
 
+type AuthDetails = {
+  userId: string;
+  userRoles: Array<string>;
+  identityProvider: string;
+  userDetails: string;
+};
+
+type RuntimeUser = {
+  username?: string;
+  fullName?: string;
+  roles?: Array<string>;
+};
+
+const HUB_VALIDATE_URL = '/ws/node/validate';
+
+const mapUserToAuthDetails = (user: RuntimeUser, identityProvider: string): AuthDetails | null => {
+  if (!user?.username) {
+    return null;
+  }
+
+  return {
+    userId: user.username,
+    userRoles: user.roles && user.roles.length > 0 ? user.roles : ['authenticated', 'user'],
+    identityProvider,
+    userDetails: user.fullName || user.username
+  };
+};
+
+const getRuntimeUser = (): RuntimeUser | null => {
+  const runtimeUser = (window as any).currentUser as RuntimeUser | undefined;
+  return runtimeUser?.username ? runtimeUser : null;
+};
+
 export const checkAuthStatus = async (): Promise<{
   isAuthenticated: boolean;
-  userDetails: { userId: string; userRoles: Array<string>; identityProvider: string; userDetails: string } | null;
+  userDetails: AuthDetails | null;
 }> => {
   const config = getAppConfig();
   
   // Only bypass authentication in development mode when explicitly enabled
   // This provides a secure way to disable auth for local development
   if (config.isDevelopment && config.skipAuthInDev) {
-    debugWarn('ðŸš§ DEVELOPMENT MODE: Bypassing authentication for local development');
-    debugWarn('âš ï¸  This bypass is automatically disabled in production builds');
+    debugWarn('DEVELOPMENT MODE: Bypassing authentication for local development');
+    debugWarn('This bypass is automatically disabled in production builds');
     return {
       isAuthenticated: true,
       userDetails: {
@@ -24,19 +57,56 @@ export const checkAuthStatus = async (): Promise<{
     };
   }
 
-  // Trust hub SSO: If this code is running, the user is already authenticated
-  // The auth-guard.ts validates authentication via hub's /ws/node/auth/validate
-  // Hub gateway protects all routes with bridges_session cookie
-  // No need for separate session validation here
-  return {
-    isAuthenticated: true,
-    userDetails: {
-      userId: 'hub-authenticated-user',
-      userRoles: ['authenticated', 'user'],
-      identityProvider: 'bridges-hub-sso',
-      userDetails: 'Authenticated via Bridges Hub SSO'
+  const runtimeUser = getRuntimeUser();
+  if (runtimeUser) {
+    return {
+      isAuthenticated: true,
+      userDetails: mapUserToAuthDetails(runtimeUser, 'bridges-hub-sso')
+    };
+  }
+
+  try {
+    const response = await fetch(HUB_VALIDATE_URL, {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        'Accept': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      return {
+        isAuthenticated: false,
+        userDetails: null
+      };
     }
-  };
+
+    const data = await response.json();
+    const userDetails = mapUserToAuthDetails(data?.user || {}, 'bridges-hub-sso');
+
+    if (!userDetails) {
+      return {
+        isAuthenticated: false,
+        userDetails: null
+      };
+    }
+
+    (window as any).currentUser = {
+      username: userDetails.userId,
+      fullName: userDetails.userDetails,
+      roles: userDetails.userRoles
+    };
+
+    return {
+      isAuthenticated: true,
+      userDetails
+    };
+  } catch {
+    return {
+      isAuthenticated: false,
+      userDetails: null
+    };
+  }
 };
 
 export const login = async (_sessionId: string, _username: string, _authResponse?: any): Promise<void> => {
@@ -58,7 +128,7 @@ export const logout = async (): Promise<void> => {
 export const useAuth = () => {
   const [authState, setAuthState] = useState<{
     isAuthenticated: boolean;
-    userDetails: { userId: string; userRoles: Array<string>; identityProvider: string; userDetails: string } | null;
+    userDetails: AuthDetails | null;
     isLoading: boolean;
   }>({
     isAuthenticated: false,

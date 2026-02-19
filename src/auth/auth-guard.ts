@@ -11,7 +11,7 @@ const HUB_URL = import.meta.env.VITE_HUB_URL || '';
 
 // Portal and auth URLs - use absolute URLs in dev mode with hub URL
 const PORTAL_URL = HUB_URL ? `${HUB_URL}/ws/node/` : '/ws/node/';
-const AUTH_VALIDATE_URL = HUB_URL ? `${HUB_URL}/ws/node/auth/validate` : '/ws/node/auth/validate';
+const AUTH_VALIDATE_URL = HUB_URL ? `${HUB_URL}/ws/node/validate` : '/ws/node/validate';
 
 // Check for dev mode auth bypass
 const DEV_SKIP_AUTH = import.meta.env.VITE_DEV_SKIP_AUTH === 'true';

@@ -95,10 +95,10 @@ const UserMenu: React.FC = () => {
         {/* User Info */}
         <Box sx={{ px: 2, py: 1 }}>
           <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
-            {userDetails.userDetails}
+            {userDetails.userId}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            {userDetails.identityProvider === 'loytec' ? 'Loytec User' : userDetails.identityProvider}
+            {userDetails.userDetails}
           </Typography>
         </Box>
         

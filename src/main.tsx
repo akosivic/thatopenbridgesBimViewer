@@ -25,6 +25,8 @@ async function initApp() {
     return;
   }
 
+  (window as any).currentUser = user;
+
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
       <ThemeProvider theme={theme}> {/* Apply the custom theme */}
