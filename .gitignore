@@ -29,3 +29,14 @@ releases/
 release-v*/
 bim-viewer-v*.zip
 temp-release/
+temp-release-*/
+
+# TypeScript
+*.tsbuildinfo
+
+# Project config
+.serena/
+
+# Nested dependencies
+api/node_modules/
+server/node_modules/
