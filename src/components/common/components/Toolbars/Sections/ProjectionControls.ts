@@ -1,0 +1,502 @@
+import * as OBC from "@thatopen/components";
+import * as BUI from "@thatopen/ui";
+import * as THREE from "three";
+import { PointerLockControls } from "three/examples/jsm/Addons.js";
+import i18n from "../../../utils/i18n";
+import { debugLog, debugWarn } from "../../../../../utils/debugLogger";
+
+// Global reference to FPS controls and current projection mode
+export let fpControls: PointerLockControls | null = null;
+export let currentProjection: "Perspective" | "Orthographic" = "Orthographic";
+
+export const setFPControls = (controls: PointerLockControls | null) => {
+    fpControls = controls;
+};
+
+export const getCurrentProjection = () => currentProjection;
+
+// Different key bindings for different modes
+interface KeyBindings {
+    forward: string[];
+    backward: string[];
+    left: string[];
+    right: string[];
+    up: string[];
+    down: string[];
+    rotateLeft: string[];
+    rotateRight: string[];
+    rotateUp: string[];
+    rotateDown: string[];
+    zoom: string[];
+    pan: string[];
+    // New orthographic-specific bindings
+    zoomIn?: string[];
+    zoomOut?: string[];
+    panLeft?: string[];
+    panRight?: string[];
+    rotate?: string[];
+}
+
+// Perspective mode: First-person style controls
+const perspectiveBindings: KeyBindings = {
+    forward: ["ArrowUp", "KeyW"],
+    backward: ["ArrowDown", "KeyS"], 
+    left: ["ArrowLeft", "KeyA"],
+    right: ["ArrowRight", "KeyD"],
+    up: ["KeyQ"],
+    down: ["KeyE"],
+    rotateLeft: ["Mouse Move Left"],
+    rotateRight: ["Mouse Move Right"],
+    rotateUp: ["Mouse Move Up"],
+    rotateDown: ["Mouse Move Down"],
+    zoom: ["Mouse Wheel"],
+    pan: ["Middle Mouse Button"]
+};
+
+// Orthographic mode: New CAD-style controls with mouse integration
+const orthographicBindings: KeyBindings = {
+    forward: ["KeyW"],
+    backward: ["KeyS"],
+    left: ["KeyA"], 
+    right: ["KeyD"],
+    up: ["KeyQ"],
+    down: ["KeyE"],
+    zoomIn: ["ArrowUp"],
+    zoomOut: ["ArrowDown"],
+    panLeft: ["ArrowLeft"],
+    panRight: ["ArrowRight"],
+    rotateLeft: ["Ctrl + Arrow Left"],
+    rotateRight: ["Ctrl + Arrow Right"],
+    rotateUp: ["Ctrl + Arrow Up"],
+    rotateDown: ["Ctrl + Arrow Down"],
+    zoom: ["Mouse Wheel"],
+    pan: ["Middle Mouse Button"],
+    rotate: ["Left Mouse Button"]
+};
+
+export default (world: OBC.World) => {
+    const { camera } = world;
+
+    const updateProjectionDisplay = () => {
+        const buttons = document.querySelectorAll('.projection-mode-button');
+        buttons.forEach(button => {
+            const isPerspective = button.getAttribute('data-mode') === 'Perspective';
+            if (isPerspective) {
+                button.classList.toggle('active', currentProjection === 'Perspective');
+            } else {
+                button.classList.toggle('active', currentProjection === 'Orthographic');
+            }
+        });
+
+        // Update current mode display
+        const modeDisplay = document.getElementById('current-projection-mode');
+        if (modeDisplay) {
+            const t = (key: string) => i18n.t(key);
+            modeDisplay.textContent = t(currentProjection.toLowerCase());
+        }
+    };
+
+    const dispatchProjectionChangeEvent = () => {
+        const event = new CustomEvent('projectionChanged', { 
+            detail: { 
+                mode: currentProjection,
+                perspectiveBindings: currentProjection === "Perspective" ? perspectiveBindings : null,
+                orthographicBindings: currentProjection === "Orthographic" ? orthographicBindings : null
+            }
+        });
+        window.dispatchEvent(event);
+    };
+
+    // Camera position memory for seamless transitions (only store position, always use current model center as target)
+    const cameraMemory = {
+        perspective: null as { position: THREE.Vector3; up: THREE.Vector3; quaternion: THREE.Quaternion } | null,
+        orthographic: null as { position: THREE.Vector3; up: THREE.Vector3; quaternion: THREE.Quaternion } | null,
+        isFirstTimeOrthographic: true,
+        isFirstTimePerspective: true,
+        isPreservingState: false // Flag to prevent other systems from interfering
+    };
+
+    // Helper function to get current camera target (where camera is looking)
+    const getCurrentCameraTarget = (camera: THREE.Camera): THREE.Vector3 => {
+        // Use model center as the target for more consistent view switching
+        if (world.meshes.size > 0) {
+            const bbox = new THREE.Box3();
+            world.meshes.forEach(mesh => {
+                bbox.expandByObject(mesh);
+            });
+            
+            if (!bbox.isEmpty()) {
+                const modelCenter = bbox.getCenter(new THREE.Vector3());
+                debugLog("Using model center as camera target:", modelCenter);
+                return modelCenter;
+            }
+        }
+        
+        // Fallback: use camera direction with reasonable distance
+        const direction = new THREE.Vector3();
+        camera.getWorldDirection(direction);
+        const distance = 10; // Reasonable distance for target calculation
+        const fallbackTarget = camera.position.clone().add(direction.multiplyScalar(distance));
+        debugLog("Using fallback camera target:", fallbackTarget);
+        return fallbackTarget;
+    };
+
+    const setProjectionMode = (mode: "Perspective" | "Orthographic") => {
+        if (camera instanceof OBC.OrthoPerspectiveCamera && mode !== currentProjection) {
+            const previousMode = currentProjection;
+            const camera3js = world.camera.three;
+            
+            // Store current camera state before switching (ENHANCED DEBUGGING)
+            const currentPosition = camera3js.position.clone();
+            const currentUp = camera3js.up.clone();
+            const currentQuaternion = camera3js.quaternion.clone();
+            const currentTarget = getCurrentCameraTarget(camera3js);
+            
+            // Get current camera direction for debugging
+            const currentDirection = new THREE.Vector3();
+            camera3js.getWorldDirection(currentDirection);
+            
+            debugLog("=== COMPREHENSIVE CAMERA STATE DEBUGGING ===");
+            debugLog(`BEFORE SWITCHING: ${previousMode} → ${mode}`);
+            debugLog("Current camera position:", currentPosition);
+            debugLog("Current camera up vector:", currentUp);
+            debugLog("Current camera quaternion:", currentQuaternion);
+            debugLog("Current camera direction:", currentDirection);
+            debugLog("Current target (model center):", currentTarget);
+            debugLog("Distance to target:", currentPosition.distanceTo(currentTarget));
+            
+            // Save current position to memory (target is always calculated as current model center)
+            if (previousMode === "Perspective") {
+                cameraMemory.perspective = { 
+                    position: currentPosition,
+                    up: currentUp.clone(),
+                    quaternion: currentQuaternion.clone()
+                };
+                debugLog("Saved perspective camera state to memory");
+            } else {
+                cameraMemory.orthographic = { 
+                    position: currentPosition,
+                    up: currentUp.clone(),
+                    quaternion: currentQuaternion.clone()
+                };
+                debugLog("Saved orthographic camera state to memory");
+            }
+            
+            // Switch projection mode
+            camera.projection.set(mode);
+            currentProjection = mode;
+            
+            debugLog(`=== SWITCHING TO ${mode.toUpperCase()} MODE ===`);
+            
+            // Apply mode-specific camera positioning
+            if (mode === "Orthographic") {
+                
+                // Set protection flag to prevent other systems from interfering
+                cameraMemory.isPreservingState = true;
+                debugLog("🔒 Camera state preservation LOCKED - preventing external interference");
+                
+                // Always use current model center as target for consistent view
+                const newTarget = currentTarget.clone();
+                
+                if (cameraMemory.orthographic && !cameraMemory.isFirstTimeOrthographic) {
+                    // Restore complete previous orthographic camera state
+                    debugLog("Restoring complete orthographic camera state");
+                    camera3js.position.copy(cameraMemory.orthographic.position);
+                    camera3js.up.copy(cameraMemory.orthographic.up);
+                    camera3js.quaternion.copy(cameraMemory.orthographic.quaternion);
+                    camera3js.updateMatrixWorld();
+                    debugLog("Complete camera state restored - no orientation override");
+                } else {
+                    // First time orthographic: preserve complete current camera state
+                    debugLog("First time orthographic: preserving complete camera orientation");
+                    debugLog("Preserving current position and rotation without lookAt override");
+                    // Don't call lookAt - preserve the current camera transformation completely
+                    cameraMemory.isFirstTimeOrthographic = false;
+                }
+                
+                // DETAILED POST-SWITCH DEBUGGING FOR ORTHOGRAPHIC
+                const newDirection = new THREE.Vector3();
+                camera3js.getWorldDirection(newDirection);
+                const newUp = camera3js.up.clone();
+                const newQuaternion = camera3js.quaternion.clone();
+                const toTarget = newTarget.clone().sub(camera3js.position).normalize();
+                const directionDotProduct = newDirection.dot(toTarget);
+                
+                debugLog("=== AFTER ORTHOGRAPHIC SWITCH ===");
+                debugLog("Orthographic camera state restored - Option 2: Auto-correct enabled");
+                debugLog("Camera now at:", camera3js.position, "with preserved orientation");
+                debugLog("New camera direction:", newDirection);
+                debugLog("New camera up vector:", newUp);
+                debugLog("New camera quaternion:", newQuaternion);
+                debugLog("Direction to target:", toTarget);
+                debugLog("Camera direction dot product with target direction:", directionDotProduct);
+                debugLog("Is camera looking toward target?", directionDotProduct > 0);
+                
+                if (directionDotProduct < 0) {
+                    debugWarn("⚠️  WARNING: Camera appears to be looking AWAY from target!");
+                    debugWarn("Dot product:", directionDotProduct, "- Auto-correcting to face model center (Option 2)");
+                    
+                    debugLog("🔧 Auto-correcting camera to look toward model center...");
+                    camera3js.lookAt(newTarget);
+                    camera3js.updateMatrixWorld();
+                    
+                    const correctedDirection = new THREE.Vector3();
+                    camera3js.getWorldDirection(correctedDirection);
+                    const correctedDotProduct = correctedDirection.dot(toTarget);
+                    debugLog("✅ Corrected camera direction:", correctedDirection);
+                    debugLog("✅ Corrected dot product:", correctedDotProduct);
+                    debugLog("✅ Camera now facing model center");
+                }
+                
+                // Reset zoom to default for orthographic
+                if (camera.controls?.camera) {
+                    camera.controls.camera.zoom = 1.0;
+                    camera.controls.camera.updateProjectionMatrix();
+                    debugLog("Zoom reset to 1.0 for orthographic mode");
+                }
+                
+                // Unlock camera state preservation after a short delay to allow state to settle
+                setTimeout(() => {
+                    cameraMemory.isPreservingState = false;
+                    debugLog("🔓 Camera state preservation UNLOCKED - external systems can operate normally");
+                }, 100);
+                
+            } else if (mode === "Perspective") {
+                
+                // Set protection flag to prevent other systems from interfering
+                cameraMemory.isPreservingState = true;
+                debugLog("🔒 Camera state preservation LOCKED - preventing external interference");
+                
+                // Always use current model center as target for consistent view
+                const newTarget = currentTarget.clone();
+                
+                if (cameraMemory.perspective && !cameraMemory.isFirstTimePerspective) {
+                    // Restore complete previous perspective camera state
+                    debugLog("Restoring complete perspective camera state");
+                    camera3js.position.copy(cameraMemory.perspective.position);
+                    camera3js.up.copy(cameraMemory.perspective.up);
+                    camera3js.quaternion.copy(cameraMemory.perspective.quaternion);
+                    camera3js.updateMatrixWorld();
+                    debugLog("Complete camera state restored - no orientation override");
+                } else {
+                    // First time perspective: preserve current camera state but enforce eye level
+                    debugLog("Seamless transition to perspective mode with eye level enforcement");
+                    debugLog("Preserving camera orientation but setting Y position to eye level (1.6m)");
+                    // Don't call lookAt - preserve the current camera transformation completely
+                    cameraMemory.isFirstTimePerspective = false;
+                }
+                
+                // ALWAYS enforce eye level (1.6m) for perspective mode
+                const EYE_LEVEL_HEIGHT = 1.6; // Standard eye level height in meters
+                if (Math.abs(camera3js.position.y - EYE_LEVEL_HEIGHT) > 0.01) {
+                    debugLog(`Adjusting camera Y position from ${camera3js.position.y.toFixed(3)}m to eye level (${EYE_LEVEL_HEIGHT}m)`);
+                    camera3js.position.y = EYE_LEVEL_HEIGHT;
+                    camera3js.updateMatrixWorld();
+                    debugLog("Camera positioned at eye level for perspective mode");
+                    
+                    // Update memory with eye-level adjusted position
+                    if (!cameraMemory.isFirstTimePerspective) {
+                        cameraMemory.perspective = {
+                            position: camera3js.position.clone(),
+                            up: camera3js.up.clone(),
+                            quaternion: camera3js.quaternion.clone()
+                        };
+                        debugLog("Updated perspective memory with eye-level adjusted position");
+                    }
+                }
+                
+                // Set forward-looking orientation for natural perspective view
+                debugLog("Setting forward-looking orientation for perspective mode");
+                const euler = new THREE.Euler().setFromQuaternion(camera3js.quaternion, 'YXZ');
+                
+                // Set pitch to 0° (horizontal forward look) instead of looking down
+                euler.x = 0; // No pitch - looking straight ahead
+                
+                // Keep current yaw (horizontal rotation) - preserve left/right orientation
+                // euler.y remains unchanged to preserve horizontal direction
+                
+                // Keep roll at 0 (no head tilt)
+                euler.z = 0;
+                
+                camera3js.quaternion.setFromEuler(euler);
+                camera3js.updateMatrixWorld();
+                debugLog("Camera orientation set to forward-looking (pitch = 0°)");
+                
+                // Update memory with the forward-looking orientation
+                if (cameraMemory.perspective) {
+                    cameraMemory.perspective.quaternion = camera3js.quaternion.clone();
+                    debugLog("Updated perspective memory with forward-looking orientation");
+                }
+                
+                // DETAILED POST-SWITCH DEBUGGING FOR PERSPECTIVE
+                const newDirection = new THREE.Vector3();
+                camera3js.getWorldDirection(newDirection);
+                const newUp = camera3js.up.clone();
+                const newQuaternion = camera3js.quaternion.clone();
+                const toTarget = newTarget.clone().sub(camera3js.position).normalize();
+                const directionDotProduct = newDirection.dot(toTarget);
+                
+                debugLog("=== AFTER PERSPECTIVE SWITCH ===");
+                debugLog("Perspective camera state restored - Option 2: Auto-correct enabled");
+                debugLog("Camera now at:", camera3js.position, "with preserved orientation");
+                debugLog("New camera direction:", newDirection);
+                debugLog("New camera up vector:", newUp);
+                debugLog("New camera quaternion:", newQuaternion);
+                debugLog("Direction to target:", toTarget);
+                debugLog("Camera direction dot product with target direction:", directionDotProduct);
+                debugLog("Is camera looking toward target?", directionDotProduct > 0);
+                
+                if (directionDotProduct < 0) {
+                    debugWarn("⚠️  WARNING: Camera appears to be looking AWAY from target!");
+                    debugWarn("Dot product:", directionDotProduct, "- Auto-correcting to face model center (Option 2)");
+                    
+                    debugLog("🔧 Auto-correcting camera to look toward model center...");
+                    camera3js.lookAt(newTarget);
+                    camera3js.updateMatrixWorld();
+                    
+                    const correctedDirection = new THREE.Vector3();
+                    camera3js.getWorldDirection(correctedDirection);
+                    const correctedDotProduct = correctedDirection.dot(toTarget);
+                    debugLog("✅ Corrected camera direction:", correctedDirection);
+                    debugLog("✅ Corrected dot product:", correctedDotProduct);
+                    debugLog("✅ Camera now facing model center");
+                }
+                
+                // Unlock camera state preservation after a short delay to allow state to settle
+                setTimeout(() => {
+                    cameraMemory.isPreservingState = false;
+                    debugLog("🔓 Camera state preservation UNLOCKED - external systems can operate normally");
+                }, 100);
+            }
+            
+            // Update NaviCube to reflect current view (without forcing specific orientations)
+            setTimeout(() => {
+                // Dispatch camera change event to update NaviCube naturally
+                window.dispatchEvent(new CustomEvent('cameraChanged', {
+                    detail: { 
+                        source: 'projection-switch', 
+                        position: camera3js.position, 
+                        rotation: camera3js.quaternion 
+                    }
+                }));
+            }, 100);
+            
+            updateProjectionDisplay();
+            dispatchProjectionChangeEvent();
+            debugLog(`=== PROJECTION SET TO: ${mode} (from ${previousMode}) ===`);
+            debugLog("Camera position preserved:", camera3js.position);
+        }
+    };
+
+    // Initialize projection display after component creation
+    setTimeout(() => {
+        updateProjectionDisplay();
+        // Initialize with current projection mode
+        if (camera instanceof OBC.OrthoPerspectiveCamera) {
+            currentProjection = camera.projection.current as "Perspective" | "Orthographic";
+            updateProjectionDisplay();
+        }
+    }, 100);
+
+    // Make functions globally accessible for debugging
+    (window as any).setProjectionMode = setProjectionMode;
+    (window as any).getCurrentProjection = getCurrentProjection;
+    (window as any).getProjectionBindings = () => ({
+        current: currentProjection,
+        perspective: perspectiveBindings,
+        orthographic: orthographicBindings
+    });
+    
+    // Expose camera memory for debugging and testing
+    (window as any).getCameraMemory = () => cameraMemory;
+    (window as any).isCameraStateBeingPreserved = () => cameraMemory.isPreservingState;
+    (window as any).resetCameraMemory = () => {
+        cameraMemory.perspective = null;
+        cameraMemory.orthographic = null;
+        cameraMemory.isFirstTimeOrthographic = true;
+        cameraMemory.isFirstTimePerspective = true;
+        debugLog("Camera memory reset");
+    };
+
+    return BUI.Component.create<BUI.PanelSection>(() => {
+        const t = (key: string) => i18n.t(key);
+        
+        return BUI.html`
+            <div style="
+              display: flex; 
+              flex-direction: column; 
+              gap: 8px; 
+              padding: 12px; 
+              border: 1px solid rgba(255, 255, 255, 0.2); 
+              border-radius: 6px; 
+              background: rgba(0, 0, 0, 0.6); 
+              backdrop-filter: blur(4px);
+              min-height: 120px;
+              justify-content: space-between;
+            ">
+                <div style="font-size: 12px; font-weight: bold; color: #ccc; text-align: center;">${t('projection')}</div>
+                <div style="display: flex; gap: 6px; flex: 1; align-items: center;">
+                    <button 
+                        class="projection-mode-button"
+                        data-mode="Perspective"
+                        onclick="window.setProjectionMode('Perspective')"
+                        title="${t('switchToPerspective')}"
+                        style="
+                            flex: 1;
+                            background: rgba(255, 255, 255, 0.2);
+                            color: white;
+                            border: none;
+                            border-radius: 6px;
+                            padding: 8px 12px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            transition: all 0.2s ease;
+                            font-size: 11px;
+                        ">
+                        ${t('perspective')}
+                    </button>
+                    <button 
+                        class="projection-mode-button"
+                        data-mode="Orthographic"
+                        onclick="window.setProjectionMode('Orthographic')"
+                        title="${t('switchToOrthographic')}"
+                        style="
+                            flex: 1;
+                            background: rgba(255, 255, 255, 0.2);
+                            color: white;
+                            border: none;
+                            border-radius: 6px;
+                            padding: 8px 12px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            transition: all 0.2s ease;
+                            font-size: 11px;
+                        ">
+                        ${t('orthographic')}
+                    </button>
+                </div>
+                <div style="
+                    font-size: 10px;
+                    color: rgba(255, 255, 255, 0.7);
+                    text-align: center;
+                " id="current-projection-mode">
+                    ${t(currentProjection.toLowerCase())}
+                </div>
+
+                <style>
+                    .projection-mode-button.active {
+                        background: #6528d7 !important;
+                        transform: scale(1.05);
+                    }
+                    .projection-mode-button:hover {
+                        background: rgba(255, 255, 255, 0.3) !important;
+                        transform: scale(1.02);
+                    }
+                    .projection-mode-button.active:hover {
+                        background: #7c3aed !important;
+                    }
+                </style>
+            </div>
+        `;
+    });
+};

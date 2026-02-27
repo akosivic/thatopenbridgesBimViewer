@@ -3,10 +3,9 @@ import Typography from '@mui/material/Typography';
 import { styled } from '@mui/material/styles';
 import Divider from '@mui/material/Divider';
 
-import FooterComponent from './components/FooterComponent';
 import HeaderComponent from './components/HeaderComponent';
 import LoginButtonComponent from './components/LoginButtonComponent';
-import { useAuth } from './components/common/Authentication';
+import { useAuth } from './components/common/authentication';
 import { Navigate } from 'react-router-dom';
 import { JSX } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -21,13 +20,35 @@ const StyledBox = styled(Box)({
 });
 
 function App(): JSX.Element {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const { t } = useTranslation();
 
-  if (isAuthenticated) {
-    return <Navigate to="/worldviewer" />;
+  // Show loading state while checking authentication
+  if (isLoading) {
+    return (
+      <StyledBox>
+        <HeaderComponent />
+        <StyledBox>
+          <Typography
+            variant="h6"
+            component="h6"
+            sx={{
+              cursor: 'default',
+            }}
+          >
+            {t('loading')}
+          </Typography>
+        </StyledBox>
+      </StyledBox>
+    );
   }
 
+  // Redirect to WorldViewer if already authenticated
+  if (isAuthenticated) {
+    return <Navigate to="/ws/node/bimviewer/worldviewer" replace />;
+  }
+
+  // Show login screen if not authenticated
   return (
     <StyledBox>
       <HeaderComponent />
@@ -44,7 +65,6 @@ function App(): JSX.Element {
         <Divider orientation="vertical" flexItem />
         <LoginButtonComponent />
       </StyledBox>
-      <FooterComponent />
     </StyledBox>
   );
 }

@@ -1,10 +1,10 @@
 {
   "navigationFallback": {
-    "rewrite": "/index.html"
+    "rewrite": "/ws/node/bimviewer/index.html"
   },
   "routes": [
     {
-      "route": "/worldviewer/*",
+      "route": "/ws/node/bimviewer/worldviewer/*",
       "allowedRoles": [
         "contributor",
         "owner",
@@ -12,7 +12,7 @@
       ]
     },
     {
-      "route": "/error",
+      "route": "/ws/node/bimviewer/error",
       "allowedRoles": [
         "anonymous",
         "authenticated",
@@ -22,7 +22,7 @@
       ]
     },
     {
-      "route": "/worldviewer",
+      "route": "/ws/node/bimviewer/worldviewer",
       "allowedRoles": [
         "contributor",
         "owner",
@@ -30,7 +30,10 @@
       ]
     },
     {
-      "route": "/api/*",
+      "route": "/ws/node/api/streamIfc",
+      "methods": [
+        "GET"
+      ],
       "allowedRoles": [
         "contributor",
         "owner",
@@ -38,7 +41,18 @@
       ]
     },
     {
-      "route": "/api/getDataPoint",
+      "route": "/ws/node/api/getDpsValues",
+      "methods": [
+        "GET"
+      ],
+      "allowedRoles": [
+        "contributor",
+        "owner",
+        "reader"
+      ]
+    },
+    {
+      "route": "/ws/node/api/GetDpsMapValues",
       "methods": [
         "GET"
       ],

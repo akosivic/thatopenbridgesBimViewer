@@ -1,0 +1,83 @@
+{
+  "version": "1.0.0",
+  "warnings": [
+    {
+      "id": "warning-1",
+      "position": {
+        "x": -5.0,
+        "y": 2.0,
+        "z": 0.0
+      },
+      "title": "HVAC Zone A",
+      "temperature": "23.5°C",
+      "humidity": "45%",
+      "isVisible": true,
+      "isConfigMode": false
+    },
+    {
+      "id": "warning-2",
+      "position": {
+        "x": 3.2,
+        "y": 1.8,
+        "z": -2.5
+      },
+      "title": "Server Room",
+      "temperature": "18.2°C",
+      "humidity": "38%",
+      "isVisible": true,
+      "isConfigMode": false
+    },
+    {
+      "id": "warning-3",
+      "position": {
+        "x": 0.0,
+        "y": 3.5,
+        "z": 4.1
+      },
+      "title": "Conference Room",
+      "temperature": "22.1°C",
+      "humidity": "52%",
+      "isVisible": true,
+      "isConfigMode": false
+    },
+    {
+      "id": "warning-4",
+      "position": {
+        "x": -2.8,
+        "y": 1.2,
+        "z": 3.0
+      },
+      "title": "Laboratory",
+      "temperature": "20.0°C",
+      "humidity": "35%",
+      "isVisible": true,
+      "isConfigMode": false
+    },
+    {
+      "id": "warning-5",
+      "position": {
+        "x": 6.5,
+        "y": 2.5,
+        "z": -1.0
+      },
+      "title": "Storage Area",
+      "temperature": "25.8°C",
+      "humidity": "60%",
+      "isVisible": true,
+      "isConfigMode": false
+    },
+    {
+      "id": "warning-6",
+      "position": {
+        "x": -4.2,
+        "y": 0.8,
+        "z": -3.5
+      },
+      "title": "Emergency Exit",
+      "temperature": "19.5°C",
+      "humidity": "42%",
+      "isVisible": true,
+      "isConfigMode": false
+    }
+  ]
+}

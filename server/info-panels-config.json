@@ -1,0 +1,191 @@
+{
+  "version": "1.0.0",
+  "panels": [
+    {
+      "id": "hvac-group-001",
+      "name": "HVAC Group 1",
+      "position": {
+        "x": 1,
+        "y": -12,
+        "z": 2.5
+      },
+      "realWorldPosition": {
+        "north": 3614,
+        "east": -13342,
+        "z": 2500,
+        "unit": "mm"
+      },
+      "content": {
+        "zone": "HVAC Group 1 - Ceiling Terminal",
+        "type": "Ceiling_HVAC_Group",
+        "id": "HG001",
+        "coordinates": "x=N3614,y=E-13342,z=2500mm",
+        "manufacturer": "HVAC Systems Inc",
+        "temperature": 19.2,
+        "humidity": 45,
+        "status": "Operational",
+        "airFlow": "Normal",
+        "pressure": "Optimal"
+      },
+      "visible": true,
+      "created": "2025-09-19T00:00:00.000Z",
+      "modified": "2025-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "hvac-group-002",
+      "name": "HVAC Group 2",
+      "position": {
+        "x": 2.5,
+        "y": -8,
+        "z": 2.5
+      },
+      "realWorldPosition": {
+        "north": 3545,
+        "east": -8222,
+        "z": 2500,
+        "unit": "mm"
+      },
+      "content": {
+        "zone": "HVAC Group 2 - Ceiling Terminal",
+        "type": "Ceiling_HVAC_Group",
+        "id": "HG002",
+        "coordinates": "x=N3545,y=E-8222,z=2500mm",
+        "manufacturer": "HVAC Systems Inc",
+        "temperature": 18.8,
+        "humidity": 43,
+        "status": "Operational",
+        "airFlow": "Normal",
+        "pressure": "Optimal"
+      },
+      "visible": true,
+      "created": "2025-09-19T00:00:00.000Z",
+      "modified": "2025-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "hvac-group-003",
+      "name": "HVAC Group 3",
+      "position": {
+        "x": 4,
+        "y": -4,
+        "z": 2.5
+      },
+      "realWorldPosition": {
+        "north": 3570,
+        "east": -2861,
+        "z": 2500,
+        "unit": "mm"
+      },
+      "content": {
+        "zone": "HVAC Group 3 - Ceiling Terminal",
+        "type": "Ceiling_HVAC_Group",
+        "id": "HG003",
+        "coordinates": "x=N3570,y=E-2861,z=2500mm",
+        "manufacturer": "HVAC Systems Inc",
+        "temperature": 19.5,
+        "humidity": 44,
+        "status": "Operational",
+        "airFlow": "Normal",
+        "pressure": "Optimal"
+      },
+      "visible": true,
+      "created": "2025-09-19T00:00:00.000Z",
+      "modified": "2025-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "hvac-group-004",
+      "name": "HVAC Group 449",
+      "position": {
+        "x": 5.5,
+        "y": 0,
+        "z": 2.5
+      },
+      "realWorldPosition": {
+        "north": 3571,
+        "east": 2539,
+        "z": 2500,
+        "unit": "mm"
+      },
+      "content": {
+        "zone": "HVAC Group 4 - Ceiling Terminal",
+        "type": "Ceiling_HVAC_Group",
+        "id": "HG004",
+        "coordinates": "x=N3571,y=E2539,z=2500mm",
+        "manufacturer": "HVAC Systems Inc",
+        "temperature": 18.9,
+        "humidity": 46,
+        "status": "Operational",
+        "airFlow": "Normal",
+        "pressure": "Optimal"
+      },
+      "visible": true,
+      "created": "2025-09-19T00:00:00.000Z",
+      "modified": "2025-09-21T14:51:58.676Z"
+    },
+    {
+      "id": "hvac-group-005",
+      "name": "HVAC Group 5",
+      "position": {
+        "x": 7,
+        "y": 4,
+        "z": 2.5
+      },
+      "realWorldPosition": {
+        "north": 3570,
+        "east": 8029,
+        "z": 2500,
+        "unit": "mm"
+      },
+      "content": {
+        "zone": "HVAC Group 5 - Ceiling Terminal",
+        "type": "Ceiling_HVAC_Group",
+        "id": "HG005",
+        "coordinates": "x=N3570,y=E8029,z=2500mm",
+        "manufacturer": "HVAC Systems Inc",
+        "temperature": 19.1,
+        "humidity": 42,
+        "status": "Operational",
+        "airFlow": "Normal",
+        "pressure": "Optimal"
+      },
+      "visible": true,
+      "created": "2025-09-19T00:00:00.000Z",
+      "modified": "2025-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "hvac-group-006",
+      "name": "1",
+      "position": {
+        "x": 8.5,
+        "y": 8,
+        "z": 2.5
+      },
+      "realWorldPosition": {
+        "north": 3570,
+        "east": 12428,
+        "z": 2500,
+        "unit": "mm"
+      },
+      "content": {
+        "zone": "HVAC Group 6 - Ceiling Terminal",
+        "type": "Ceiling_HVAC_Group",
+        "id": "HG006",
+        "coordinates": "x=N3570,y=E12428,z=2500mm",
+        "manufacturer": "HVAC Systems Inc",
+        "temperature": 18.7,
+        "humidity": 47,
+        "status": "Operational",
+        "airFlow": "Normal",
+        "pressure": "Optimal"
+      },
+      "visible": true,
+      "created": "2025-09-19T00:00:00.000Z",
+      "modified": "2025-09-22T11:30:31.491Z"
+    }
+  ],
+  "editMode": false,
+  "settings": {
+    "panelScale": 1,
+    "opacity": 0.95,
+    "showConnectorLines": true
+  }
+}

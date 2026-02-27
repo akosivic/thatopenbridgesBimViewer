@@ -1,71 +1,167 @@
 # Bridges BIM Viewer
 
-A web-based BIM viewer for bridge models using ThatOpen Components.
+A modern web-based BIM viewer for bridge and building models with Loytec system integration.
 
-## Features
+## ✨ Key Features
 
-- View IFC models in 3D
-- Stream IFC models from API
-- Measure and analyze BIM elements
-- Select and view element properties
+- **3D Model Visualization**: View IFC models with advanced rendering
+- **Loytec Integration**: Seamless authentication with Loytec devices  
+- **Professional Navigation**: Perspective and orthographic viewing modes
+- **Measurement Tools**: Distance, area, and volume measurements
+- **Element Analysis**: Interactive property inspection and selection
+- **On-Premises Ready**: Deploy on Loytec devices or local infrastructure
 
-## Setup and Running
+## 🚀 Quick Start
 
-### Prerequisites
-
-- Node.js 20.x or later
-- Azure Functions Core Tools v4
-
-### Installation
-
-1. Install dependencies for the frontend:
-
+### Development Setup
 ```bash
+# Install dependencies
 npm install
+cd server && npm install && cd ..
+
+# Configure environment
+cp .env.example .env
+echo "VITE_DEV_SKIP_AUTH=true" >> .env
+
+# Start both frontend and backend
+npm run start:dev
 ```
 
-2. Install dependencies for the API:
+### Production Deployment
+```bash
+# Build for production
+npm run build
+
+# Start production server  
+npm run start
+```
+
+**Access the application**: http://localhost:8001/ws/node/bimviewer/
+
+## � SSO Development with bridges-hub
+
+When developing with SSO (Single Sign-On) integration with bridges-hub:
+
+### Setup Steps
+
+1. **Configure Environment**
+   ```bash
+   # In .env.development.local, set:
+   VITE_HUB_URL=http://localhost:8001
+   VITE_DEV_SKIP_AUTH=false
+   ```
+
+2. **Start bridges-hub First**
+   ```bash
+   cd ../bridges-hub
+   
+   # Option A: Auth server only (recommended for SSO testing)
+   npm run server
+   
+   # Option B: Auth server + hub frontend dev server (for hub development)
+   npm run dev:sso
+   ```
+
+3. **Start BIM Viewer**
+   ```bash
+   # In separate terminal
+   npm run dev
+   ```
+
+4. **Access and Login**
+   - Open: http://localhost:5173/ws/node/bimviewer/
+   - You'll be redirected to bridges-hub login (localhost:8001)
+   - After login, you'll be returned to BIM Viewer
+   - Subsequent visits won't require login (SSO active)
+
+### How It Works
+
+- **Development Mode**: BIM Viewer runs on port 5173, bridges-hub on port 8001
+- **Cookie Sharing**: Authentication cookies use `sameSite: 'lax'` for cross-origin navigation
+- **Return URL**: After login, hub redirects back to your original BIM Viewer URL
+- **Session Validation**: Each load checks authentication with bridges-hub
+
+### Bypass SSO for Faster Development
 
 ```bash
-cd api
-npm install
+# Skip SSO and authentication entirely
+VITE_DEV_SKIP_AUTH=true npm run dev
 ```
 
-### Running the Application
+**Note**: In production (unified deployment), SSO works seamlessly as all apps share the same origin.
 
-1. Start the API (in one terminal):
+## �📁 Documentation
 
+Complete documentation is available in the [`docs/`](docs/) folder:
+
+- **🚀 [Getting Started](docs/README.md)** - Documentation index and overview
+- **🔐 [Authentication](docs/authentication/)** - Loytec integration and security
+- **🛠️ [Development](docs/development/)** - Local development setup and troubleshooting  
+- **🏗️ [Deployment](docs/deployment/)** - On-premises deployment and security
+- **✨ [Features](docs/features/)** - Camera controls and BIM viewer capabilities
+
+## 🎯 Common Use Cases
+
+### Skip Authentication in Development
 ```bash
-cd api
-npm start
+# Enable auth bypass for faster development
+VITE_DEV_SKIP_AUTH=true npm run start:dev
 ```
 
-This will start the Azure Functions runtime on http://localhost:7071.
-
-2. Start the frontend (in another terminal):
-
+### Fix Proxy Errors
 ```bash
-npm run dev
+# Always use this command (not npm run dev)
+npm run start:dev
 ```
 
-This will start the Vite development server with the frontend application.
+### Deploy to Loytec Device
+See [On-Premises Deployment Guide](docs/deployment/on-premises.md)
 
-3. Open your browser and navigate to the URL shown in the terminal (typically http://localhost:5173).
+## 🔧 Available Scripts
 
-## Using the Application
+| Script | Purpose |
+|--------|---------|
+| `npm run start:dev` | 🚀 **Development** (frontend + backend) |
+| `npm run dev` | Frontend only (may cause proxy errors) |
+| `npm run build` | Production build |
+| `npm run start` | Production server |
 
-1. Click on the "Test IFC" button in the Import toolbar to load the test bridge IFC model from the API.
-2. Use the camera controls to navigate around the model.
-3. Select elements to view their properties in the selection panel.
+## 🏗️ Architecture
 
-## Development
+```
+Frontend (React/Vite) ←→ Node.js Server ←→ Loytec Device
+     ↓                      ↓                    ↓
+  3D BIM Viewer         API Endpoints      Authentication
+  ThatOpen Components   Data Integration   Session Management
+```
 
-- The frontend is built with React, TypeScript, and ThatOpen Components.
-- The API is built with Azure Functions.
-- The IFC model is streamed from the API to the frontend.
+## 🔍 Troubleshooting
 
-## Project Structure
+### Proxy Connection Errors
+**Problem**: `ECONNREFUSED` errors when loading  
+**Solution**: Use `npm run start:dev` instead of `npm run dev`
 
-- `/src` - Frontend source code
-- `/api` - Azure Functions API
-- `/api/src/model` - IFC model files
+### Authentication Issues  
+**Development**: Enable bypass with `VITE_DEV_SKIP_AUTH=true`  
+**Production**: Check Loytec device connectivity
+
+### Model Loading Issues
+**Check**: IFC file format and size  
+**Solution**: See [BIM Viewer Documentation](docs/features/bim-viewer.md)
+
+## 📞 Support
+
+For detailed guides and troubleshooting:
+1. Check the [Documentation](docs/) folder
+2. Review specific feature guides  
+3. Check browser console for error messages
+
+## 🛡️ Security
+
+- **Development**: Authentication bypass available (`VITE_DEV_SKIP_AUTH=true`)
+- **Production**: Full Loytec authentication required
+- **On-Premises**: Designed for secure deployment on Loytec devices
+
+---
+
+**Quick Links**: [Development Setup](docs/development/environment-setup.md) | [Loytec Integration](docs/authentication/loytec-integration.md) | [Deployment Guide](docs/deployment/on-premises.md)

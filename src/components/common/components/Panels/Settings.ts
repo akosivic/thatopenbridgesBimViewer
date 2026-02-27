@@ -1,84 +1,36 @@
 import * as BUI from "@thatopen/ui";
-import * as CUI from "@thatopen/ui-obc";
 import * as OBC from "@thatopen/components";
+import * as CUI from "@thatopen/ui-obc";
 import i18n from "../../utils/i18n";
 
-export default (components: OBC.Components, isDebug: boolean) => {
-  const html = document.querySelector("html")!;
-  const onThemeChange = (event: Event) => {
-    const selector = event.target as BUI.Selector;
-    if (
-      selector.value === undefined ||
-      selector.value === null ||
-      selector.value === 0
-    ) {
-      html.classList.remove("bim-ui-dark", "bim-ui-light");
-    } else if (selector.value === 1) {
-      html.className = "bim-ui-dark";
-    } else if (selector.value === 2) {
-      html.className = "bim-ui-light";
+export default (components: OBC.Components) => {
+
+  const setTheme = () => {
+    const dropdown = document.querySelector('[data-name="theme-color-scheme"]') as BUI.Dropdown;
+    const colorScheme = dropdown?.value as unknown as string;
+    if (colorScheme === "auto") {
+      document.documentElement.style.colorScheme = ""
+    } else {
+      document.documentElement.style.colorScheme = colorScheme;
     }
-  };
+  }
 
   const worldsTable = CUI.tables.worldsConfiguration({ components });
 
-  // const onWorldConfigSearch = (e: Event) => {
-  //   const input = e.target as BUI.TextInput;
-  //   // worldsTable.queryString = input.value;
-  // };
-
-  const panel = BUI.Component.create<BUI.Panel>(() => {
-    const t = (key: string) => i18n.t(key);
-
-    if (isDebug) {
-      return BUI.html`
-      <bim-panel>
-        <bim-panel-section label="${t('aspect')}" icon="mage:box-3d-fill">
-          <bim-selector vertical @change=${onThemeChange}>
-            <bim-option
-              value="0"
-              label="${t('system')}"
-              icon="majesticons:laptop"
-              .checked=${!html.classList.contains("bim-ui-dark") &&
-        !html.classList.contains("bim-ui-light")
-        }>
-            </bim-option>
-            <bim-option value="1" label="${t('dark')}" icon="solar:moon-bold" .checked=${html.classList.contains("bim-ui-dark")}></bim-option>
-            <bim-option value="2" label="${t('light')}" icon="solar:sun-bold" .checked=${html.classList.contains("bim-ui-light")}></bim-option>
-          </bim-selector>
-        </bim-panel-section>
-        <bim-panel-section label="${t('worlds')}" icon="tabler:world">
-          ${worldsTable}
-        </bim-panel-section>
-      </bim-panel> 
-    `;
-    }
-    else {
-      return BUI.html`
-      <bim-panel>
-        <bim-panel-section label="${t('aspect')}" icon="mage:box-3d-fill">
-          <bim-selector vertical @change=${onThemeChange}>
-            <bim-option
-              value="0"
-              label="${t('system')}"
-              icon="majesticons:laptop"
-              .checked=${!html.classList.contains("bim-ui-dark") &&
-        !html.classList.contains("bim-ui-light")
-        }>
-            </bim-option>
-            <bim-option value="1" label="${t('dark')}" icon="solar:moon-bold" .checked=${html.classList.contains("bim-ui-dark")}></bim-option>
-            <bim-option value="2" label="${t('light')}" icon="solar:sun-bold" .checked=${html.classList.contains("bim-ui-light")}></bim-option>
-          </bim-selector>
-        </bim-panel-section>
-      </bim-panel> 
-    `;
-    }
-  });
-
-  // // Listen for language changes
-  // i18n.on('languageChanged', () => {
-  //   updatePanel();
-  // });
-
-  return panel;
+  return BUI.html`
+    <bim-panel>
+      <bim-panel-section label="${i18n.t('aspect')}" icon="solar:palette-2-bold">
+        <bim-option label="${i18n.t('theme')}" icon="solar:palette-2-bold">
+          <bim-dropdown @change=${setTheme} data-name="theme-color-scheme" required>
+            <bim-option value="auto" label="${i18n.t('system')}" icon="solar:settings-bold"></bim-option>
+            <bim-option value="dark" label="${i18n.t('dark')}" icon="solar:moon-bold"></bim-option>
+            <bim-option value="light" label="${i18n.t('light')}" icon="solar:sun-bold"></bim-option>
+          </bim-dropdown>
+        </bim-option>
+      </bim-panel-section>
+      <bim-panel-section icon="tabler:world" label="${i18n.t('worlds')}">
+        ${worldsTable}
+      </bim-panel-section>
+    </bim-panel>
+  `;
 };

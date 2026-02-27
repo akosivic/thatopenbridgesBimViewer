@@ -1,0 +1,343 @@
+{
+  "version": "1.0.0",
+  "panels": [
+    {
+      "id": "hvac-monitor-655873",
+      "name": "HVAC Monitor 655873",
+      "position": {
+        "x": 0.645,
+        "y": 1.643,
+        "z": 0.79
+      },
+      "content": {
+        "zone": "HVAC Flow Terminal",
+        "type": "SSG_Monitor_Generic_PLA",
+        "id": "655873",
+        "coordinates": "X=645.337, Y=1643.060, Z=790mm",
+        "manufacturer": "Southwest Solutions Group"
+      },
+      "visible": true,
+      "created": "2025-09-19T00:00:00.000Z",
+      "modified": "2025-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "hvac-monitor-658800",
+      "name": "HVAC Monitor 658800",
+      "position": {
+        "x": 0.645,
+        "y": 2.843,
+        "z": 0.79
+      },
+      "content": {
+        "zone": "HVAC Flow Terminal",
+        "type": "SSG_Monitor_Generic_PLA",
+        "id": "658800",
+        "coordinates": "X=645.337, Y=2843.060, Z=790mm",
+        "manufacturer": "Southwest Solutions Group"
+      },
+      "visible": true,
+      "created": "2025-09-19T00:00:00.000Z",
+      "modified": "2025-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "hvac-monitor-658829",
+      "name": "HVAC Monitor 658829",
+      "position": {
+        "x": 0.645,
+        "y": 4.043,
+        "z": 0.79
+      },
+      "content": {
+        "zone": "HVAC Flow Terminal",
+        "type": "SSG_Monitor_Generic_PLA",
+        "id": "658829",
+        "coordinates": "X=645.337, Y=4043.060, Z=790mm",
+        "manufacturer": "Southwest Solutions Group"
+      },
+      "visible": true,
+      "created": "2025-09-19T00:00:00.000Z",
+      "modified": "2025-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "hvac-monitor-658860",
+      "name": "HVAC Monitor 658860",
+      "position": {
+        "x": 0.645,
+        "y": 5.243,
+        "z": 0.79
+      },
+      "content": {
+        "zone": "HVAC Flow Terminal",
+        "type": "SSG_Monitor_Generic_PLA",
+        "id": "658860",
+        "coordinates": "X=645.337, Y=5243.060, Z=790mm",
+        "manufacturer": "Southwest Solutions Group"
+      },
+      "visible": true,
+      "created": "2025-09-19T00:00:00.000Z",
+      "modified": "2025-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "hvac-monitor-659006",
+      "name": "HVAC Monitor 659006",
+      "position": {
+        "x": 3.548,
+        "y": 5.243,
+        "z": 0.79
+      },
+      "content": {
+        "zone": "HVAC Flow Terminal",
+        "type": "SSG_Monitor_Generic_PLA",
+        "id": "659006",
+        "coordinates": "X=3547.812, Y=5243.060, Z=790mm",
+        "manufacturer": "Southwest Solutions Group"
+      },
+      "visible": true,
+      "created": "2025-09-19T00:00:00.000Z",
+      "modified": "2025-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "hvac-monitor-659037",
+      "name": "HVAC Monitor 659037",
+      "position": {
+        "x": 3.548,
+        "y": 4.043,
+        "z": 0.79
+      },
+      "content": {
+        "zone": "HVAC Flow Terminal",
+        "type": "SSG_Monitor_Generic_PLA",
+        "id": "659037",
+        "coordinates": "X=3547.812, Y=4043.060, Z=790mm",
+        "manufacturer": "Southwest Solutions Group"
+      },
+      "visible": true,
+      "created": "2025-09-19T00:00:00.000Z",
+      "modified": "2025-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "hvac-monitor-659066",
+      "name": "HVAC Monitor 659066",
+      "position": {
+        "x": 3.548,
+        "y": 2.843,
+        "z": 0.79
+      },
+      "content": {
+        "zone": "HVAC Flow Terminal",
+        "type": "SSG_Monitor_Generic_PLA",
+        "id": "659066",
+        "coordinates": "X=3547.812, Y=2843.060, Z=790mm",
+        "manufacturer": "Southwest Solutions Group"
+      },
+      "visible": true,
+      "created": "2025-09-19T00:00:00.000Z",
+      "modified": "2025-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "hvac-monitor-659097",
+      "name": "HVAC Monitor 659097",
+      "position": {
+        "x": 3.548,
+        "y": 1.643,
+        "z": 0.79
+      },
+      "content": {
+        "zone": "HVAC Flow Terminal",
+        "type": "SSG_Monitor_Generic_PLA",
+        "id": "659097",
+        "coordinates": "X=3547.812, Y=1643.060, Z=790mm",
+        "manufacturer": "Southwest Solutions Group"
+      },
+      "visible": true,
+      "created": "2025-09-19T00:00:00.000Z",
+      "modified": "2025-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "hvac-monitor-659155",
+      "name": "HVAC Monitor 659155",
+      "position": {
+        "x": 3.548,
+        "y": 0.443,
+        "z": 0.79
+      },
+      "content": {
+        "zone": "HVAC Flow Terminal",
+        "type": "SSG_Monitor_Generic_PLA",
+        "id": "659155",
+        "coordinates": "X=3547.812, Y=443.060, Z=790mm",
+        "manufacturer": "Southwest Solutions Group"
+      },
+      "visible": true,
+      "created": "2025-09-19T00:00:00.000Z",
+      "modified": "2025-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "hvac-monitor-659240",
+      "name": "HVAC Monitor 659240",
+      "position": {
+        "x": 6.463,
+        "y": 3.323,
+        "z": 0.79
+      },
+      "content": {
+        "zone": "HVAC Flow Terminal",
+        "type": "SSG_Monitor_Generic_PLA",
+        "id": "659240",
+        "coordinates": "X=6463.274, Y=3323.060, Z=790mm",
+        "manufacturer": "Southwest Solutions Group"
+      },
+      "visible": true,
+      "created": "2025-09-19T00:00:00.000Z",
+      "modified": "2025-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "hvac-monitor-659271",
+      "name": "HVAC Monitor 659271",
+      "position": {
+        "x": 6.463,
+        "y": 2.123,
+        "z": 0.79
+      },
+      "content": {
+        "zone": "HVAC Flow Terminal",
+        "type": "SSG_Monitor_Generic_PLA",
+        "id": "659271",
+        "coordinates": "X=6463.274, Y=2123.060, Z=790mm",
+        "manufacturer": "Southwest Solutions Group"
+      },
+      "visible": true,
+      "created": "2025-09-19T00:00:00.000Z",
+      "modified": "2025-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "hvac-monitor-659302",
+      "name": "HVAC Monitor 659302",
+      "position": {
+        "x": 6.463,
+        "y": 0.923,
+        "z": 0.79
+      },
+      "content": {
+        "zone": "HVAC Flow Terminal",
+        "type": "SSG_Monitor_Generic_PLA",
+        "id": "659302",
+        "coordinates": "X=6463.274, Y=923.060, Z=790mm",
+        "manufacturer": "Southwest Solutions Group"
+      },
+      "visible": true,
+      "created": "2025-09-19T00:00:00.000Z",
+      "modified": "2025-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "hvac-monitor-659339",
+      "name": "HVAC Monitor 659339",
+      "position": {
+        "x": 0.836,
+        "y": 1.643,
+        "z": 0.79
+      },
+      "content": {
+        "zone": "HVAC Flow Terminal",
+        "type": "SSG_Monitor_Generic_PLA",
+        "id": "659339",
+        "coordinates": "X=835.837, Y=1643.060, Z=790mm",
+        "manufacturer": "Southwest Solutions Group"
+      },
+      "visible": true,
+      "created": "2025-09-19T00:00:00.000Z",
+      "modified": "2025-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "hvac-monitor-659360",
+      "name": "HVAC Monitor 659360",
+      "position": {
+        "x": 0.836,
+        "y": 2.843,
+        "z": 0.79
+      },
+      "content": {
+        "zone": "HVAC Flow Terminal",
+        "type": "SSG_Monitor_Generic_PLA",
+        "id": "659360",
+        "coordinates": "X=835.837, Y=2843.060, Z=790mm",
+        "manufacturer": "Southwest Solutions Group"
+      },
+      "visible": true,
+      "created": "2025-09-19T00:00:00.000Z",
+      "modified": "2025-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "hvac-monitor-659381",
+      "name": "HVAC Monitor 659381",
+      "position": {
+        "x": 0.836,
+        "y": 4.043,
+        "z": 0.79
+      },
+      "content": {
+        "zone": "HVAC Flow Terminal",
+        "type": "SSG_Monitor_Generic_PLA",
+        "id": "659381",
+        "coordinates": "X=835.837, Y=4043.060, Z=790mm",
+        "manufacturer": "Southwest Solutions Group"
+      },
+      "visible": true,
+      "created": "2025-09-19T00:00:00.000Z",
+      "modified": "2025-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "hvac-monitor-660890",
+      "name": "HVAC Monitor 660890",
+      "position": {
+        "x": 0.836,
+        "y": 5.243,
+        "z": 0.79
+      },
+      "content": {
+        "zone": "HVAC Flow Terminal",
+        "type": "SSG_Monitor_Generic_PLA",
+        "id": "660890",
+        "coordinates": "X=835.837, Y=5243.060, Z=790mm",
+        "manufacturer": "Southwest Solutions Group"
+      },
+      "visible": true,
+      "created": "2025-09-19T00:00:00.000Z",
+      "modified": "2025-09-19T00:00:00.000Z"
+    },
+    {
+      "id": "ceiling-hvac-monitor-001",
+      "name": "Ceiling HVAC Monitor 001",
+      "position": {
+        "x": 3.614,
+        "y": -13.342,
+        "z": 2.5
+      },
+      "realWorldPosition": {
+        "north": 3614,
+        "east": -13342,
+        "z": 2500,
+        "unit": "mm"
+      },
+      "content": {
+        "zone": "Ceiling HVAC Flow Terminal",
+        "type": "High_Ceiling_Monitor",
+        "id": "001",
+        "coordinates": "x=N3614,y=E-13342,z=2500mm",
+        "manufacturer": "HVAC Systems Inc",
+        "temperature": 18.5,
+        "humidity": 42,
+        "status": "Operational"
+      },
+      "visible": true,
+      "created": "2025-09-19T00:00:00.000Z",
+      "modified": "2025-09-19T00:00:00.000Z"
+    }
+  ],
+  "editMode": false,
+  "settings": {
+    "panelScale": 1.0,
+    "opacity": 0.95,
+    "showConnectorLines": true
+  }
+}

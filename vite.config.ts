@@ -4,13 +4,43 @@ import react from '@vitejs/plugin-react';
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
+  base: '/ws/node/bimviewer/',
   server: {
     proxy: {
-      '/api': {
-        target: 'http://localhost:7071',
+      '/ws/node/api': {
+        target: 'http://localhost:8001',
+        changeOrigin: true,
+        secure: false,
+        configure: (proxy) => {
+          proxy.on('error', () => {
+            // console.error('⚠️ Proxy error - make sure backend server is running on port 8001');
+            // console.error('Run: npm run start:dev (to start both frontend and backend)');
+            // console.error('Error details:', err.message);
+          });
+        },
+      },
+      // Proxy auth routes to bridges-hub gateway
+      '/ws/node/auth': {
+        target: 'http://localhost:8001',
         changeOrigin: true,
         secure: false,
       },
     },
+    fs: {
+      allow: ['..']
+    }
   },
+  optimizeDeps: {
+    exclude: ['web-ifc']
+  },
+  build: {
+    rollupOptions: {
+      external: [],
+      output: {
+        manualChunks: {
+          'web-ifc': ['web-ifc']
+        }
+      }
+    }
+  }
 });

@@ -1,8 +1,11 @@
 .world-viewer {
-  padding-top: 64px;
-  display: block;
-  height: 100vh;
-  padding-bottom: 37px;
+  padding-top: 32px;
+  /* display: block; */
+  height: calc(100vh - 32px); /* Full height minus header */
+  width: 100vw;
+  overflow: hidden; /* Prevent scrolling within the viewer */
+  background: transparent !important;
+  background-color: transparent !important;
   /* Ensure the component is block-level */
 }
 
@@ -13,6 +16,7 @@ bim-grid:not([floating])>bim-panel {
 bim-grid[floating]>bim-toolbar {
   justify-self: center;
 }
+
 /* Loading overlay styles */
 .loading-overlay {
   position: fixed;
@@ -44,6 +48,646 @@ bim-grid[floating]>bim-toolbar {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Left panel minimize/expand styles */
+.left-panel-minimize-btn {
+  background: rgba(0, 0, 0, 0.1);
+  border: none;
+  cursor: pointer;
+  transition: none !important;
+}
+
+.left-panel-minimize-btn:hover {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.left-panel-expand-btn {
+  position: fixed;
+  top: 80px;
+  left: 10px;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.8);
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: none !important;
+}
+
+.left-panel-expand-btn:hover {
+  background: rgba(0, 0, 0, 0.9);
+  transform: none;
+}
+
+/* Ensure floating camera settings stay centered and don't move */
+bim-tabs[floating] {
+  position: fixed !important;
+  bottom: 20px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  z-index: 100000 !important;
+  transition: none !important;
+  /* Remove any transitions */
+}
+
+bim-grid[floating]>bim-toolbar {
+  justify-self: center !important;
+  transition: none !important;
+  /* Remove any transitions */
+}
+
+/* Ensure floating elements are never affected by panel minimization */
+bim-tabs[floating],
+bim-toolbar[floating],
+*[floating] {
+  position: fixed !important;
+  transition: none !important;
+}
+
+/* Override any inherited transitions for floating camera settings */
+bim-tabs[floating] * {
+  transition: none !important;
+}
+
+/* Left panel minimized state - optimized for performance */
+bim-grid.left-panel-minimized {
+  grid-template-areas: "viewport" !important;
+  grid-template-columns: 1fr !important;
+}
+
+/* Left panel floats over full-screen model - transparent - positioned just below header */
+.custom-tabs-container {
+  will-change: auto;
+  backface-visibility: visible;
+  transform: translate3d(0, 0, 0);
+  transition: none !important;
+  opacity: 0.8;
+  visibility: visible;
+  width: 20rem;
+  position: fixed !important;
+  left: 0 !important;
+  top: 32px !important; /* Position below header */
+  height: calc(100vh - 32px) !important; /* Full height minus header */
+  z-index: 10 !important;
+  background: rgba(0, 0, 0, 0.95) !important;
+  background-color: rgba(0, 0, 0, 0.95) !important;
+  backdrop-filter: blur(8px);
+  overflow-y: auto; /* Allow scrolling within panel if needed */
+  overflow-x: hidden;
+}
+
+/* Hide left panel elements instantly */
+bim-grid.left-panel-minimized .custom-tabs-container {
+  transform: translate3d(-100%, 0, 0) !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  transition: none !important;
+}
+
+/* Make sure viewport stays fullscreen when minimized */
+bim-grid.left-panel-minimized bim-viewport {
+  grid-area: viewport !important;
+  width: 100% !important;
+  height: 100% !important;
+  position: relative !important;
+  top: 0 !important;
+  left: 0 !important;
+  z-index: -1 !important;
+}
+
+/* Full layout state - viewport always full screen */
+bim-grid:not(.left-panel-minimized) {
+  grid-template-areas: "viewport" !important;
+  grid-template-columns: 1fr !important;
+}
+
+/* Show left panel elements instantly */
+bim-grid:not(.left-panel-minimized) .custom-tabs-container {
+  transform: translate3d(0, 0, 0) !important;
+  opacity: 0.8 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  transition: none !important;
+}
+
+/* Ensure viewport is full screen even when left panel is expanded */
+bim-grid:not(.left-panel-minimized) bim-viewport {
+  width: 100% !important;
+  height: 100% !important;
+  position: relative !important;
+  top: 0 !important;
+  left: 0 !important;
+  z-index: -1 !important;
+}
+
+/* Additional viewport styling for full screen mode */
+bim-grid.left-panel-minimized {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+bim-grid.left-panel-minimized bim-viewport canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Make bim-grid transparent and prevent layout shifts */
+bim-grid {
+  contain: layout style;
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+/* Instant left panel expand button - no transitions */
+.left-panel-expand-btn {
+  will-change: auto;
+  transform: translate3d(0, 0, 0);
+  transition: none !important;
+  display: none;
+  /* Hidden by default */
+}
+
+/* The expand button display will be handled by JavaScript for better control */
+
+/* Ensure expand button is properly styled */
+.bim-expand-button {
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  position: fixed !important;
+  top: 80px !important;
+  left: 10px !important;
+  z-index: 1000 !important;
+  background: rgba(0, 0, 0, 0.8) !important;
+  border: none !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  padding: 12px !important;
+  transition: none !important;
+  backdrop-filter: blur(4px) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+.bim-expand-button:hover {
+  background: rgba(0, 0, 0, 0.9) !important;
+  transform: none !important;
+  transition: none !important;
+}
+
+/* Ensure hamburger icon is properly styled */
+.bim-expand-button svg {
+  display: block !important;
+  width: 24px !important;
+  height: 24px !important;
+}
+
+/* Viewport should fill full screen and be behind panels */
+bim-viewport {
+  transition: none !important;
+  width: 100% !important;
+  height: 100% !important;
+  position: relative !important;
+  top: 0 !important;
+  left: 0 !important;
+  z-index: -1 !important;
+  overflow: hidden !important;
+}
+
+/* Ensure bim-grid takes full space */
+bim-grid {
+  width: 100% !important;
+  height: 100% !important;
+  overflow: hidden !important;
+  contain: layout style;
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+/* Hide aspect section when project tab is active */
+bim-tab[name="project"][active]~* bim-panel-section[icon="solar:palette-bold"],
+bim-tabs:has(bim-tab[name="project"][active]) bim-panel-section[icon="solar:palette-bold"] {
+  display: none !important;
+}
+
+/* Alternative approach - hide any theme selector outside of settings */
+bim-tab:not([name="settings"]) bim-selector[vertical] bim-option[icon="solar:moon-bold"],
+bim-tab:not([name="settings"]) bim-selector[vertical] bim-option[icon="solar:sun-bold"],
+bim-tab:not([name="settings"]) bim-selector[vertical] bim-option[icon="majesticons:laptop"] {
+  display: none !important;
+}
+
+
+
+/* Force aspect section to only show in settings context */
+bim-panel-section[icon="solar:palette-bold"] {
+  display: none !important;
+}
+
+bim-tab[name="settings"] bim-panel-section[icon="solar:palette-bold"] {
+  display: block !important;
+}
+
+/* Hide any global theme selectors that might be created by the framework */
+body>bim-selector[vertical],
+html>bim-selector[vertical],
+.world-viewer>bim-selector[vertical] {
+  display: none !important;
+}
+
+/* Hide any floating or absolute positioned theme controls */
+bim-selector[vertical][style*="position: absolute"],
+bim-selector[vertical][style*="position: fixed"] {
+  display: none !important;
+}
+
+/* Aggressive hiding of any theme selector outside tabs */
+:not(bim-tab[name="settings"])>* bim-selector[vertical] {
+  display: none !important;
+}
+
+/* Hide any selector that contains theme options */
+bim-selector:has(bim-option[icon="solar:moon-bold"]),
+bim-selector:has(bim-option[icon="solar:sun-bold"]),
+bim-selector:has(bim-option[icon="majesticons:laptop"]) {
+  display: none !important;
+}
+
+/* Only show theme selector within settings tab */
+bim-tab[name="settings"] bim-selector:has(bim-option[icon="solar:moon-bold"]),
+bim-tab[name="settings"] bim-selector:has(bim-option[icon="solar:sun-bold"]),
+bim-tab[name="settings"] bim-selector:has(bim-option[icon="majesticons:laptop"]) {
+  display: block !important;
+}
+
+/* Transparent backgrounds for panels */
+bim-panel {
+  background-color: transparent !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+bim-panel-section {
+  background-color: transparent !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Ensure lights section also has transparent background */
+bim-panel-section[icon="solar:lamp-bold"] {
+  background-color: transparent !important;
+  background: transparent !important;
+}
+
+/* Panel section headers with transparent background */
+bim-panel-section::part(header) {
+  background-color: transparent !important;
+  background: transparent !important;
+  color: #ecf0f1 !important;
+  font-weight: 600 !important;
+  font-size: 1.1em !important;
+  padding: 12px 16px !important;
+}
+
+/* Make all content within the left panel semi-transparent */
+.custom-tabs-container * {
+  background-color: rgba(0, 0, 0, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Ensure tabs themselves are transparent */
+bim-tab {
+  background: rgba(0, 0, 0, 0.3) !important;
+  background-color: rgba(0, 0, 0, 0.3) !important;
+  backdrop-filter: blur(4px);
+}
+
+/* Light control buttons should be red */
+bim-panel-section[icon="solar:lamp-bold"] bim-button {
+  background-color: #ff4444 !important;
+  color: white !important;
+}
+
+bim-panel-section[icon="solar:lamp-bold"] bim-button:hover {
+  background-color: #2196F3 !important; /* blue hover instead of confusing yellow */
+}
+
+/* Datapoint button states - green when ON, red when OFF */
+.datapoint-button {
+  background: #f44336 !important; /* red by default (OFF) */
+  color: white !important;
+  transition: background 0.2s;
+}
+.datapoint-button.active {
+  background: #4CAF50 !important; /* green when ON */
+  color: white !important;
+}
+.datapoint-button:not(.active):hover {
+  background: #2196F3 !important; /* blue hover for OFF buttons */
+}
+.datapoint-button.active:hover {
+  background: #2196F3 !important; /* blue hover for ON buttons */
+}
+
+/* Debug Compass Styles */
+.debug-compass {
+  position: fixed;
+  top: 80px;
+  left: 20px;
+  width: 120px;
+  height: 120px;
+  background: rgba(0, 0, 0, 0.8);
+  border: 2px solid #00ff00;
+  border-radius: 50%;
+  z-index: 9999;
+  pointer-events: none;
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+}
+
+.compass-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+
+.compass-direction {
+  position: absolute;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  font-weight: bold;
+  color: #00ff00;
+  text-shadow: 0 0 3px rgba(0, 255, 0, 0.5);
+}
+
+.compass-direction.north {
+  top: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #ff4444;
+  text-shadow: 0 0 3px rgba(255, 68, 68, 0.5);
+}
+
+.compass-direction.south {
+  bottom: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.compass-direction.east {
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.compass-direction.west {
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.compass-needle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 2px;
+  height: 40px;
+  background: linear-gradient(to bottom, #ff4444, #00ff00);
+  transform-origin: bottom center;
+  transform: translate(-50%, -100%);
+  border-radius: 1px;
+  box-shadow: 0 0 3px rgba(255, 68, 68, 0.5);
+}
+
+.compass-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  background: #00ff00;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 3px rgba(0, 255, 0, 0.8);
+}
+
+/* Content Editing Modal Styles */
+.edit-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000;
+}
+
+.edit-modal {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  min-width: 400px;
+  max-width: 600px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.edit-modal h3 {
+  margin: 0 0 16px 0;
+  color: #333;
+}
+
+.edit-modal-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.edit-modal-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.edit-modal-button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.edit-modal-button.primary {
+  background-color: #007acc;
+  color: white;
+}
+
+.edit-modal-button.secondary {
+  background-color: #f0f0f0;
+  color: #333;
+}
+
+/* Point List Modal Styles */
+.point-list-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000;
+}
+
+.point-list-modal {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  min-width: 500px;
+  max-width: 700px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.point-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 12px;
+}
+
+.point-list-title {
+  margin: 0;
+  color: #333;
+}
+
+.point-list-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.point-list-content {
+  margin-bottom: 20px;
+}
+
+.point-list-loading {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+  font-style: italic;
+}
+
+.point-list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid #eee;
+  border-radius: 4px;
+  margin-bottom: 8px;
+  background: #f9f9f9;
+}
+
+.point-list-item-info {
+  flex: 1;
+}
+
+.point-list-item-name {
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.point-list-item-coords {
+  font-size: 12px;
+  color: #666;
+  font-family: monospace;
+}
+
+.point-list-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.point-list-add-button {
+  width: 100%;
+  padding: 12px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  margin-top: 16px;
+}
+
+.point-list-add-button:hover {
+  background-color: #218838;
+}
+
+/* Panel Content Editing Styles */
+.panel-content-editing {
+  border: 2px dashed #007acc;
+  background-color: rgba(0, 122, 204, 0.05);
+  position: relative;
+}
+
+.panel-content-editing::before {
+  content: "✏️ Editing Mode";
+  position: absolute;
+  top: -25px;
+  left: 0;
+  background-color: #007acc;
+  color: white;
+  padding: 2px 8px;
+  font-size: 11px;
+  border-radius: 3px;
+}
+
+.content-edit-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.content-edit-button:hover {
+  opacity: 1;
+  background-color: rgba(0, 122, 204, 0.1);
+}
+
+.content-edit-button svg {
+  width: 16px;
+  height: 16px;
+  fill: #007acc;
 }
